@@ -257,6 +257,9 @@ int usockif_readreqioctl(int fd, FAR struct usrsock_request_buff_s *buf)
 
   switch (req->cmd)
     {
+      case FIONBIO:
+        rsize = sizeof(int);
+        break;
       case SIOCLTECMD:
         rsize = sizeof(struct lte_ioctl_data_s);
         break;

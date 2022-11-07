@@ -256,7 +256,7 @@ int cmd_addroute(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
 
   /* We need to have a socket (any socket) in order to perform the ioctl */
 
-  sockfd = socket(family, NETLIB_SOCK_TYPE, 0);
+  sockfd = socket(NET_SOCK_FAMILY, NET_SOCK_TYPE, NET_SOCK_PROTOCOL);
   if (sockfd < 0)
     {
       nsh_error(vtbl, g_fmtcmdfailed, argv[0], "socket", NSH_ERRNO);
@@ -327,7 +327,7 @@ int cmd_addroute(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
            * /128 -> ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff
            */
 
-          memset(&inaddr.ipv6, 0, sizeof(struct sockaddr_in6));
+          memset(&inaddr.ipv6, 0, sizeof(inaddr.ipv6));
           for (i = 0; i < 8 && shift >= 16; i++, shift -= 16)
             {
               inaddr.ipv6.s6_addr16[i] = 0xffff;
@@ -503,7 +503,7 @@ int cmd_delroute(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
    * used.
    */
 
-  if (shift > 0 && argc  != 2)
+  if (shift > 0 && argc != 2)
     {
       nsh_error(vtbl, g_fmttoomanyargs, argv[0]);
       goto errout;
@@ -537,7 +537,7 @@ int cmd_delroute(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
 
   /* We need to have a socket (any socket) in order to perform the ioctl */
 
-  sockfd = socket(family, NETLIB_SOCK_TYPE, 0);
+  sockfd = socket(NET_SOCK_FAMILY, NET_SOCK_TYPE, NET_SOCK_PROTOCOL);
   if (sockfd < 0)
     {
       nsh_error(vtbl, g_fmtcmdfailed, argv[0], "socket", NSH_ERRNO);
@@ -608,7 +608,7 @@ int cmd_delroute(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
            * /128 -> ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff
            */
 
-          memset(&inaddr.ipv6, 0, sizeof(struct sockaddr_in6));
+          memset(&inaddr.ipv6, 0, sizeof(inaddr.ipv6));
           for (i = 0; i < 8 && shift >= 16; i++, shift -= 16)
             {
               inaddr.ipv6.s6_addr16[i] = 0xffff;

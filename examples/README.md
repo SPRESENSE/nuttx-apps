@@ -317,8 +317,7 @@ options:
    LDELFFLAGS = -r -e main
    ```
 
-   If you use GCC to link, you make also need to include `-nostdlib` or
-   `-nostartfiles` and `-nodefaultlibs`.
+   If you use GCC to link, you make also need to include `-nostdlib`.
 
 3. This example also requires `genromfs`. `genromfs` can be build as part of the
    nuttx toolchain. Or can built from the `genromfs` sources that can be found
@@ -643,6 +642,16 @@ maintaining duplicate logic in the NuttX repository.
 This is a simple test of the board LED driver at
 `nuttx/drivers/leds/userled_*.c`.
 
+## `luamod_hello` Hello World Lua module
+
+A Lua C module showing how to add built-in modules to the Lua interpreter.
+Usage:
+
+```lua
+> hello.say_hello()
+"Hello World!"
+```
+
 ## `lis2csh_reader` `LIS3DSH` Accelerometer
 
 A simple reader example for the `LIS3DSH` acceleration sensor as found on
@@ -673,7 +682,7 @@ drivers. This test is suitable for use EEPROM character drivers (see
 `nuttx/drivers/bch`)
 
 ```c
-int ret = bchdev_register(<path-to-block-dirver>,
+int ret = bchdev_register(<path-to-block-driver>,
                           <path-to-character-driver>, false);
 ```
 
@@ -723,8 +732,7 @@ configuration options:
    LDMODULEFLAGS = -r -e module_initialize
    ```
 
-   If you use GCC to link, you make also need to include `-nostdlib` or
-   `-nostartfiles` and `-nodefaultlibs`.
+   If you use GCC to link, you make also need to include `-nostdlib`.
 
 3. This example also requires `genromfs`. `genromfs` can be build as part of the
    nuttx toolchain. Or can built from the `genromfs` sources that can be found
@@ -1265,8 +1273,7 @@ Test-specific configuration options:
    LDELFFLAGS = -r -e main
    ```
 
-   If you use GCC to link, you make also need to include `-nostdlib` or
-   `-nostartfiles` and `-nodefaultlibs`.
+   If you use GCC to link, you make also need to include `-nostdlib`.
 
 3. This example also requires `genromfs`. `genromfs` can be build as part of the
    nuttx toolchain. Or can built from the `genromfs` sources that can be found
@@ -1537,8 +1544,7 @@ system. At run time, the shared library is installed and exercised. Requires
    LDMODULEFLAGS = -r -e module_initialize
    ```
 
-   If you use GCC to link, you make also need to include `-nostdlib` or
-   `-nostartfiles` and `-nodefaultlibs`.
+   If you use GCC to link, you make also need to include `-nostdlib`.
 
 3. This example also requires `genromfs`. `genromfs` can be build as part of the
    nuttx toolchain. Or can built from the `genromfs` sources that can be found
@@ -1716,43 +1722,46 @@ Example configuration:
 - `CONFIG_EXAMPLES_TIMER_PROGNAME` – This is the name of the program that will
   be used when the NSH ELF program is installed. Default: `timer`.
 
-## `timer_gpout`
+## `timer_gpio`
 
-This example uses the timer interrupt to periodically
-change the state of a digital output.
-The digital output may be a relay, a led or anything else.
-This example can be very useful to validate timer drivers
-by using a logic analyzer connected to the digital output.
-This example, mainly differs from the timer example because it
-waits on a sigwaitinfo() instead of using a signal handler.
-This approach ensures a deterministic wake-up time when
-the signal occurs.
+This example uses the timer interrupt to periodically change the state of a
+digital output. The digital output may be a relay, a led or anything else.
+This example can be very useful to validate timer drivers by using a logic
+analyzer connected to the digital output. This example mainly differs from
+the timer example because it waits on a sigwaitinfo() instead of using a
+signal handler. This approach ensures a deterministic wake-up time when the
+signal occurs.
 
 Dependencies:
 
 - `CONFIG_TIMER` – The timer driver must be selected.
 - `CONFIG_DEV_GPIO` – The GPIO driver must be selected.
 
-Note: You should also select one timer instance and have gpout
-proper configured in your board logic.
+Note: You should also select one timer instance and have the gpio driver
+properly configured in your board logic.
 
 Example configuration:
 
-- `EXAMPLES_TIMER_GPOUT_TIM_DEVNAME` – This is the name of the timer device that will be used.
-   Default: `/dev/timer0`.
-- `EXAMPLES_TIMER_GPOUT_GPOUT_DEVNAME` – This is the name of the gpout device that will be used.
-  Default: `/dev/gpout0`.
-- `EXAMPLES_TIMER_GPOUT_INTERVAL` – This is the timer interval in microseconds.
+- `EXAMPLES_TIMER_GPIO_TIM_DEVNAME` – This is the name of the timer device
+    that will be used.
+  Default: `/dev/timer0`.
+- `EXAMPLES_TIMER_GPIO_GPIO_DEVNAME` – This is the name of the gpio device
+    that will be used.
+  Default: `/dev/gpio0`.
+- `EXAMPLES_TIMER_GPIO_INTERVAL` – This is the timer interval in
+    microseconds.
   Default: `1000000`.
-- `EXAMPLES_TIMER_GPOUT_SIGNO` – This is the signal number that is used to notify that a timer
-		interrupt occurred.
+- `EXAMPLES_TIMER_GPIO_SIGNO` – This is the signal number that is used to
+    notify that a timer interrupt occurred.
   Default: `17`.
-- `EXAMPLES_TIMER_GPOUT_STACKSIZE` – This is the stack size allocated when the timer task runs.
+- `EXAMPLES_TIMER_GPIO_STACKSIZE` – This is the stack size allocated when the
+    timer task runs.
   Default: `2048`.
-- `EXAMPLES_TIMER_GPOUT_PRIORITY` – This is the priority of the timer task.
+- `EXAMPLES_TIMER_GPIO_PRIORITY` – This is the priority of the timer task.
   Default: `255`.
-- `EXAMPLES_TIMER_GPOUT_PROGNAME` – This is the name of the program that will be used from the nsh.
-  Default: `timer_gpout`.
+- `EXAMPLES_TIMER_GPIO_PROGNAME` – This is the name of the program that will
+    be used from the nsh.
+  Default: `timer_gpio`.
 
 ## `touchscreen` Touchscreen Events
 

@@ -233,14 +233,9 @@ static void iperf_report_task(void *arg)
   struct timespec start;
   uintmax_t now_len;
   int ret;
-#ifdef CONFIG_CLOCK_MONOTONIC
-  const clockid_t clockid = CLOCK_MONOTONIC;
-#else
-  const clockid_t clockid = CLOCK_REALTIME;
-#endif
 
   now_len = s_iperf_ctrl.total_len;
-  ret = clock_gettime(clockid, &now);
+  ret = clock_gettime(CLOCK_MONOTONIC, &now);
   if (ret != 0)
     {
       fprintf(stderr, "clock_gettime failed\n");
@@ -258,7 +253,7 @@ static void iperf_report_task(void *arg)
       last_len = now_len;
       last = now;
       now_len = s_iperf_ctrl.total_len;
-      ret = clock_gettime(clockid, &now);
+      ret = clock_gettime(CLOCK_MONOTONIC, &now);
       if (ret != 0)
         {
           fprintf(stderr, "clock_gettime failed\n");
@@ -388,11 +383,16 @@ static int iperf_run_tcp_server(void)
         }
       else
         {
-          printf("accept: %s,%d\n", inet_ntoa(remote_addr.sin_addr),
+          char inetaddr[INET_ADDRSTRLEN];
+
+          printf("accept: %s,%d\n",
+                 inet_ntoa_r(remote_addr.sin_addr, inetaddr,
+                             sizeof(inetaddr)),
                  htons(remote_addr.sin_port));
           iperf_start_report();
 
           t.tv_sec = IPERF_SOCKET_RX_TIMEOUT;
+          t.tv_usec = 0;
           setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &t, sizeof(t));
         }
 
@@ -401,8 +401,10 @@ static int iperf_run_tcp_server(void)
           actual_recv = recv(sockfd, buffer, want_recv, 0);
           if (actual_recv == 0)
             {
+              char inetaddr[INET_ADDRSTRLEN];
               printf("closed by the peer: %s,%d\n",
-                     inet_ntoa(remote_addr.sin_addr),
+                     inet_ntoa_r(remote_addr.sin_addr, inetaddr,
+                                 sizeof(inetaddr)),
                      htons(remote_addr.sin_port));
 
               /* Note: unlike the original iperf, this implementation
@@ -481,6 +483,7 @@ static int iperf_run_udp_server(void)
   printf("want recv=%d", want_recv);
 
   t.tv_sec = IPERF_SOCKET_RX_TIMEOUT;
+  t.tv_usec = 0;
   setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &t, sizeof(t));
 
   while (!s_iperf_ctrl.finish)

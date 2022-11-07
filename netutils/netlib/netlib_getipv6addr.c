@@ -66,12 +66,12 @@ int netlib_get_ipv6addr(FAR const char *ifname, FAR struct in6_addr *addr)
 
   if (ifname && addr)
     {
-      int sockfd = socket(PF_INET6, NETLIB_SOCK_TYPE, 0);
+      int sockfd = socket(NET_SOCK_FAMILY, NET_SOCK_TYPE, NET_SOCK_PROTOCOL);
       if (sockfd >= 0)
         {
           struct lifreq req;
 
-          strncpy(req.lifr_name, ifname, IFNAMSIZ);
+          strlcpy(req.lifr_name, ifname, IFNAMSIZ);
           ret = ioctl(sockfd, SIOCGLIFADDR, (unsigned long)&req);
           if (!ret)
             {

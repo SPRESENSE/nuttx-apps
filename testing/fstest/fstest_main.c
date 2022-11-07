@@ -91,7 +91,6 @@ struct fstest_filedesc_s
   bool failed;
   size_t len;
   uint32_t crc;
-  uint32_t hash;
 };
 
 /****************************************************************************
@@ -100,19 +99,18 @@ struct fstest_filedesc_s
 
 /* Pre-allocated simulated flash */
 
-static uint8_t g_fileimage[CONFIG_TESTING_FSTEST_MAXFILE];
-static struct fstest_filedesc_s g_files[CONFIG_TESTING_FSTEST_MAXOPEN];
-static char g_mountdir[CONFIG_TESTING_FSTEST_MAXNAME] =
-            CONFIG_TESTING_FSTEST_MOUNTPT "/";
-static int g_nfiles;
-static int g_ndeleted;
-static int g_nfailed;
-static bool g_media_full;
-
-static struct mallinfo g_mmbefore;
-static struct mallinfo g_mmprevious;
-static struct mallinfo g_mmafter;
-
+struct fstest_ctx_s
+{
+  uint8_t fileimage[CONFIG_TESTING_FSTEST_MAXFILE];
+  struct fstest_filedesc_s files[CONFIG_TESTING_FSTEST_MAXOPEN];
+  char mountdir[CONFIG_TESTING_FSTEST_MAXNAME];
+  int nfiles;
+  int ndeleted;
+  int nfailed;
+  struct mallinfo mmbefore;
+  struct mallinfo mmprevious;
+  struct mallinfo mmafter;
+};
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
@@ -124,45 +122,50 @@ static struct mallinfo g_mmafter;
 static void fstest_showmemusage(struct mallinfo *mmbefore,
                                 struct mallinfo *mmafter)
 {
-  printf("VARIABLE  BEFORE   AFTER\n");
-  printf("======== ======== ========\n");
-  printf("arena    %8x %8x\n", mmbefore->arena,    mmafter->arena);
-  printf("ordblks  %8d %8d\n", mmbefore->ordblks,  mmafter->ordblks);
-  printf("mxordblk %8x %8x\n", mmbefore->mxordblk, mmafter->mxordblk);
-  printf("uordblks %8x %8x\n", mmbefore->uordblks, mmafter->uordblks);
-  printf("fordblks %8x %8x\n", mmbefore->fordblks, mmafter->fordblks);
+  printf("VARIABLE  BEFORE   AFTER    DELTA\n");
+  printf("======== ======== ======== ========\n");
+  printf("arena    %8x %8x %8x\n", mmbefore->arena   , mmafter->arena,
+                                   mmafter->arena    - mmbefore->arena);
+  printf("ordblks  %8d %8d %8d\n", mmbefore->ordblks , mmafter->ordblks,
+                                   mmafter->ordblks  - mmbefore->ordblks);
+  printf("mxordblk %8x %8x %8x\n", mmbefore->mxordblk, mmafter->mxordblk,
+                                   mmafter->mxordblk - mmbefore->mxordblk);
+  printf("uordblks %8x %8x %8x\n", mmbefore->uordblks, mmafter->uordblks,
+                                   mmafter->uordblks - mmbefore->uordblks);
+  printf("fordblks %8x %8x %8x\n", mmbefore->fordblks, mmafter->fordblks,
+                                   mmafter->fordblks - mmbefore->fordblks);
 }
 
 /****************************************************************************
  * Name: fstest_loopmemusage
  ****************************************************************************/
 
-static void fstest_loopmemusage(void)
+static void fstest_loopmemusage(FAR struct fstest_ctx_s *ctx)
 {
   /* Get the current memory usage */
 
-  g_mmafter = mallinfo();
+  ctx->mmafter = mallinfo();
 
   /* Show the change from the previous loop */
 
   printf("\nEnd of loop memory usage:\n");
-  fstest_showmemusage(&g_mmprevious, &g_mmafter);
+  fstest_showmemusage(&ctx->mmprevious, &ctx->mmafter);
 
   /* Set up for the next test */
 
-  g_mmprevious = g_mmafter;
+  ctx->mmprevious = ctx->mmafter;
 }
 
 /****************************************************************************
  * Name: fstest_endmemusage
  ****************************************************************************/
 
-static void fstest_endmemusage(void)
+static void fstest_endmemusage(FAR struct fstest_ctx_s *ctx)
 {
-  g_mmafter = mallinfo();
+  ctx->mmafter = mallinfo();
 
   printf("\nFinal memory usage:\n");
-  fstest_showmemusage(&g_mmbefore, &g_mmafter);
+  fstest_showmemusage(&ctx->mmbefore, &ctx->mmafter);
 }
 
 /****************************************************************************
@@ -191,19 +194,19 @@ static inline char fstest_randchar(void)
 }
 
 /****************************************************************************
- * Name: fstest_checkexit
+ * Name: fstest_checkexist
  ****************************************************************************/
 
-static bool fstest_checkexit(FAR struct fstest_filedesc_s *file)
+static bool fstest_checkexist(FAR struct fstest_ctx_s *ctx,
+                              FAR struct fstest_filedesc_s *file)
 {
   int i;
   bool ret = false;
 
   for (i = 0; i < CONFIG_TESTING_FSTEST_MAXOPEN; i++)
     {
-      if (!g_files[i].deleted &&
-          &g_files[i] != file &&
-          g_files[i].hash == file->hash)
+      if (&ctx->files[i] != file && ctx->files[i].name &&
+          strcmp(ctx->files[i].name, file->name) == 0)
         {
           ret = true;
           break;
@@ -217,7 +220,8 @@ static bool fstest_checkexit(FAR struct fstest_filedesc_s *file)
  * Name: fstest_randname
  ****************************************************************************/
 
-static inline void fstest_randname(FAR struct fstest_filedesc_s *file)
+static inline void fstest_randname(FAR struct fstest_ctx_s *ctx,
+                                   FAR struct fstest_filedesc_s *file)
 {
   int dirlen;
   int maxname;
@@ -225,7 +229,7 @@ static inline void fstest_randname(FAR struct fstest_filedesc_s *file)
   int alloclen;
   int i;
 
-  dirlen   = strlen(g_mountdir);
+  dirlen   = strlen(ctx->mountdir);
 
   /* Force the max filename lengh and also the min name len = 4 */
 
@@ -241,7 +245,7 @@ static inline void fstest_randname(FAR struct fstest_filedesc_s *file)
       exit(5);
     }
 
-  memcpy(file->name, g_mountdir, dirlen);
+  memcpy(file->name, ctx->mountdir, dirlen);
 
   do
     {
@@ -251,27 +255,26 @@ static inline void fstest_randname(FAR struct fstest_filedesc_s *file)
         }
 
       file->name[alloclen] = '\0';
-      file->hash = crc32((const uint8_t *)file->name + dirlen,
-                         alloclen - dirlen);
     }
-  while (fstest_checkexit(file));
+  while (fstest_checkexist(ctx, file));
 }
 
 /****************************************************************************
  * Name: fstest_randfile
  ****************************************************************************/
 
-static inline void fstest_randfile(FAR struct fstest_filedesc_s *file)
+static inline void fstest_randfile(FAR struct fstest_ctx_s *ctx,
+                                   FAR struct fstest_filedesc_s *file)
 {
   int i;
 
   file->len = (rand() % CONFIG_TESTING_FSTEST_MAXFILE) + 1;
   for (i = 0; i < file->len; i++)
     {
-      g_fileimage[i] = fstest_randchar();
+      ctx->fileimage[i] = fstest_randchar();
     }
 
-  file->crc = crc32(g_fileimage, file->len);
+  file->crc = crc32(ctx->fileimage, file->len);
 }
 
 /****************************************************************************
@@ -356,7 +359,7 @@ static int fstest_gc_withfd(int fd, size_t nbytes)
   return ret;
 }
 
-static int fstest_gc(size_t nbytes)
+static int fstest_gc(FAR struct fstest_ctx_s *ctx, size_t nbytes)
 {
   FAR struct fstest_filedesc_s *file;
   int ret = OK;
@@ -367,7 +370,7 @@ static int fstest_gc(size_t nbytes)
 
   for (i = 0; i < CONFIG_TESTING_FSTEST_MAXOPEN; i++)
     {
-      file = &g_files[i];
+      file = &ctx->files[i];
       if (file->name != NULL && !file->deleted)
         {
           /* Open the file for reading */
@@ -401,7 +404,8 @@ static int fstest_gc(size_t nbytes)
  * Name: fstest_wrfile
  ****************************************************************************/
 
-static inline int fstest_wrfile(FAR struct fstest_filedesc_s *file)
+static inline int fstest_wrfile(FAR struct fstest_ctx_s *ctx,
+                                FAR struct fstest_filedesc_s *file)
 {
   size_t offset;
   int fd;
@@ -409,8 +413,8 @@ static inline int fstest_wrfile(FAR struct fstest_filedesc_s *file)
 
   /* Create a random file */
 
-  fstest_randname(file);
-  fstest_randfile(file);
+  fstest_randname(ctx, file);
+  fstest_randfile(ctx, file);
 
   fd = open(file->name, O_WRONLY | O_CREAT | O_EXCL | O_TRUNC, 0666);
   if (fd < 0)
@@ -443,7 +447,7 @@ static inline int fstest_wrfile(FAR struct fstest_filedesc_s *file)
           nbytestowrite = maxio;
         }
 
-      nbyteswritten = write(fd, &g_fileimage[offset], nbytestowrite);
+      nbyteswritten = write(fd, &ctx->fileimage[offset], nbytestowrite);
       if (nbyteswritten < 0)
         {
           int errcode = errno;
@@ -456,11 +460,7 @@ static inline int fstest_wrfile(FAR struct fstest_filedesc_s *file)
             {
               continue;
             }
-          else if (errcode == ENOSPC)
-            {
-              g_media_full = true;
-            }
-          else
+          else if (errcode != ENOSPC)
             {
               printf("ERROR: Failed to write file: %d\n", errcode);
               printf("  File name:    %s\n", file->name);
@@ -509,7 +509,7 @@ static inline int fstest_wrfile(FAR struct fstest_filedesc_s *file)
  * Name: fstest_fillfs
  ****************************************************************************/
 
-static int fstest_fillfs(void)
+static int fstest_fillfs(FAR struct fstest_ctx_s *ctx)
 {
   FAR struct fstest_filedesc_s *file;
   int ret;
@@ -517,14 +517,12 @@ static int fstest_fillfs(void)
 
   /* Create a file for each unused file structure */
 
-  g_media_full = false;
-
   for (i = 0; i < CONFIG_TESTING_FSTEST_MAXOPEN; i++)
     {
-      file = &g_files[i];
+      file = &ctx->files[i];
       if (file->name == NULL)
         {
-          ret = fstest_wrfile(file);
+          ret = fstest_wrfile(ctx, file);
           if (ret < 0)
             {
 #if CONFIG_TESTING_FSTEST_VERBOSE != 0
@@ -536,12 +534,7 @@ static int fstest_fillfs(void)
 #if CONFIG_TESTING_FSTEST_VERBOSE != 0
           printf("  Created file %s\n", file->name);
 #endif
-          g_nfiles++;
-
-          if (g_media_full)
-            {
-              break;
-            }
+          ctx->nfiles++;
         }
     }
 
@@ -552,7 +545,8 @@ static int fstest_fillfs(void)
  * Name: fstest_rdblock
  ****************************************************************************/
 
-static ssize_t fstest_rdblock(int fd, FAR struct fstest_filedesc_s *file,
+static ssize_t fstest_rdblock(FAR struct fstest_ctx_s *ctx, int fd,
+                              FAR struct fstest_filedesc_s *file,
                               size_t offset, size_t len)
 {
   size_t maxio = (rand() % CONFIG_TESTING_FSTEST_MAXIO) + 1;
@@ -565,7 +559,7 @@ static ssize_t fstest_rdblock(int fd, FAR struct fstest_filedesc_s *file,
 
   for (; ; )
     {
-      nbytesread = read(fd, &g_fileimage[offset], len);
+      nbytesread = read(fd, &ctx->fileimage[offset], len);
       if (nbytesread < 0)
         {
           int errcode = errno;
@@ -613,7 +607,8 @@ static ssize_t fstest_rdblock(int fd, FAR struct fstest_filedesc_s *file,
  * Name: fstest_rdfile
  ****************************************************************************/
 
-static inline int fstest_rdfile(FAR struct fstest_filedesc_s *file)
+static inline int fstest_rdfile(FAR struct fstest_ctx_s *ctx,
+                                FAR struct fstest_filedesc_s *file)
 {
   size_t ntotalread;
   ssize_t nbytesread;
@@ -641,7 +636,7 @@ static inline int fstest_rdfile(FAR struct fstest_filedesc_s *file)
 
   for (ntotalread = 0; ntotalread < file->len; )
     {
-      nbytesread = fstest_rdblock(fd, file, ntotalread,
+      nbytesread = fstest_rdblock(ctx, fd, file, ntotalread,
                                   file->len - ntotalread);
       if (nbytesread < 0)
         {
@@ -654,7 +649,7 @@ static inline int fstest_rdfile(FAR struct fstest_filedesc_s *file)
 
   /* Verify the file image CRC */
 
-  crc = crc32(g_fileimage, file->len);
+  crc = crc32(ctx->fileimage, file->len);
   if (crc != file->crc)
     {
       printf("ERROR: Bad CRC: %" PRId32 " vs %" PRId32 "\n", crc, file->crc);
@@ -666,7 +661,7 @@ static inline int fstest_rdfile(FAR struct fstest_filedesc_s *file)
 
   /* Try reading past the end of the file */
 
-  nbytesread = fstest_rdblock(fd, file, ntotalread, 1024) ;
+  nbytesread = fstest_rdblock(ctx, fd, file, ntotalread, 1024);
   if (nbytesread > 0)
     {
       printf("ERROR: Read past the end of file\n");
@@ -686,7 +681,7 @@ static inline int fstest_rdfile(FAR struct fstest_filedesc_s *file)
  ****************************************************************************/
 
 #ifdef CONFIG_HAVE_LONG_LONG
-static unsigned long long fstest_filesize(void)
+static unsigned long long fstest_filesize(FAR struct fstest_ctx_s *ctx)
 {
   unsigned long long bytes_used;
   FAR struct fstest_filedesc_s *file;
@@ -696,7 +691,7 @@ static unsigned long long fstest_filesize(void)
 
   for (i = 0; i < CONFIG_TESTING_FSTEST_MAXOPEN; i++)
     {
-      file = &g_files[i];
+      file = &ctx->files[i];
       if (file->name != NULL && !file->deleted)
         {
           bytes_used += file->len;
@@ -706,7 +701,7 @@ static unsigned long long fstest_filesize(void)
   return bytes_used;
 }
 #else
-static unsigned long fstest_filesize(void)
+static unsigned long fstest_filesize(FAR struct fstest_ctx_s *ctx)
 {
   unsigned long bytes_used;
   FAR struct fstest_filedesc_s *file;
@@ -716,7 +711,7 @@ static unsigned long fstest_filesize(void)
 
   for (i = 0; i < CONFIG_TESTING_FSTEST_MAXOPEN; i++)
     {
-      file = &g_files[i];
+      file = &ctx->files[i];
       if (file->name != NULL && !file->deleted)
         {
           bytes_used += file->len;
@@ -731,7 +726,7 @@ static unsigned long fstest_filesize(void)
  * Name: fstest_verifyfs
  ****************************************************************************/
 
-static int fstest_verifyfs(void)
+static int fstest_verifyfs(FAR struct fstest_ctx_s *ctx)
 {
   FAR struct fstest_filedesc_s *file;
   int ret;
@@ -741,10 +736,10 @@ static int fstest_verifyfs(void)
 
   for (i = 0; i < CONFIG_TESTING_FSTEST_MAXOPEN; i++)
     {
-      file = &g_files[i];
+      file = &ctx->files[i];
       if (file->name != NULL)
         {
-          ret = fstest_rdfile(file);
+          ret = fstest_rdfile(ctx, file);
           if (ret < 0)
             {
               if (file->deleted)
@@ -753,8 +748,8 @@ static int fstest_verifyfs(void)
                   printf("Deleted file %d OK\n", i);
 #endif
                   fstest_freefile(file);
-                  g_ndeleted--;
-                  g_nfiles--;
+                  ctx->ndeleted--;
+                  ctx->nfiles--;
                 }
               else
                 {
@@ -774,8 +769,8 @@ static int fstest_verifyfs(void)
                   printf("  File size: %zd\n", file->len);
 #endif
                   fstest_freefile(file);
-                  g_ndeleted--;
-                  g_nfiles--;
+                  ctx->ndeleted--;
+                  ctx->nfiles--;
                   return ERROR;
                 }
               else
@@ -795,7 +790,7 @@ static int fstest_verifyfs(void)
  * Name: fstest_delfiles
  ****************************************************************************/
 
-static int fstest_delfiles(void)
+static int fstest_delfiles(FAR struct fstest_ctx_s *ctx)
 {
   FAR struct fstest_filedesc_s *file;
   int ndel;
@@ -805,7 +800,7 @@ static int fstest_delfiles(void)
 
   /* Are there any files to be deleted? */
 
-  int nfiles = g_nfiles - g_ndeleted - g_nfailed;
+  int nfiles = ctx->nfiles - ctx->ndeleted - ctx->nfailed;
   if (nfiles <= 1)
     {
       return 0;
@@ -821,7 +816,7 @@ static int fstest_delfiles(void)
     {
       /* Guess a file index */
 
-      int ndx = (rand() % (g_nfiles - g_ndeleted));
+      int ndx = (rand() % (ctx->nfiles - ctx->ndeleted));
 
       /* And delete the next undeleted file after that random index.  NOTE
        * that the entry at ndx is not checked.
@@ -836,7 +831,7 @@ static int fstest_delfiles(void)
               j = 0;
             }
 
-          file = &g_files[j];
+          file = &ctx->files[j];
           if (file->name && !file->deleted)
             {
               ret = unlink(file->name);
@@ -852,7 +847,7 @@ static int fstest_delfiles(void)
                    */
 
                   file->failed = true;
-                  g_nfailed++;
+                  ctx->nfailed++;
                   nfiles--;
 
                   if (nfiles < 1)
@@ -866,7 +861,7 @@ static int fstest_delfiles(void)
                   printf("  Deleted file %s\n", file->name);
 #endif
                   file->deleted = true;
-                  g_ndeleted++;
+                  ctx->ndeleted++;
                   break;
                 }
             }
@@ -880,7 +875,7 @@ static int fstest_delfiles(void)
  * Name: fstest_delallfiles
  ****************************************************************************/
 
-static int fstest_delallfiles(void)
+static int fstest_delallfiles(FAR struct fstest_ctx_s *ctx)
 {
   FAR struct fstest_filedesc_s *file;
   int ret;
@@ -888,7 +883,7 @@ static int fstest_delallfiles(void)
 
   for (i = 0; i < CONFIG_TESTING_FSTEST_MAXOPEN; i++)
     {
-      file = &g_files[i];
+      file = &ctx->files[i];
       if (file->name)
         {
           ret = unlink(file->name);
@@ -909,8 +904,9 @@ static int fstest_delallfiles(void)
         }
     }
 
-  g_nfiles = 0;
-  g_ndeleted = 0;
+  ctx->nfiles = 0;
+  ctx->nfailed = 0;
+  ctx->ndeleted = 0;
   return OK;
 }
 
@@ -918,7 +914,7 @@ static int fstest_delallfiles(void)
  * Name: fstest_directory
  ****************************************************************************/
 
-static int fstest_directory(void)
+static int fstest_directory(FAR struct fstest_ctx_s *ctx)
 {
   DIR *dirp;
   FAR struct dirent *entryp;
@@ -926,14 +922,14 @@ static int fstest_directory(void)
 
   /* Open the directory */
 
-  dirp = opendir(g_mountdir);
+  dirp = opendir(ctx->mountdir);
 
   if (!dirp)
     {
       /* Failed to open the directory */
 
       printf("ERROR: Failed to open directory '%s': %d\n",
-             g_mountdir, errno);
+             ctx->mountdir, errno);
       return ERROR;
     }
 
@@ -969,7 +965,7 @@ static void show_useage(void)
   printf("Usage : fstest [OPTION [ARG]] ...\n");
   printf("-h    show this help statement\n");
   printf("-n    num of test loop e.g. [%d]\n", CONFIG_TESTING_FSTEST_NLOOPS);
-  printf("-m    mount point tobe test e.g. [%s]\n",
+  printf("-m    mount point to be tested e.g. [%s]\n",
           CONFIG_TESTING_FSTEST_MOUNTPT);
 }
 
@@ -983,17 +979,27 @@ static void show_useage(void)
 
 int main(int argc, FAR char *argv[])
 {
+  FAR struct fstest_ctx_s *ctx;
   struct statfs buf;
   unsigned int i;
   int ret;
   int loop_num;
   int option;
 
+  ctx = malloc(sizeof(struct fstest_ctx_s));
+  if (ctx == NULL)
+    {
+      printf("malloc ctx feild,exit!\n");
+      exit(1);
+    }
+
+  memset(ctx, 0, sizeof(struct fstest_ctx_s));
+
   /* Seed the random number generated */
 
   srand(0x93846);
   loop_num = CONFIG_TESTING_FSTEST_NLOOPS;
-  strcpy(g_mountdir, CONFIG_TESTING_FSTEST_MOUNTPT);
+  strcpy(ctx->mountdir, CONFIG_TESTING_FSTEST_MOUNTPT);
 
   /* Opt Parse */
 
@@ -1002,32 +1008,35 @@ int main(int argc, FAR char *argv[])
       switch (option)
         {
           case 'm':
-            strcpy(g_mountdir, optarg);
+            strcpy(ctx->mountdir, optarg);
             break;
           case 'h':
             show_useage();
+            free(ctx);
             exit(0);
           case 'n':
             loop_num = atoi(optarg);
             break;
           case ':':
             printf("Error: Missing required argument\n");
+            free(ctx);
             exit(1);
           case '?':
             printf("Error: Unrecognized option\n");
+            free(ctx);
             exit(1);
         }
     }
 
-  if (g_mountdir[strlen(g_mountdir)-1] != '/')
+  if (ctx->mountdir[strlen(ctx->mountdir)-1] != '/')
     {
-      strcat(g_mountdir, "/");
+      strcat(ctx->mountdir, "/");
     }
 
   /* Set up memory monitoring */
 
-  g_mmbefore = mallinfo();
-  g_mmprevious = g_mmbefore;
+  ctx->mmbefore = mallinfo();
+  ctx->mmprevious = ctx->mmbefore;
 
   /* Loop a few times ... file the file system with some random, files,
    * delete some files randomly, fill the file system with more random file,
@@ -1046,91 +1055,95 @@ int main(int argc, FAR char *argv[])
        */
 
       printf("\n=== FILLING %u =============================\n", i);
-      fstest_fillfs();
+      fstest_fillfs(ctx);
       printf("Filled file system\n");
-      printf("  Number of files: %d\n", g_nfiles);
-      printf("  Number deleted:  %d\n", g_ndeleted);
+      printf("  Number of files: %d\n", ctx->nfiles);
+      printf("  Number deleted:  %d\n", ctx->ndeleted);
 
       /* Directory listing */
 
-      fstest_directory();
+      fstest_directory(ctx);
 #ifdef CONFIG_HAVE_LONG_LONG
-      printf("Total file size: %llu\n", fstest_filesize());
+      printf("Total file size: %llu\n", fstest_filesize(ctx));
 #else
-      printf("Total file size: %lu\n", fstest_filesize());
+      printf("Total file size: %lu\n", fstest_filesize(ctx));
 #endif
 
       /* Verify all files written to FLASH */
 
-      ret = fstest_verifyfs();
+      ret = fstest_verifyfs(ctx);
       if (ret < 0)
         {
           printf("ERROR: Failed to verify files\n");
-          printf("  Number of files: %d\n", g_nfiles);
-          printf("  Number deleted:  %d\n", g_ndeleted);
+          printf("  Number of files: %d\n", ctx->nfiles);
+          printf("  Number deleted:  %d\n", ctx->ndeleted);
+          free(ctx);
           exit(ret);
         }
       else
         {
 #if CONFIG_TESTING_FSTEST_VERBOSE != 0
           printf("Verified!\n");
-          printf("  Number of files: %d\n", g_nfiles);
-          printf("  Number deleted:  %d\n", g_ndeleted);
+          printf("  Number of files: %d\n", ctx->nfiles);
+          printf("  Number deleted:  %d\n", ctx->ndeleted);
 #endif
         }
 
       /* Delete some files */
 
       printf("\n=== DELETING %u ============================\n", i);
-      ret = fstest_delfiles();
+      ret = fstest_delfiles(ctx);
       if (ret < 0)
         {
           printf("ERROR: Failed to delete files\n");
-          printf("  Number of files: %d\n", g_nfiles);
-          printf("  Number deleted:  %d\n", g_ndeleted);
+          printf("  Number of files: %d\n", ctx->nfiles);
+          printf("  Number deleted:  %d\n", ctx->ndeleted);
+          free(ctx);
           exit(ret);
         }
       else
         {
           printf("Deleted some files\n");
-          printf("  Number of files: %d\n", g_nfiles);
-          printf("  Number deleted:  %d\n", g_ndeleted);
+          printf("  Number of files: %d\n", ctx->nfiles);
+          printf("  Number deleted:  %d\n", ctx->ndeleted);
         }
 
       /* Directory listing */
 
-      fstest_directory();
+      fstest_directory(ctx);
 #ifdef CONFIG_HAVE_LONG_LONG
-      printf("Total file size: %llu\n", fstest_filesize());
+      printf("Total file size: %llu\n", fstest_filesize(ctx));
 #else
-      printf("Total file size: %lu\n", fstest_filesize());
+      printf("Total file size: %lu\n", fstest_filesize(ctx));
 #endif
 
       /* Verify all files written to FLASH */
 
-      ret = fstest_verifyfs();
+      ret = fstest_verifyfs(ctx);
       if (ret < 0)
         {
           printf("ERROR: Failed to verify files\n");
-          printf("  Number of files: %d\n", g_nfiles);
-          printf("  Number deleted:  %d\n", g_ndeleted);
+          printf("  Number of files: %d\n", ctx->nfiles);
+          printf("  Number deleted:  %d\n", ctx->ndeleted);
+          free(ctx);
           exit(ret);
         }
       else
         {
 #if CONFIG_TESTING_FSTEST_VERBOSE != 0
           printf("Verified!\n");
-          printf("  Number of files: %d\n", g_nfiles);
-          printf("  Number deleted:  %d\n", g_ndeleted);
+          printf("  Number of files: %d\n", ctx->nfiles);
+          printf("  Number deleted:  %d\n", ctx->ndeleted);
 #endif
         }
 
       /* Show file system usage */
 
-      ret = statfs(g_mountdir, &buf);
+      ret = statfs(ctx->mountdir, &buf);
       if (ret < 0)
         {
            printf("ERROR: statfs failed: %d\n", errno);
+           free(ctx);
            exit(ret);
         }
       else
@@ -1151,14 +1164,15 @@ int main(int argc, FAR char *argv[])
 
       /* Show memory usage */
 
-      fstest_loopmemusage();
+      fstest_loopmemusage(ctx);
       fflush(stdout);
     }
 
   /* Delete all files then show memory usage again */
 
-  fstest_delallfiles();
-  fstest_endmemusage();
+  fstest_delallfiles(ctx);
+  fstest_endmemusage(ctx);
   fflush(stdout);
+  free(ctx);
   return 0;
 }

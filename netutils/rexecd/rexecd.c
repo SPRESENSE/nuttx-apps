@@ -130,7 +130,7 @@ errout:
 static void usage(FAR const char *progname)
 {
   fprintf(stderr, "Usage: %s [-4|-6|-r]\n", progname);
-  fprintf(stderr, "Remote Execution Deamon:\n"
+  fprintf(stderr, "Remote Execution Daemon:\n"
                   " -4, Specify address family to AF_INET(default)\n"
                   " -6, Specify address family to AF_INET6\n"
                   " -r, Specify address family to AF_RPMSG\n");
@@ -176,6 +176,7 @@ int main(int argc, FAR char **argv)
   memset(&addr, 0, sizeof(addr));
   switch (family)
     {
+      default:
       case AF_INET:
         ((FAR struct sockaddr_in *)&addr)->sin_family = AF_INET;
         ((FAR struct sockaddr_in *)&addr)->sin_port = REXECD_PORT;

@@ -45,7 +45,7 @@ static int postproc_accepterr(FAR struct alt1250_s *dev,
                               FAR struct alt_container_s *reply,
                               FAR struct usock_s *usock,
                               FAR int32_t *usock_result,
-                              FAR uint8_t *usock_xid,
+                              FAR uint64_t *usock_xid,
                               FAR struct usock_ackinfo_s *ackinfo,
                               unsigned long arg)
 {
@@ -101,7 +101,7 @@ static int postproc_accept(FAR struct alt1250_s *dev,
                            FAR struct alt_container_s *reply,
                            FAR struct usock_s *usock,
                            FAR int32_t *usock_result,
-                           FAR uint8_t *usock_xid,
+                           FAR uint64_t *usock_xid,
                            FAR struct usock_ackinfo_s *ackinfo,
                            unsigned long arg)
 {
@@ -202,7 +202,7 @@ static int send_accept_command(FAR struct alt1250_s *dev,
 int usockreq_accept(FAR struct alt1250_s *dev,
                     FAR struct usrsock_request_buff_s *req,
                     FAR int32_t *usock_result,
-                    FAR uint8_t *usock_xid,
+                    FAR uint64_t *usock_xid,
                     FAR struct usock_ackinfo_s *ackinfo)
 {
   FAR struct usrsock_request_accept_s *request = &req->request.accept_req;

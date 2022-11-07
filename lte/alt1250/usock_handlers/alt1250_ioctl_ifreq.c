@@ -43,7 +43,7 @@ static int postproc_radiooff(FAR struct alt1250_s *dev,
                              FAR struct alt_container_s *reply,
                              FAR struct usock_s *usock,
                              FAR int32_t *usock_result,
-                             FAR uint8_t *usock_xid,
+                             FAR uint64_t *usock_xid,
                              FAR struct usock_ackinfo_s *ackinfo,
                              unsigned long arg);
 
@@ -51,7 +51,7 @@ static int postproc_radioon(FAR struct alt1250_s *dev,
                             FAR struct alt_container_s *reply,
                             FAR struct usock_s *usock,
                             FAR int32_t *usock_result,
-                            FAR uint8_t *usock_xid,
+                            FAR uint64_t *usock_xid,
                             FAR struct usock_ackinfo_s *ackinfo,
                             unsigned long arg);
 
@@ -59,7 +59,7 @@ static int postproc_actpdn(FAR struct alt1250_s *dev,
                            FAR struct alt_container_s *reply,
                            FAR struct usock_s *usock,
                            FAR int32_t *usock_result,
-                           FAR uint8_t *usock_xid,
+                           FAR uint64_t *usock_xid,
                            FAR struct usock_ackinfo_s *ackinfo,
                            unsigned long arg);
 
@@ -67,7 +67,7 @@ static int postproc_reportnet(FAR struct alt1250_s *dev,
                               FAR struct alt_container_s *reply,
                               FAR struct usock_s *usock,
                               FAR int32_t *usock_result,
-                              FAR uint8_t *usock_xid,
+                              FAR uint64_t *usock_xid,
                               FAR struct usock_ackinfo_s *ackinfo,
                               unsigned long arg);
 
@@ -135,7 +135,7 @@ static int postproc_radiooff(FAR struct alt1250_s *dev,
                              FAR struct alt_container_s *reply,
                              FAR struct usock_s *usock,
                              FAR int32_t *usock_result,
-                             FAR uint8_t *usock_xid,
+                             FAR uint64_t *usock_xid,
                              FAR struct usock_ackinfo_s *ackinfo,
                              unsigned long arg)
 {
@@ -161,7 +161,7 @@ static int postproc_actpdn(FAR struct alt1250_s *dev,
                            FAR struct alt_container_s *reply,
                            FAR struct usock_s *usock,
                            FAR int32_t *usock_result,
-                           FAR uint8_t *usock_xid,
+                           FAR uint64_t *usock_xid,
                            FAR struct usock_ackinfo_s *ackinfo,
                            unsigned long arg)
 {
@@ -196,7 +196,7 @@ static int postproc_radioon(FAR struct alt1250_s *dev,
                             FAR struct alt_container_s *reply,
                             FAR struct usock_s *usock,
                             FAR int32_t *usock_result,
-                            FAR uint8_t *usock_xid,
+                            FAR uint64_t *usock_xid,
                             FAR struct usock_ackinfo_s *ackinfo,
                             unsigned long arg)
 {
@@ -226,7 +226,7 @@ static int postproc_reportnet(FAR struct alt1250_s *dev,
                               FAR struct alt_container_s *reply,
                               FAR struct usock_s *usock,
                               FAR int32_t *usock_result,
-                              FAR uint8_t *usock_xid,
+                              FAR uint64_t *usock_xid,
                               FAR struct usock_ackinfo_s *ackinfo,
                               unsigned long arg)
 {
@@ -254,7 +254,7 @@ static int postproc_reportnet(FAR struct alt1250_s *dev,
 static int do_ifup(FAR struct alt1250_s *dev,
                    FAR struct usrsock_request_buff_s *req,
                    FAR int32_t *usock_result,
-                   FAR uint8_t *usock_xid,
+                   FAR uint64_t *usock_xid,
                    FAR struct usock_ackinfo_s *ackinfo)
 {
   FAR struct usrsock_request_ioctl_s *request =
@@ -299,7 +299,7 @@ static int do_ifup(FAR struct alt1250_s *dev,
 static int do_ifdown(FAR struct alt1250_s *dev,
                      FAR struct usrsock_request_buff_s *req,
                      FAR int32_t *usock_result,
-                     FAR uint8_t *usock_xid,
+                     FAR uint64_t *usock_xid,
                      FAR struct usock_ackinfo_s *ackinfo)
 {
   FAR struct usrsock_request_ioctl_s *request =
@@ -379,7 +379,7 @@ int send_reportnet_command(FAR struct alt1250_s *dev,
 int usockreq_ioctl_ifreq(FAR struct alt1250_s *dev,
                          FAR struct usrsock_request_buff_s *req,
                          FAR int32_t *usock_result,
-                         FAR uint8_t *usock_xid,
+                         FAR uint64_t *usock_xid,
                          FAR struct usock_ackinfo_s *ackinfo)
 {
   FAR struct usrsock_request_ioctl_s *request = &req->request.ioctl_req;

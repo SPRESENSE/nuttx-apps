@@ -59,6 +59,9 @@
 #define EVTTASK_NAME "lteevt_task"
 #define LAPIEVT_QNAME "/lapievt"
 
+#define clr_evtcb(info) reg_evtcb(info, 0, NULL)
+#define search_free_evtcb() search_evtcb(0)
+
 /****************************************************************************
  * Private Function Prototypes
  ****************************************************************************/
@@ -1693,6 +1696,73 @@ static uint64_t alt1250_evt_search(uint32_t cmdid)
 }
 
 /****************************************************************************
+ * Name: reg_evtcb
+ ****************************************************************************/
+
+static int reg_evtcb(struct cbinfo_s *info, uint32_t cmdid, FAR void *cb)
+{
+  if (info == NULL)
+    {
+      return ERROR;
+    }
+
+  info->cmdid = cmdid;
+  info->cb = cb;
+
+  return OK;
+}
+
+/****************************************************************************
+ * Name: search_evtcb
+ ****************************************************************************/
+
+static struct cbinfo_s *search_evtcb(uint32_t cmdid)
+{
+  int i;
+
+  for (i = 0; i < ARRAY_SZ(g_cbtable); i++)
+    {
+      if (g_cbtable[i].cmdid == cmdid)
+        {
+          return &g_cbtable[i];
+        }
+    }
+
+  return NULL;
+}
+
+/****************************************************************************
+ * Name: register_evtcb
+ ****************************************************************************/
+
+static int register_evtcb(uint32_t cmdid, FAR void *cb)
+{
+  if (search_evtcb(cmdid) == NULL)
+    {
+      if (reg_evtcb(search_free_evtcb(), cmdid, cb) == ERROR)
+        {
+          return -EBUSY;
+        }
+
+      return OK;
+    }
+  else
+    {
+      return IS_REPORT_API(cmdid) ? -EALREADY : -EINPROGRESS;
+    }
+}
+
+/****************************************************************************
+ * Name: clear_evtcb
+ ****************************************************************************/
+
+static int clear_evtcb(uint32_t cmdid)
+{
+  clr_evtcb(search_evtcb(cmdid));
+  return OK;
+}
+
+/****************************************************************************
  * Public Functions
  ****************************************************************************/
 
@@ -1723,68 +1793,17 @@ int alt1250_evtdatadestroy(void)
 
 int alt1250_regevtcb(uint32_t cmdid, FAR void *cb)
 {
-  int ret = OK;
-  int i;
-  bool is_clear = (cb == NULL);
-  int myidx = -1;
-  int freeidx = -1;
+  int ret;
 
   sem_wait(&g_cbtablelock);
 
-  for (i = 0; i < ARRAY_SZ(g_cbtable); i++)
+  if (cb == NULL)
     {
-      if (g_cbtable[i].cmdid == 0)
-        {
-          freeidx = i;
-        }
-
-      if (g_cbtable[i].cmdid == cmdid)
-        {
-          myidx = i;
-          break;
-        }
-    }
-
-  if (!is_clear)
-    {
-      /* Found my ID */
-
-      if (myidx != -1)
-        {
-          if (IS_REPORT_API(cmdid))
-            {
-              ret = -EALREADY;
-            }
-          else
-            {
-              ret = -EINPROGRESS;
-            }
-        }
-
-      /* No free index at table? */
-
-      else if (freeidx == -1)
-        {
-          ret = -EBUSY;
-        }
-
-      /* Not found my ID, but found a free index. */
-
-      else
-        {
-          g_cbtable[freeidx].cmdid = cmdid;
-          g_cbtable[freeidx].cb = cb;
-        }
+      ret = clear_evtcb(cmdid);
     }
   else
     {
-      /* Found my ID */
-
-      if (myidx != -1)
-        {
-          g_cbtable[myidx].cmdid = 0;
-          g_cbtable[myidx].cb = NULL;
-        }
+      ret = register_evtcb(cmdid, cb);
     }
 
   sem_post(&g_cbtablelock);

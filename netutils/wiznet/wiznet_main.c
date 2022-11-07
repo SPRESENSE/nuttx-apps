@@ -261,7 +261,7 @@ static int f_write_to_usock(int fd, void *buf, size_t count)
  ****************************************************************************/
 
 static int f_send_ack_common(int fd,
-                             uint8_t xid,
+                             uint64_t xid,
                              FAR struct usrsock_message_req_ack_s *resp)
 {
   resp->head.msgid = USRSOCK_MESSAGE_RESPONSE_ACK;
@@ -442,7 +442,7 @@ static int usock_send_event(int fd, FAR struct wiznet_s *priv,
     }
 
   event.usockid = f_sockfd_to_usock(i);
-  event.events  = events;
+  event.head.events = events;
 
   return f_write_to_usock(fd, &event, sizeof(event));
 }

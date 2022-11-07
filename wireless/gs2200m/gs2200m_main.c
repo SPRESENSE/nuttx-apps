@@ -59,7 +59,7 @@
 #endif
 
 #ifndef MIN
-#  define MIN(a,b)  (((a) < (b)) ? (a) : (b))
+#  define MIN(a,b) ((a) < (b) ? (a) : (b))
 #endif
 
 #define SOCKET_BASE  10000
@@ -95,6 +95,23 @@ struct gs2200m_s
   int     gsfd;
   int     usock_enable;
   struct usock_s sockets[SOCKET_COUNT];
+};
+
+union usrsock_request_u
+{
+  struct usrsock_request_socket_s       socket;
+  struct usrsock_request_close_s        close;
+  struct usrsock_request_connect_s      connect;
+  struct usrsock_request_sendto_s       sendto;
+  struct usrsock_request_recvfrom_s     recvfrom;
+  struct usrsock_request_setsockopt_s   setsockopt;
+  struct usrsock_request_getsockopt_s   getsockopt;
+  struct usrsock_request_getsockname_s  getsockname;
+  struct usrsock_request_getpeername_s  getpeername;
+  struct usrsock_request_bind_s         bind;
+  struct usrsock_request_listen_s       listen;
+  struct usrsock_request_accept_s       accept;
+  struct usrsock_request_ioctl_s        ioctl;
 };
 
 /****************************************************************************
@@ -227,11 +244,12 @@ static int _write_to_usock(int fd, void *buf, size_t count)
  ****************************************************************************/
 
 static int _send_ack_common(int fd,
-                            uint8_t xid,
+                            uint64_t xid,
                             FAR struct usrsock_message_req_ack_s *resp)
 {
-  resp->head.msgid = USRSOCK_MESSAGE_RESPONSE_ACK;
-  resp->head.flags = 0;
+  resp->head.msgid  = USRSOCK_MESSAGE_RESPONSE_ACK;
+  resp->head.flags  = 0;
+  resp->head.events = 0;
   resp->xid = xid;
 
   /* Send ACK response. */
@@ -367,10 +385,10 @@ read_req(int fd, FAR const struct usrsock_request_common_s *com_hdr,
 static int usrsock_request(int fd, FAR struct gs2200m_s *priv)
 {
   FAR struct usrsock_request_common_s *com_hdr;
-  uint8_t hdrbuf[16];
+  union usrsock_request_u req;
   ssize_t rlen;
 
-  com_hdr = (FAR void *)hdrbuf;
+  com_hdr = (FAR void *)&req;
   rlen = read(fd, com_hdr, sizeof(*com_hdr));
 
   if (rlen < 0)
@@ -390,9 +408,9 @@ static int usrsock_request(int fd, FAR struct gs2200m_s *priv)
       return -EIO;
     }
 
-  assert(handlers[com_hdr->reqid].hdrlen < sizeof(hdrbuf));
+  assert(handlers[com_hdr->reqid].hdrlen <= sizeof(req));
 
-  rlen = read_req(fd, com_hdr, hdrbuf,
+  rlen = read_req(fd, com_hdr, &req,
                   handlers[com_hdr->reqid].hdrlen);
 
   if (rlen < 0)
@@ -400,7 +418,7 @@ static int usrsock_request(int fd, FAR struct gs2200m_s *priv)
       return rlen;
     }
 
-  return handlers[com_hdr->reqid].fn(fd, priv, hdrbuf);
+  return handlers[com_hdr->reqid].fn(fd, priv, &req);
 }
 
 /****************************************************************************
@@ -431,7 +449,7 @@ static int usock_send_event(int fd, FAR struct gs2200m_s *priv,
     }
 
   event.usockid = i + SOCKET_BASE;
-  event.events  = events;
+  event.head.events = events;
 
   return _write_to_usock(fd, &event, sizeof(event));
 }
@@ -467,7 +485,7 @@ static int socket_request(int fd, FAR struct gs2200m_s *priv,
   int16_t usockid;
   int ret;
 
-  gs2200m_printf("%s: start type=%d \n",
+  gs2200m_printf("%s: start type=%d\n",
                  __func__, req->type);
 
   /* Check domain requested */
@@ -515,7 +533,7 @@ static int socket_request(int fd, FAR struct gs2200m_s *priv,
                        USRSOCK_EVENT_SENDTO_READY);
     }
 
-  gs2200m_printf("%s: end \n", __func__);
+  gs2200m_printf("%s: end\n", __func__);
   return OK;
 }
 
@@ -533,7 +551,7 @@ static int close_request(int fd, FAR struct gs2200m_s *priv,
   char cid;
   int ret = 0;
 
-  gs2200m_printf("%s: start \n", __func__);
+  gs2200m_printf("%s: start\n", __func__);
 
   /* Check if this socket exists. */
 
@@ -568,7 +586,7 @@ errout:
 
   ret = gs2200m_socket_free(priv, req->usockid);
 
-  gs2200m_printf("%s: end \n", __func__);
+  gs2200m_printf("%s: end\n", __func__);
 
   return OK;
 }
@@ -593,7 +611,7 @@ static int connect_request(int fd, FAR struct gs2200m_s *priv,
   DEBUGASSERT(priv);
   DEBUGASSERT(req);
 
-  gs2200m_printf("%s: start \n", __func__);
+  gs2200m_printf("%s: start\n", __func__);
 
   /* Check if this socket exists. */
 
@@ -711,7 +729,7 @@ prepare:
       return wlen;
     }
 
-  gs2200m_printf("%s: end \n", __func__);
+  gs2200m_printf("%s: end\n", __func__);
   return OK;
 }
 
@@ -735,7 +753,7 @@ static int sendto_request(int fd, FAR struct gs2200m_s *priv,
   DEBUGASSERT(priv);
   DEBUGASSERT(req);
 
-  gs2200m_printf("%s: start (buflen=%d) \n",
+  gs2200m_printf("%s: start (buflen=%d)\n",
                  __func__, req->buflen);
 
   /* Check if this socket exists. */
@@ -880,7 +898,7 @@ prepare:
       return wlen;
     }
 
-  gs2200m_printf("%s: end \n", __func__);
+  gs2200m_printf("%s: end\n", __func__);
 
   return OK;
 }
@@ -894,6 +912,7 @@ static int recvfrom_request(int fd, FAR struct gs2200m_s *priv,
 {
   FAR struct usrsock_request_recvfrom_s *req = hdrbuf;
   struct usrsock_message_datareq_ack_s resp;
+  struct usrsock_message_req_ack_s resp1;
   struct gs2200m_recv_msg rmsg;
   FAR struct usock_s *usock;
   int ret = 0;
@@ -901,7 +920,7 @@ static int recvfrom_request(int fd, FAR struct gs2200m_s *priv,
   DEBUGASSERT(priv);
   DEBUGASSERT(req);
 
-  gs2200m_printf("%s: start (req->max_buflen=%d) \n",
+  gs2200m_printf("%s: start (req->max_buflen=%d)\n",
                  __func__, req->max_buflen);
 
   memset(&rmsg, 0, sizeof(rmsg));
@@ -949,7 +968,7 @@ static int recvfrom_request(int fd, FAR struct gs2200m_s *priv,
 
   if (!rmsg.is_tcp)
     {
-      gs2200m_printf("%s: from (%s:%d) \n",
+      gs2200m_printf("%s: from (%s:%d)\n",
                      __func__,
                      inet_ntoa(rmsg.addr.sin_addr),
                      ntohs(rmsg.addr.sin_port));
@@ -962,8 +981,9 @@ prepare:
   memset(&resp, 0, sizeof(resp));
   resp.reqack.result = ret;
   resp.reqack.xid = req->head.xid;
-  resp.reqack.head.msgid = USRSOCK_MESSAGE_RESPONSE_DATA_ACK;
-  resp.reqack.head.flags = 0;
+  resp.reqack.head.msgid  = USRSOCK_MESSAGE_RESPONSE_DATA_ACK;
+  resp.reqack.head.flags  = 0;
+  resp.reqack.head.events = 0;
 
   if (0 <= ret)
     {
@@ -976,6 +996,14 @@ prepare:
           usock_send_event(fd, priv, usock,
                            USRSOCK_EVENT_REMOTE_CLOSED
                            );
+
+          /* Send ack only */
+
+          memset(&resp1, 0, sizeof(resp1));
+          resp1.result = ret;
+          ret = _send_ack_common(fd, req->head.xid, &resp1);
+
+          goto err_out;
         }
     }
 
@@ -1014,7 +1042,7 @@ prepare:
 
 err_out:
 
-  gs2200m_printf("%s: *** end ret=%d \n", __func__, ret);
+  gs2200m_printf("%s: *** end ret=%d\n", __func__, ret);
 
   if (rmsg.buf)
     {
@@ -1042,7 +1070,7 @@ static int bind_request(int fd, FAR struct gs2200m_s *priv,
   DEBUGASSERT(priv);
   DEBUGASSERT(req);
 
-  gs2200m_printf("%s: called **** \n", __func__);
+  gs2200m_printf("%s: called ****\n", __func__);
 
   /* Check if this socket exists. */
 
@@ -1105,7 +1133,7 @@ prepare:
       return ret;
     }
 
-  gs2200m_printf("%s: end \n", __func__);
+  gs2200m_printf("%s: end\n", __func__);
   return OK;
 }
 
@@ -1124,7 +1152,7 @@ static int listen_request(int fd, FAR struct gs2200m_s *priv,
   DEBUGASSERT(priv);
   DEBUGASSERT(req);
 
-  gs2200m_printf("%s: called **** \n", __func__);
+  gs2200m_printf("%s: called ****\n", __func__);
 
   /* Check if this socket exists. */
 
@@ -1146,7 +1174,7 @@ static int listen_request(int fd, FAR struct gs2200m_s *priv,
       return ret;
     }
 
-  gs2200m_printf("%s: end \n", __func__);
+  gs2200m_printf("%s: end\n", __func__);
   return ret;
 }
 
@@ -1168,7 +1196,7 @@ static int accept_request(int fd, FAR struct gs2200m_s *priv,
   DEBUGASSERT(priv);
   DEBUGASSERT(req);
 
-  gs2200m_printf("%s: called **** \n", __func__);
+  gs2200m_printf("%s: called ****\n", __func__);
 
   /* Check if this socket exists. */
 
@@ -1210,8 +1238,9 @@ prepare:
 
   memset(&resp, 0, sizeof(resp));
   resp.reqack.xid = req->head.xid;
-  resp.reqack.head.msgid = USRSOCK_MESSAGE_RESPONSE_DATA_ACK;
-  resp.reqack.head.flags = 0;
+  resp.reqack.head.msgid  = USRSOCK_MESSAGE_RESPONSE_DATA_ACK;
+  resp.reqack.head.flags  = 0;
+  resp.reqack.head.events = 0;
 
   if (0 == ret)
     {
@@ -1262,7 +1291,7 @@ prepare:
     }
 
 err_out:
-  gs2200m_printf("%s: end \n", __func__);
+  gs2200m_printf("%s: end\n", __func__);
   return ret;
 }
 
@@ -1283,7 +1312,7 @@ static int setsockopt_request(int fd, FAR struct gs2200m_s *priv,
   DEBUGASSERT(priv);
   DEBUGASSERT(req);
 
-  gs2200m_printf("%s: called **** \n", __func__);
+  gs2200m_printf("%s: called ****\n", __func__);
 
   /* Check if this socket exists. */
 
@@ -1343,7 +1372,7 @@ prepare:
 
   ret = _send_ack_common(fd, req->head.xid, &resp);
 
-  gs2200m_printf("%s: end (ret=%d) \n", __func__, ret);
+  gs2200m_printf("%s: end (ret=%d)\n", __func__, ret);
   return ret;
 }
 
@@ -1374,7 +1403,7 @@ static int getsockname_request(int fd, FAR struct gs2200m_s *priv,
   DEBUGASSERT(priv);
   DEBUGASSERT(req);
 
-  gs2200m_printf("%s: called **** \n", __func__);
+  gs2200m_printf("%s: called ****\n", __func__);
 
   /* Check if this socket exists. */
 
@@ -1398,8 +1427,9 @@ prepare:
 
   memset(&resp, 0, sizeof(resp));
   resp.reqack.xid = req->head.xid;
-  resp.reqack.head.msgid = USRSOCK_MESSAGE_RESPONSE_DATA_ACK;
-  resp.reqack.head.flags = 0;
+  resp.reqack.head.msgid  = USRSOCK_MESSAGE_RESPONSE_DATA_ACK;
+  resp.reqack.head.flags  = 0;
+  resp.reqack.head.events = 0;
   resp.reqack.result = ret;
 
   if (0 == ret)
@@ -1440,7 +1470,7 @@ prepare:
     }
 
 err_out:
-  gs2200m_printf("%s: end \n", __func__);
+  gs2200m_printf("%s: end\n", __func__);
   return ret;
 }
 
@@ -1459,7 +1489,7 @@ static int getpeername_request(int fd, FAR struct gs2200m_s *priv,
   DEBUGASSERT(priv);
   DEBUGASSERT(req);
 
-  gs2200m_printf("%s: called **** \n", __func__);
+  gs2200m_printf("%s: called ****\n", __func__);
 
   /* Check if this socket exists. */
 
@@ -1482,8 +1512,9 @@ prepare:
 
   memset(&resp, 0, sizeof(resp));
   resp.reqack.xid = req->head.xid;
-  resp.reqack.head.msgid = USRSOCK_MESSAGE_RESPONSE_DATA_ACK;
-  resp.reqack.head.flags = 0;
+  resp.reqack.head.msgid  = USRSOCK_MESSAGE_RESPONSE_DATA_ACK;
+  resp.reqack.head.flags  = 0;
+  resp.reqack.head.events = 0;
   resp.reqack.result = ret;
 
   if (0 == ret)
@@ -1524,7 +1555,7 @@ prepare:
     }
 
 err_out:
-  gs2200m_printf("%s: end \n", __func__);
+  gs2200m_printf("%s: end\n", __func__);
   return ret;
 }
 
@@ -1605,8 +1636,9 @@ static int ioctl_request(int fd, FAR struct gs2200m_s *priv,
     {
       resp2.reqack.result = ret;
       resp2.reqack.xid = req->head.xid;
-      resp2.reqack.head.msgid = USRSOCK_MESSAGE_RESPONSE_DATA_ACK;
-      resp2.reqack.head.flags = 0;
+      resp2.reqack.head.msgid  = USRSOCK_MESSAGE_RESPONSE_DATA_ACK;
+      resp2.reqack.head.flags  = 0;
+      resp2.reqack.head.events = 0;
       resp2.valuelen_nontrunc = sizeof(imsg.ifr);
       resp2.valuelen = sizeof(imsg.ifr);
 
@@ -1678,7 +1710,7 @@ static int gs2200m_loop(FAR struct gs2200m_s *priv)
 
       if (fds[1].revents & POLLIN)
         {
-          gs2200m_printf("=== %s: event from /dev/gs2200m \n",
+          gs2200m_printf("=== %s: event from /dev/gs2200m\n",
                          __func__);
 
           /* retrieve cid from gs2200m driver */
@@ -1740,10 +1772,10 @@ static void _show_usage(FAR char *cmd)
           "Usage: %s [-a [ch]] ssid passphrase(key) \n\n", cmd);
   fprintf(stderr,
           "AP mode : specify -a option (optionally with channel) with ssid\n"
-          "          and 8 to 63 ascii passphrase for WPA2-PSK \n"
-          "          or 10 hex digits key for WEP \n");
+          "          and 8 to 63 ascii passphrase for WPA2-PSK\n"
+          "          or 10 hex digits key for WEP\n");
   fprintf(stderr,
-          "STA mode: specify ssid and passphrase for WPA/WPA2 PSK \n");
+          "STA mode: specify ssid and passphrase for WPA/WPA2 PSK\n");
 }
 
 /****************************************************************************
@@ -1758,7 +1790,7 @@ int main(int argc, FAR char *argv[])
 
   if (_daemon)
     {
-      fprintf(stderr, "%s is already running! \n", argv[0]);
+      fprintf(stderr, "%s is already running!\n", argv[0]);
       return -1;
     }
 

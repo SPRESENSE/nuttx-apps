@@ -18,8 +18,8 @@
  *
  ****************************************************************************/
 
-#ifndef __EXAMPLES_PWLINES_PWLINES_INTERNAL_H
-#define __EXAMPLES_PWLINES_PWLINES_INTERNAL_H
+#ifndef __APPS_EXAMPLES_PWLINES_PWLINES_INTERNAL_H
+#define __APPS_EXAMPLES_PWLINES_PWLINES_INTERNAL_H
 
 /****************************************************************************
  * Included Files
@@ -154,11 +154,10 @@
 /* Helpers */
 
 #ifndef MIN
-#  define MIN(a,b) (((a) < (b)) ? (a) : (b))
+#  define MIN(a,b) ((a) < (b) ? (a) : (b))
 #endif
-
 #ifndef MAX
-#  define MAX(a,b) (((a) > (b)) ? (a) : (b))
+#  define MAX(a,b) ((a) > (b) ? (a) : (b))
 #endif
 
 /****************************************************************************
@@ -228,4 +227,4 @@ void pwlines_circle(FAR struct pwlines_state_s *st);
 void pwlines_update(FAR struct pwlines_state_s *st);
 bool pwlines_motion(FAR struct pwlines_state_s *st);
 
-#endif /* __EXAMPLES_PWLINES_PWLINES_INTERNAL_H */
+#endif /* __APPS_EXAMPLES_PWLINES_PWLINES_INTERNAL_H */

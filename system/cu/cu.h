@@ -33,8 +33,8 @@
  *
  ****************************************************************************/
 
-#ifndef __APPS_SYSTEM_CU_CUTERM_H
-#define __APPS_SYSTEM_CU_CUTERM_H
+#ifndef __APPS_SYSTEM_CU_CU_H
+#define __APPS_SYSTEM_CU_CU_H
 
 /****************************************************************************
  * Included Files
@@ -73,6 +73,7 @@ struct cu_globals_s
   int infd;            /* Incoming data from serial port */
   int outfd;           /* Outgoing data to serial port */
   pthread_t listener;  /* Terminal listener thread */
+  bool force_exit;     /* Force exit */
 };
 
 /****************************************************************************
@@ -83,4 +84,4 @@ struct cu_globals_s
  * Public Function Prototypes
  ****************************************************************************/
 
-#endif /* __APPS_SYSTEM_CU_CUTERM_H */
+#endif /* __APPS_SYSTEM_CU_CU_H */

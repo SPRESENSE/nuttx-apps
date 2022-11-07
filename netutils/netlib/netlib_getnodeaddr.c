@@ -67,12 +67,12 @@ int netlib_getnodnodeaddr(FAR const char *ifname,
     {
       /* Get a socket (only so that we get access to the INET subsystem) */
 
-      int sockfd = socket(PF_INET6, NETLIB_SOCK_TYPE, 0);
+      int sockfd = socket(NET_SOCK_FAMILY, NET_SOCK_TYPE, NET_SOCK_PROTOCOL);
       if (sockfd >= 0)
         {
           /* Copy the network interface name */
 
-          strncpy(req.pifr_name, ifname, IFNAMSIZ);
+          strlcpy(req.pifr_name, ifname, IFNAMSIZ);
 
           /* And perform the IOCTL command */
 

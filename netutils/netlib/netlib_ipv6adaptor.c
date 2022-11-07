@@ -96,7 +96,7 @@ static int _netlib_ipv6adaptor(FAR const struct in6_addr *destipaddr,
   lifc.lifc_req = NULL;
   lifc.lifc_len = 0;
 
-  sd = socket(AF_INET6, NETLIB_SOCK_TYPE, 0);
+  sd = socket(NET_SOCK_FAMILY, NET_SOCK_TYPE, NET_SOCK_PROTOCOL);
   if (sd < 0)
     {
       ret = -errno;
@@ -165,7 +165,7 @@ static int _netlib_ipv6adaptor(FAR const struct in6_addr *destipaddr,
 
       /* Get the network mask */
 
-      strncpy(maskreq.lifr_name, lifr->lifr_name, IFNAMSIZ);
+      strlcpy(maskreq.lifr_name, lifr->lifr_name, IFNAMSIZ);
 
       status = ioctl(sd, SIOCGLIFNETMASK,
                      (unsigned long)((uintptr_t)&maskreq));

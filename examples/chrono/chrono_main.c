@@ -157,7 +157,7 @@ static int chrono_daemon(int argc, char *argv[])
   if (ret < 0)
     {
       int errcode = errno;
-      printf("chrono_daemon: ERROR: ioctl(BTNIOC_SUPPORTED) failed: %d\n",
+      printf("chrono_daemon: ERROR: ioctl(BTNIOC_REGISTER) failed: %d\n",
              errcode);
       goto errout_with_fd;
     }
@@ -298,7 +298,7 @@ static void slcd_puts(FAR struct lib_outstream_s *outstream,
 int main(int argc, FAR char *argv[])
 {
   FAR struct slcd_chrono_s *priv = &g_slcd;
-  FAR char str[8] = "00:00.0";
+  FAR char str[32] = "00:00.0";
   int fd;
   int ret;
   long sec;
@@ -393,7 +393,7 @@ int main(int argc, FAR char *argv[])
         {
           /* Copy the initial value */
 
-          strncpy(str, "00:00.0", 7);
+          strlcpy(str, "00:00.0", sizeof(str));
 
           /* Print the initial reset value */
 
@@ -431,8 +431,8 @@ int main(int argc, FAR char *argv[])
 
           sec = sec % 60;
 
-          sprintf(str, "%02ld:%02ld:%01ld", min, sec,
-                  (priv->ts_end.tv_nsec / 100000000));
+          snprintf(str, sizeof(str), "%02ld:%02ld:%01ld",
+                   min, sec, (priv->ts_end.tv_nsec / 100000000));
 
           /* Print it into LCD */
 

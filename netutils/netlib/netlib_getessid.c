@@ -69,8 +69,7 @@ int netlib_getessid(FAR const char *ifname, FAR char *essid, size_t idlen)
     {
       /* Get a socket (only so that we get access to the INET subsystem) */
 
-      int sockfd = socket(NETLIB_SOCK_FAMILY,
-                          NETLIB_SOCK_TYPE, NETLIB_SOCK_PROTOCOL);
+      int sockfd = socket(NET_SOCK_FAMILY, NET_SOCK_TYPE, NET_SOCK_PROTOCOL);
       if (sockfd >= 0)
         {
           struct iwreq req;
@@ -78,7 +77,7 @@ int netlib_getessid(FAR const char *ifname, FAR char *essid, size_t idlen)
           /* Put the driver name into the request */
 
           memset(&req, 0, sizeof(struct iwreq));
-          strncpy(req.ifr_name, ifname, IFNAMSIZ);
+          strlcpy(req.ifr_name, ifname, IFNAMSIZ);
 
           /* Put pointer to receive the ESSID into the request */
 

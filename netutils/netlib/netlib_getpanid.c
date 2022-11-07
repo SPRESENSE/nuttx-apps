@@ -67,12 +67,12 @@ int netlib_getpanid(FAR const char *ifname, FAR uint8_t *panid)
     {
       /* Get a socket (only so that we get access to the INET subsystem) */
 
-      int sockfd = socket(PF_INET6, NETLIB_SOCK_TYPE, 0);
+      int sockfd = socket(NET_SOCK_FAMILY, NET_SOCK_TYPE, NET_SOCK_PROTOCOL);
       if (sockfd >= 0)
         {
           /* Perform the IOCTL */
 
-          strncpy(arg.ifr_name, ifname, IFNAMSIZ);
+          strlcpy(arg.ifr_name, ifname, IFNAMSIZ);
           arg.u.getreq.attr = IEEE802154_ATTR_MAC_PANID;
 
           ret = ioctl(sockfd, MAC802154IOC_MLME_GET_REQUEST,

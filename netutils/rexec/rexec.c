@@ -22,6 +22,7 @@
  * Included Files
  ****************************************************************************/
 
+#include <sys/types.h>
 #include <getopt.h>
 #include <netdb.h>
 #include <stdio.h>
@@ -45,8 +46,8 @@ struct rexec_arg_s
   FAR const char *command;
   FAR const char *user;
   FAR char *host;
+  sa_family_t af;
   int port;
-  int af;
 };
 
 /****************************************************************************
@@ -114,8 +115,10 @@ static int do_rexec(FAR struct rexec_arg_s *arg)
 
 int main(int argc, FAR char **argv)
 {
+  char cmd[CONFIG_NSH_LINELEN];
   struct rexec_arg_s arg;
   int option;
+  int i;
 
   memset(&arg, 0, sizeof(arg));
 
@@ -159,6 +162,13 @@ int main(int argc, FAR char **argv)
       usage(argv[0]);
     }
 
-  arg.command = argv[optind];
+  cmd[0] = '\0';
+  for (i = optind; i < argc; i++)
+    {
+      strcat(cmd, argv[i]);
+      strcat(cmd, " ");
+    }
+
+  arg.command = cmd;
   return do_rexec(&arg);
 }

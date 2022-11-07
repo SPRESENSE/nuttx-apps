@@ -80,13 +80,14 @@ static int postproc_recvfrom(FAR struct alt1250_s *dev,
 
   *usock_result = rsize;
 
-  if (rsize >= 0)
-    {
-      if ((rsize == 0) && (_rx_max_buflen != 0))
-        {
-          usockif_sendclose(dev->usockfd, USOCKET_USOCKID(usock));
-        }
+  dbg_alt1250("recv %d bytes\n", rsize);
 
+  if ((rsize == 0) && (_rx_max_buflen != 0))
+    {
+      usockif_sendclose(dev->usockfd, USOCKET_USOCKID(usock));
+    }
+  else if (rsize >= 0)
+    {
       *usock_xid = USOCKET_XID(usock);
 
       ackinfo->valuelen = MIN(USOCKET_REQADDRLEN(usock), addr_len);

@@ -26,6 +26,8 @@
  ****************************************************************************/
 
 #include <stdint.h>
+#include <net/if.h>
+
 #include <nuttx/compiler.h>
 #include <nuttx/net/usrsock.h>
 

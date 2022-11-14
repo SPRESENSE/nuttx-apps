@@ -569,7 +569,7 @@ static int atcmdreply_setsrvinfo_step1(FAR struct alt1250_s *dev,
 
 static int perform_m2m_applysetting(FAR struct alt1250_s *dev,
                                     FAR int32_t *usock_result,
-                                    uint64_t xid)
+                                    uint32_t xid)
 {
   dbg_alt1250("%s called\n", __func__);
 
@@ -853,7 +853,7 @@ int send_m2mnotice_command(uint32_t cmdid,
 int usockreq_ioctl_lwm2m(FAR struct alt1250_s *dev,
                          FAR struct usrsock_request_buff_s *req,
                          FAR int32_t *ures,
-                         FAR uint64_t *usock_xid,
+                         FAR uint32_t *usock_xid,
                          FAR struct usock_ackinfo_s *ackinfo)
 {
   FAR struct usrsock_request_ioctl_s *request = &req->request.ioctl_req;

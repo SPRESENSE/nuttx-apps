@@ -73,7 +73,7 @@ static int postproc_internal_atcmd(FAR struct alt1250_s *dev,
                                    FAR struct alt_container_s *reply,
                                    FAR struct usock_s *usock,
                                    FAR int32_t *usock_result,
-                                   FAR uint64_t *usock_xid,
+                                   FAR uint32_t *usock_xid,
                                    FAR struct usock_ackinfo_s *ackinfo,
                                    unsigned long arg)
 {

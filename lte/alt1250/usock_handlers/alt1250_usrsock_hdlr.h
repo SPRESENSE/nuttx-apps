@@ -49,79 +49,79 @@ void reset_fwupdate_info(FAR struct alt1250_s *dev);
 int usockreq_socket(FAR struct alt1250_s *dev,
                     FAR struct usrsock_request_buff_s *req,
                     FAR int32_t *usock_result,
-                    FAR uint64_t *usock_xid,
+                    FAR uint32_t *usock_xid,
                     FAR struct usock_ackinfo_s *ackinfo);
 
 int usockreq_close(FAR struct alt1250_s *dev,
                    FAR struct usrsock_request_buff_s *req,
                    FAR int32_t *usock_result,
-                   FAR uint64_t *usock_xid,
+                   FAR uint32_t *usock_xid,
                    FAR struct usock_ackinfo_s *ackinfo);
 
 int usockreq_connect(FAR struct alt1250_s *dev,
                      FAR struct usrsock_request_buff_s *req,
                      FAR int32_t *usock_result,
-                     FAR uint64_t *usock_xid,
+                     FAR uint32_t *usock_xid,
                      FAR struct usock_ackinfo_s *ackinfo);
 
 int usockreq_sendto(FAR struct alt1250_s *dev,
                     FAR struct usrsock_request_buff_s *req,
                     FAR int32_t *usock_result,
-                    FAR uint64_t *usock_xid,
+                    FAR uint32_t *usock_xid,
                     FAR struct usock_ackinfo_s *ackinfo);
 
 int usockreq_recvfrom(FAR struct alt1250_s *dev,
                       FAR struct usrsock_request_buff_s *req,
                       FAR int32_t *usock_result,
-                      FAR uint64_t *usock_xid,
+                      FAR uint32_t *usock_xid,
                       FAR struct usock_ackinfo_s *ackinfo);
 
 int usockreq_setsockopt(FAR struct alt1250_s *dev,
                         FAR struct usrsock_request_buff_s *req,
                         FAR int32_t *usock_result,
-                        FAR uint64_t *usock_xid,
+                        FAR uint32_t *usock_xid,
                         FAR struct usock_ackinfo_s *ackinfo);
 
 int usockreq_getsockopt(FAR struct alt1250_s *dev,
                         FAR struct usrsock_request_buff_s *req,
                         FAR int32_t *usock_result,
-                        FAR uint64_t *usock_xid,
+                        FAR uint32_t *usock_xid,
                         FAR struct usock_ackinfo_s *ackinfo);
 
 int usockreq_getsockname(FAR struct alt1250_s *dev,
                          FAR struct usrsock_request_buff_s *req,
                          FAR int32_t *usock_result,
-                         FAR uint64_t *usock_xid,
+                         FAR uint32_t *usock_xid,
                          FAR struct usock_ackinfo_s *ackinfo);
 
 int usockreq_getpeername(FAR struct alt1250_s *dev,
                          FAR struct usrsock_request_buff_s *req,
                          FAR int32_t *usock_result,
-                         FAR uint64_t *usock_xid,
+                         FAR uint32_t *usock_xid,
                          FAR struct usock_ackinfo_s *ackinfo);
 
 int usockreq_bind(FAR struct alt1250_s *dev,
                   FAR struct usrsock_request_buff_s *req,
                   FAR int32_t *usock_result,
-                  FAR uint64_t *usock_xid,
+                  FAR uint32_t *usock_xid,
                   FAR struct usock_ackinfo_s *ackinfo);
 
 int usockreq_listen(FAR struct alt1250_s *dev,
                     FAR struct usrsock_request_buff_s *req,
                     FAR int32_t *usock_result,
-                    FAR uint64_t *usock_xid,
+                    FAR uint32_t *usock_xid,
                     FAR struct usock_ackinfo_s *ackinfo);
 
 int usockreq_accept(FAR struct alt1250_s *dev,
                     FAR struct usrsock_request_buff_s *req,
                     FAR int32_t *usock_result,
-                    FAR uint64_t *usock_xid,
+                    FAR uint32_t *usock_xid,
                     FAR struct usock_ackinfo_s *ackinfo);
 
 int usockreq_ioctl(FAR struct alt1250_s *dev,
                    FAR struct usrsock_request_buff_s *req,
                    FAR int32_t *usock_result,
-                   FAR uint64_t *usock_xid,
+                   FAR uint32_t *usock_xid,
                    FAR struct usock_ackinfo_s *ackinfo);
 
 int open_altsocket(FAR struct alt1250_s *dev,
@@ -133,7 +133,7 @@ int nextstep_connect(FAR struct alt1250_s *dev,
                      FAR struct alt_container_s *reply,
                      FAR struct usock_s *usock,
                      FAR int32_t *usock_result,
-                     FAR uint64_t *usock_xid,
+                     FAR uint32_t *usock_xid,
                      FAR struct usock_ackinfo_s *ackinfo,
                      unsigned long arg);
 
@@ -144,7 +144,7 @@ int nextstep_bind(FAR struct alt1250_s *dev,
                   FAR struct alt_container_s *reply,
                   FAR struct usock_s *usock,
                   FAR int32_t *usock_result,
-                  FAR uint64_t *usock_xid,
+                  FAR uint32_t *usock_xid,
                   FAR struct usock_ackinfo_s *ackinfo,
                   unsigned long arg);
 
@@ -152,7 +152,7 @@ int nextstep_listen(FAR struct alt1250_s *dev,
                     FAR struct alt_container_s *reply,
                     FAR struct usock_s *usock,
                     FAR int32_t *usock_result,
-                    FAR uint64_t *usock_xid,
+                    FAR uint32_t *usock_xid,
                     FAR struct usock_ackinfo_s *ackinfo,
                     unsigned long arg);
 
@@ -160,7 +160,7 @@ int nextstep_setsockopt(FAR struct alt1250_s *dev,
                         FAR struct alt_container_s *reply,
                         FAR struct usock_s *usock,
                         FAR int32_t *usock_result,
-                        FAR uint64_t *usock_xid,
+                        FAR uint32_t *usock_xid,
                         FAR struct usock_ackinfo_s *ackinfo,
                         unsigned long arg);
 
@@ -168,7 +168,7 @@ int nextstep_getsockopt(FAR struct alt1250_s *dev,
                         FAR struct alt_container_s *reply,
                         FAR struct usock_s *usock,
                         FAR int32_t *usock_result,
-                        FAR uint64_t *usock_xid,
+                        FAR uint32_t *usock_xid,
                         FAR struct usock_ackinfo_s *ackinfo,
                         unsigned long arg);
 
@@ -176,7 +176,7 @@ int nextstep_getsockname(FAR struct alt1250_s *dev,
                          FAR struct alt_container_s *reply,
                          FAR struct usock_s *usock,
                          FAR int32_t *usock_result,
-                         FAR uint64_t *usock_xid,
+                         FAR uint32_t *usock_xid,
                          FAR struct usock_ackinfo_s *ackinfo,
                          unsigned long arg);
 
@@ -184,7 +184,7 @@ int postproc_sockcommon(FAR struct alt1250_s *dev,
                         FAR struct alt_container_s *reply,
                         FAR struct usock_s *usock,
                         FAR int32_t *usock_result,
-                        FAR uint64_t *usock_xid,
+                        FAR uint32_t *usock_xid,
                         FAR struct usock_ackinfo_s *ackinfo,
                         unsigned long arg);
 
@@ -219,7 +219,7 @@ int postproc_fwgetversion(FAR struct alt1250_s *dev,
                           FAR struct alt_container_s *reply,
                           FAR struct usock_s *usock,
                           FAR int32_t *usock_result,
-                          FAR uint64_t *usock_xid,
+                          FAR uint32_t *usock_xid,
                           FAR struct usock_ackinfo_s *ackinfo,
                           unsigned long arg);
 

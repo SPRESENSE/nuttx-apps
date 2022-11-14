@@ -104,7 +104,7 @@ int alt1250_sms_recv(FAR struct alt1250_s *dev,
 int usockreq_ioctl_sms(FAR struct alt1250_s *dev,
                        FAR struct usrsock_request_buff_s *req,
                        FAR int32_t *usock_result,
-                       FAR uint64_t *usock_xid,
+                       FAR uint32_t *usock_xid,
                        FAR struct usock_ackinfo_s *ackinfo);
 uint64_t perform_sms_report_event(FAR struct alt1250_s *dev,
                                   uint64_t bitmap);

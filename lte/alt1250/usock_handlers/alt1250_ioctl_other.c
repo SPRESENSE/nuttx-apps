@@ -46,7 +46,7 @@
 static int perform_setrestart(FAR struct alt1250_s *dev,
                               FAR struct usrsock_request_buff_s *req,
                               FAR int32_t *usock_result,
-                              FAR uint64_t *usock_xid,
+                              FAR uint32_t *usock_xid,
                               FAR struct usock_ackinfo_s *ackinfo)
 {
   FAR struct lte_ioctl_data_s *ltecmd = &req->req_ioctl.ltecmd;
@@ -63,7 +63,7 @@ static int perform_setrestart(FAR struct alt1250_s *dev,
 static int perform_seteventctx(FAR struct alt1250_s *dev,
                                FAR struct usrsock_request_buff_s *req,
                                FAR int32_t *usock_result,
-                               FAR uint64_t *usock_xid,
+                               FAR uint32_t *usock_xid,
                                FAR struct usock_ackinfo_s *ackinfo)
 {
   FAR struct lte_ioctl_data_s *ltecmd = &req->req_ioctl.ltecmd;
@@ -91,7 +91,7 @@ static int perform_seteventctx(FAR struct alt1250_s *dev,
 static int perform_geterrinfo(FAR struct alt1250_s *dev,
                               FAR struct usrsock_request_buff_s *req,
                               FAR int32_t *usock_result,
-                              FAR uint64_t *usock_xid,
+                              FAR uint32_t *usock_xid,
                               FAR struct usock_ackinfo_s *ackinfo)
 {
   FAR struct lte_ioctl_data_s *ltecmd = &req->req_ioctl.ltecmd;
@@ -114,7 +114,7 @@ static int perform_geterrinfo(FAR struct alt1250_s *dev,
 static int perform_saveapn(FAR struct alt1250_s *dev,
                            FAR struct usrsock_request_buff_s *req,
                            FAR int32_t *usock_result,
-                           FAR uint64_t *usock_xid,
+                           FAR uint32_t *usock_xid,
                            FAR struct usock_ackinfo_s *ackinfo)
 {
   FAR struct lte_ioctl_data_s *ltecmd = &req->req_ioctl.ltecmd;
@@ -136,7 +136,7 @@ static int perform_saveapn(FAR struct alt1250_s *dev,
 static int perform_getapn(FAR struct alt1250_s *dev,
                           FAR struct usrsock_request_buff_s *req,
                           FAR int32_t *usock_result,
-                          FAR uint64_t *usock_xid,
+                          FAR uint32_t *usock_xid,
                           FAR struct usock_ackinfo_s *ackinfo)
 {
   FAR struct lte_ioctl_data_s *ltecmd = &req->req_ioctl.ltecmd;
@@ -176,7 +176,7 @@ void alt1250_geterrinfo(FAR lte_errinfo_t *errinfo)
 int usockreq_ioctl_other(FAR struct alt1250_s *dev,
                          FAR struct usrsock_request_buff_s *req,
                          FAR int32_t *usock_result,
-                         FAR uint64_t *usock_xid,
+                         FAR uint32_t *usock_xid,
                          FAR struct usock_ackinfo_s *ackinfo)
 {
   FAR struct usrsock_request_ioctl_s *request = &req->request.ioctl_req;

@@ -60,7 +60,7 @@ static const usrsock_reqhandler_t handlers[USRSOCK_REQUEST__MAX] =
  ****************************************************************************/
 
 int usock_reply(int ufd, int action_code, int32_t result,
-    uint64_t xid, FAR struct usock_ackinfo_s *ackinfo)
+    uint32_t xid, FAR struct usock_ackinfo_s *ackinfo)
 {
   int ret = OK;
 
@@ -103,7 +103,7 @@ int perform_usockrequest(FAR struct alt1250_s *dev)
 {
   int ret = OK;
   int32_t usock_result;
-  uint64_t usock_xid;
+  uint32_t usock_xid;
   struct usock_ackinfo_s ackinfo;
 
   if (!IS_USOCKREQ_RECEIVED(dev))

@@ -67,7 +67,7 @@ static int write_to_usock(int fd, FAR void *buf, size_t sz)
  * name: send_dataack
  ****************************************************************************/
 
-static int send_dataack(int fd, uint64_t ackxid, int32_t ackresult,
+static int send_dataack(int fd, uint32_t ackxid, int32_t ackresult,
                         uint16_t valuelen, uint16_t valuelen_nontrunc,
                         FAR uint8_t *value_ptr, FAR uint8_t *buf_ptr)
 {
@@ -345,7 +345,7 @@ void usockif_discard(int fd, size_t sz)
  * name: usockif_sendack
  ****************************************************************************/
 
-int usockif_sendack(int fd, int32_t usock_result, uint64_t usock_xid,
+int usockif_sendack(int fd, int32_t usock_result, uint32_t usock_xid,
                     bool inprogress)
 {
   struct usrsock_message_req_ack_s ack;
@@ -363,7 +363,7 @@ int usockif_sendack(int fd, int32_t usock_result, uint64_t usock_xid,
  * name: usockif_senddataack
  ****************************************************************************/
 
-int usockif_senddataack(int fd, int32_t usock_result, uint64_t usock_xid,
+int usockif_senddataack(int fd, int32_t usock_result, uint32_t usock_xid,
                         FAR struct usock_ackinfo_s *ackinfo)
 {
   return send_dataack(fd, usock_xid, usock_result, ackinfo->valuelen,

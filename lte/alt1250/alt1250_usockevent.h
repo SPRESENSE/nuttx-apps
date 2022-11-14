@@ -59,7 +59,7 @@
 typedef int (*usrsock_reqhandler_t)(FAR struct alt1250_s *dev,
                                     FAR struct usrsock_request_buff_s *req,
                                     FAR int32_t *usock_result,
-                                    FAR uint64_t *usock_xid,
+                                    FAR uint32_t *usock_xid,
                                     FAR struct usock_ackinfo_s *ackinfo);
 
 /****************************************************************************
@@ -67,7 +67,7 @@ typedef int (*usrsock_reqhandler_t)(FAR struct alt1250_s *dev,
  ****************************************************************************/
 
 int usock_reply(int ufd, int action_code, int32_t result,
-    uint64_t xid, FAR struct usock_ackinfo_s *ackinfo);
+    uint32_t xid, FAR struct usock_ackinfo_s *ackinfo);
 
 int perform_usockrequest(FAR struct alt1250_s *dev);
 

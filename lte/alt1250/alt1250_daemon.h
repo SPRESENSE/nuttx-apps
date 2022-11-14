@@ -29,11 +29,11 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <queue.h>
 #include <mqueue.h>
 #include <semaphore.h>
 #include <string.h>
 
+#include <nuttx/queue.h>
 #include <nuttx/net/netdev.h>
 #include <nuttx/wireless/lte/lte.h>
 #include <nuttx/modem/alt1250.h>

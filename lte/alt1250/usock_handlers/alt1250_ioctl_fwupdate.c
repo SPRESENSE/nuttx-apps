@@ -23,8 +23,8 @@
  ****************************************************************************/
 
 #include <nuttx/config.h>
+#include <nuttx/crc32.h>
 #include <nuttx/net/usrsock.h>
-#include <crc32.h>
 
 #include "alt1250_dbg.h"
 #include "alt1250_daemon.h"

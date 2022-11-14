@@ -25,7 +25,7 @@
 #include <nuttx/config.h>
 
 #include <string.h>
-#include <queue.h>
+#include <nuttx/queue.h>
 
 #include "alt1250_dbg.h"
 #include "alt1250_daemon.h"

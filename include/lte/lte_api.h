@@ -1513,6 +1513,16 @@ int lte_acquire_wakelock(void);
 
 int lte_release_wakelock(void);
 
+/* Get the number of wakelock counts acquired.
+ * Please call this API after calling lte_initialize().
+ * Otherwise this API will result in an error.
+ *
+ * On success, return the count of the current modem wakelock. On failure,
+ * negative value is returned according to <errno.h>.
+ */
+
+int lte_get_wakelock_count(void);
+
 /* Send AT command to the modem.
  *
  * [in] cmd: The AT command data.

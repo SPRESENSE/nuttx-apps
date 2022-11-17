@@ -372,10 +372,10 @@ read_req(int fd, FAR const struct usrsock_request_common_s *com_hdr,
 }
 
 /****************************************************************************
- * Name: usrsock_request
+ * Name: usrsock_handle_request
  ****************************************************************************/
 
-static int usrsock_request(int fd, FAR struct wiznet_s *priv)
+static int usrsock_handle_request(int fd, FAR struct wiznet_s *priv)
 {
   FAR struct usrsock_request_common_s *com_hdr;
   uint8_t hdrbuf[16];
@@ -1808,7 +1808,7 @@ static int wiznet_loop(FAR struct wiznet_s *priv, FAR uint64_t *mac)
           wiznet_printf("=== %s: event from /dev/usrsock \n",
                         __func__);
 
-          ret = usrsock_request(fd[0], priv);
+          ret = usrsock_handle_request(fd[0], priv);
           ASSERT(0 == ret);
         }
 

@@ -261,11 +261,13 @@ static int f_write_to_usock(int fd, void *buf, size_t count)
  ****************************************************************************/
 
 static int f_send_ack_common(int fd,
+                             uint16_t events,
                              uint64_t xid,
                              FAR struct usrsock_message_req_ack_s *resp)
 {
-  resp->head.msgid = USRSOCK_MESSAGE_RESPONSE_ACK;
-  resp->head.flags = 0;
+  resp->head.msgid  = USRSOCK_MESSAGE_RESPONSE_ACK;
+  resp->head.flags  = 0;
+  resp->head.events = events;
   resp->xid = xid;
 
   /* Send ACK response. */
@@ -458,7 +460,7 @@ static int socket_request(int fd, FAR struct wiznet_s *priv,
     = (FAR struct usrsock_request_socket_s *)hdrbuf;
   struct usrsock_message_req_ack_s resp;
   struct wiznet_socket_msg cmsg;
-  FAR struct usock_s *usock;
+  uint16_t events = 0;
   int16_t usockid;
   int ret;
 
@@ -503,22 +505,16 @@ static int socket_request(int fd, FAR struct wiznet_s *priv,
 
   memset(&resp, 0, sizeof(resp));
   resp.result = usockid;
-  ret = f_send_ack_common(fd, req->head.xid, &resp);
+  if (req->type == SOCK_DGRAM)
+    {
+      events = USRSOCK_EVENT_SENDTO_READY;
+    }
+
+  ret = f_send_ack_common(fd, events, req->head.xid, &resp);
 
   if (0 > ret)
     {
       return ret;
-    }
-
-  if (req->type == SOCK_DGRAM)
-    {
-      /* NOTE: If the socket type is DGRAM, it's ready to send
-       * a packet after creating user socket.
-       */
-
-      usock = f_socket_get(priv, usockid);
-      usock_send_event(fd, priv, usock,
-                       USRSOCK_EVENT_SENDTO_READY);
     }
 
   wiznet_printf("%s: end \n", __func__);
@@ -568,7 +564,7 @@ errout:
 
   memset(&resp, 0, sizeof(resp));
   resp.result = ret;
-  ret = f_send_ack_common(fd, req->head.xid, &resp);
+  ret = f_send_ack_common(fd, 0, req->head.xid, &resp);
 
   if (0 > ret)
     {
@@ -679,7 +675,7 @@ prepare:
 
   memset(&resp, 0, sizeof(resp));
   resp.result = ret;
-  ret = f_send_ack_common(fd, req->head.xid, &resp);
+  ret = f_send_ack_common(fd, 0, req->head.xid, &resp);
 
   if (0 > ret)
     {
@@ -824,7 +820,7 @@ prepare:
 
   memset(&resp, 0, sizeof(resp));
   resp.result = ret;
-  ret = f_send_ack_common(fd, req->head.xid, &resp);
+  ret = f_send_ack_common(fd, 0, req->head.xid, &resp);
 
   if (0 > ret)
     {
@@ -909,8 +905,9 @@ prepare:
   memset(&resp, 0, sizeof(resp));
   resp.reqack.result = ret;
   resp.reqack.xid = req->head.xid;
-  resp.reqack.head.msgid = USRSOCK_MESSAGE_RESPONSE_DATA_ACK;
-  resp.reqack.head.flags = 0;
+  resp.reqack.head.msgid  = USRSOCK_MESSAGE_RESPONSE_DATA_ACK;
+  resp.reqack.head.flags  = 0;
+  resp.reqack.head.events = 0;
 
   if (0 <= ret)
     {
@@ -1091,7 +1088,7 @@ prepare:
 
   memset(&resp, 0, sizeof(resp));
   resp.result = ret;
-  ret = f_send_ack_common(fd, req->head.xid, &resp);
+  ret = f_send_ack_common(fd, 0, req->head.xid, &resp);
 
   if (0 > ret)
     {
@@ -1147,7 +1144,7 @@ prepare:
 
   memset(&resp, 0, sizeof(resp));
   resp.result = ret;
-  ret = f_send_ack_common(fd, req->head.xid, &resp);
+  ret = f_send_ack_common(fd, 0, req->head.xid, &resp);
 
   if (0 > ret)
     {
@@ -1234,8 +1231,9 @@ prepare:
 
   memset(&resp, 0, sizeof(resp));
   resp.reqack.xid = req->head.xid;
-  resp.reqack.head.msgid = USRSOCK_MESSAGE_RESPONSE_DATA_ACK;
-  resp.reqack.head.flags = 0;
+  resp.reqack.head.msgid  = USRSOCK_MESSAGE_RESPONSE_DATA_ACK;
+  resp.reqack.head.flags  = 0;
+  resp.reqack.head.events = 0;
 
   if (0 == ret)
     {
@@ -1396,7 +1394,7 @@ prepare:
   memset(&resp, 0, sizeof(resp));
   resp.result = ret;
 
-  ret = f_send_ack_common(fd, req->head.xid, &resp);
+  ret = f_send_ack_common(fd, 0, req->head.xid, &resp);
 
   wiznet_printf("%s: end (ret=%d) \n", __func__, ret);
   return ret;
@@ -1440,8 +1438,9 @@ prepare:
   memset(&resp, 0, sizeof(resp));
   resp.reqack.result = ret;
   resp.reqack.xid = req->head.xid;
-  resp.reqack.head.msgid = USRSOCK_MESSAGE_RESPONSE_DATA_ACK;
-  resp.reqack.head.flags = 0;
+  resp.reqack.head.msgid  = USRSOCK_MESSAGE_RESPONSE_DATA_ACK;
+  resp.reqack.head.flags  = 0;
+  resp.reqack.head.events = 0;
 
   if (0 == ret)
     {
@@ -1516,8 +1515,9 @@ prepare:
 
   memset(&resp, 0, sizeof(resp));
   resp.reqack.xid = req->head.xid;
-  resp.reqack.head.msgid = USRSOCK_MESSAGE_RESPONSE_DATA_ACK;
-  resp.reqack.head.flags = 0;
+  resp.reqack.head.msgid  = USRSOCK_MESSAGE_RESPONSE_DATA_ACK;
+  resp.reqack.head.flags  = 0;
+  resp.reqack.head.events = 0;
   resp.reqack.result = ret;
 
   if (0 == ret)
@@ -1602,8 +1602,9 @@ prepare:
 
   memset(&resp, 0, sizeof(resp));
   resp.reqack.xid = req->head.xid;
-  resp.reqack.head.msgid = USRSOCK_MESSAGE_RESPONSE_DATA_ACK;
-  resp.reqack.head.flags = 0;
+  resp.reqack.head.msgid  = USRSOCK_MESSAGE_RESPONSE_DATA_ACK;
+  resp.reqack.head.flags  = 0;
+  resp.reqack.head.events = 0;
   resp.reqack.result = ret;
 
   if (0 == ret)
@@ -1714,7 +1715,7 @@ static int ioctl_request(int fd, FAR struct wiznet_s *priv,
 
       memset(&resp, 0, sizeof(resp));
       resp.result = ret;
-      ret = f_send_ack_common(fd, req->head.xid, &resp);
+      ret = f_send_ack_common(fd, 0, req->head.xid, &resp);
 
       if (0 > ret)
         {
@@ -1726,8 +1727,9 @@ static int ioctl_request(int fd, FAR struct wiznet_s *priv,
     {
       resp2.reqack.result = ret;
       resp2.reqack.xid = req->head.xid;
-      resp2.reqack.head.msgid = USRSOCK_MESSAGE_RESPONSE_DATA_ACK;
-      resp2.reqack.head.flags = 0;
+      resp2.reqack.head.msgid  = USRSOCK_MESSAGE_RESPONSE_DATA_ACK;
+      resp2.reqack.head.flags  = 0;
+      resp2.reqack.head.events = 0;
       resp2.valuelen_nontrunc = sizeof(cmsg.ifr);
       resp2.valuelen = sizeof(cmsg.ifr);
 

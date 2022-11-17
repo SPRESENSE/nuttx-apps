@@ -42,8 +42,10 @@
  * Name: cmd_insmod
  ****************************************************************************/
 
-int cmd_insmod(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
+int cmd_insmod(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv)
 {
+  UNUSED(argc);
+
   FAR void *handle;
 
   /* Usage: insmod <filepath> <modulename> */
@@ -64,8 +66,10 @@ int cmd_insmod(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
  * Name: cmd_rmmod
  ****************************************************************************/
 
-int cmd_rmmod(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
+int cmd_rmmod(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv)
 {
+  UNUSED(argc);
+
   FAR void *handle;
   int ret;
 
@@ -97,8 +101,10 @@ int cmd_rmmod(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
  ****************************************************************************/
 
 #if defined(CONFIG_FS_PROCFS) && !defined(CONFIG_FS_PROCFS_EXCLUDE_MODULE)
-int cmd_lsmod(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
+int cmd_lsmod(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv)
 {
+  UNUSED(argc);
+
   FILE *stream;
 
   /* Usage: lsmod */

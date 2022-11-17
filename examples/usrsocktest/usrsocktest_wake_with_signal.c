@@ -29,6 +29,8 @@
 #include <errno.h>
 #include <poll.h>
 
+#include <nuttx/clock.h>
+
 #include "defines.h"
 
 /****************************************************************************
@@ -158,7 +160,7 @@ static void do_usrsock_blocking_socket_thread(FAR void *param)
   TEST_ASSERT_EQUAL(ENETDOWN, errno);
 }
 
-static FAR void * usrsock_blocking_socket_thread(FAR void *param)
+static FAR void *usrsock_blocking_socket_thread(FAR void *param)
 {
   do_usrsock_blocking_socket_thread(param);
   return NULL;
@@ -197,7 +199,7 @@ static void do_usrsock_blocking_close_thread(FAR void *param)
   test_sd[tidx] = -1;
 }
 
-static FAR void * usrsock_blocking_close_thread(FAR void *param)
+static FAR void *usrsock_blocking_close_thread(FAR void *param)
 {
   do_usrsock_blocking_close_thread(param);
   return NULL;
@@ -241,7 +243,7 @@ static void do_usrsock_blocking_connect_thread(FAR void *param)
   test_sd[tidx] = -1;
 }
 
-static FAR void * usrsock_blocking_connect_thread(FAR void *param)
+static FAR void *usrsock_blocking_connect_thread(FAR void *param)
 {
   do_usrsock_blocking_connect_thread(param);
   return NULL;
@@ -287,7 +289,7 @@ static void do_usrsock_blocking_setsockopt_thread(FAR void *param)
   test_sd[tidx] = -1;
 }
 
-static FAR void * usrsock_blocking_setsockopt_thread(FAR void *param)
+static FAR void *usrsock_blocking_setsockopt_thread(FAR void *param)
 {
   do_usrsock_blocking_setsockopt_thread(param);
   return NULL;
@@ -335,7 +337,7 @@ static void do_usrsock_blocking_getsockopt_thread(FAR void *param)
   test_sd[tidx] = -1;
 }
 
-static FAR void * usrsock_blocking_getsockopt_thread(FAR void *param)
+static FAR void *usrsock_blocking_getsockopt_thread(FAR void *param)
 {
   do_usrsock_blocking_getsockopt_thread(param);
   return NULL;
@@ -384,7 +386,7 @@ static void do_usrsock_blocking_send_thread(FAR void *param)
   test_sd[tidx] = -1;
 }
 
-static FAR void * usrsock_blocking_send_thread(FAR void *param)
+static FAR void *usrsock_blocking_send_thread(FAR void *param)
 {
   do_usrsock_blocking_send_thread(param);
   return NULL;
@@ -433,7 +435,7 @@ static void do_usrsock_blocking_recv_thread(FAR void *param)
   test_sd[tidx] = -1;
 }
 
-static FAR void * usrsock_blocking_recv_thread(FAR void *param)
+static FAR void *usrsock_blocking_recv_thread(FAR void *param)
 {
   do_usrsock_blocking_recv_thread(param);
   return NULL;
@@ -495,7 +497,7 @@ static void do_usrsock_blocking_poll_thread(FAR void *param)
   test_sd[tidx] = -1;
 }
 
-static FAR void * usrsock_blocking_poll_thread(FAR void *param)
+static FAR void *usrsock_blocking_poll_thread(FAR void *param)
 {
   do_usrsock_blocking_poll_thread(param);
   return NULL;

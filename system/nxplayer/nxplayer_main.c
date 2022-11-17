@@ -256,7 +256,7 @@ static const int g_nxplayer_cmd_count = sizeof(g_nxplayer_cmds) /
 
 static int nxplayer_cmd_play(FAR struct nxplayer_s *pplayer, char *parg)
 {
-  int     ret;
+  int ret;
 
   /* Try to play the file specified */
 
@@ -771,9 +771,9 @@ int main(int argc, FAR char *argv[])
       /* Read a line from the terminal */
 
       len = readline(buffer, sizeof(buffer), stdin, stdout);
-      buffer[len] = '\0';
       if (len > 0)
         {
+          buffer[len] = '\0';
           if (strncmp(buffer, "!", 1) != 0)
             {
               /* nxplayer command */

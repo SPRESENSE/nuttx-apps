@@ -84,7 +84,7 @@ static int camera_prepare(int fd, enum v4l2_buf_type type,
                           uint16_t hsize, uint16_t vsize,
                           struct v_buffer **vbuf,
                           uint8_t buffernum, int buffersize);
-static void free_buffer(struct v_buffer  *buffers, uint8_t bufnum);
+static void free_buffer(struct v_buffer *buffers, uint8_t bufnum);
 static int parse_arguments(int argc, char *argv[],
                            int *capture_num, enum v4l2_buf_type *type);
 static int get_camimage(int fd, struct v4l2_buffer *v4l2_buf,
@@ -246,7 +246,7 @@ static int camera_prepare(int fd, enum v4l2_buf_type type,
  *   All free allocated memory of v_buffer.
  ****************************************************************************/
 
-static void free_buffer(struct v_buffer  *buffers, uint8_t bufnum)
+static void free_buffer(struct v_buffer *buffers, uint8_t bufnum)
 {
   uint8_t cnt;
   if (buffers)
@@ -434,13 +434,13 @@ static int stop_stillcapture(int v_fd, enum v4l2_buf_type capture_type)
  *   Get image sensor driver name by querying device capabilities.
  ****************************************************************************/
 
-static const char *get_imgsensor_name(int fd)
+static FAR const char *get_imgsensor_name(int fd)
 {
   static struct v4l2_capability cap;
 
   ioctl(fd, VIDIOC_QUERYCAP, (unsigned long)&cap);
 
-  return (const char *)cap.driver;
+  return (FAR const char *)cap.driver;
 }
 
 /****************************************************************************
@@ -461,8 +461,8 @@ int main(int argc, FAR char *argv[])
   int capture_num = DEFAULT_CAPTURE_NUM;
   enum v4l2_buf_type capture_type = V4L2_BUF_TYPE_STILL_CAPTURE;
   struct v4l2_buffer v4l2_buf;
-  const char *save_dir;
-  const char *sensor;
+  FAR const char *save_dir;
+  FAR const char *sensor;
   uint16_t w;
   uint16_t h;
   int is_eternal;
@@ -762,15 +762,12 @@ exit_this_app:
   free_buffer(buffers_still, STILL_BUFNUM);
 
 exit_without_cleaning_buffer:
-
   video_uninitialize();
 
 exit_without_cleaning_videodriver:
-
 #ifdef CONFIG_EXAMPLES_CAMERA_OUTPUT_LCD
   nximage_finalize();
 #endif
-
   return ret;
 }
 

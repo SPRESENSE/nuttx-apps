@@ -203,6 +203,54 @@ config NSH_FILE_APPS
 		system.  This options requires support for the posix_spawn()
 		interface (LIBC_EXECFUNCS).
 
+config NSH_SYMTAB
+	bool "Register symbol table"
+	default n
+	depends on LIBC_EXECFUNCS && BOARDCTL && !EXECFUNCS_HAVE_SYMTAB
+	select BOARDCTL_APP_SYMTAB
+	---help---
+		Enable logic to automatically register an application symbol table
+		as part of NSH initialization.  If enabled, then application logic
+		must provide the following:
+
+			const struct symtab_s g_exports[];
+			const int g_nexports;
+
+		Where g_exports is the name of the exported application symbol table
+		and g_nexports holds the number of entries in the application symbol
+		table.
+
+		This is done very early in the NSH initialization sequence.
+
+		Why might you want to do this?  There is really only one reason:  You
+		would like to have the symbol tables in place early so that programs
+		started by NSH, perhaps via an initialization script, will have all
+		of the necessary symbols in place.  Otherwise, you probably do *not*
+		want this option!
+
+if NSH_SYMTAB
+
+config NSH_SYMTAB_ARRAYNAME
+	string "Symbol table used by exec[l|v]"
+	default "g_exports"
+	---help---
+		The exec[l|v] and posix_spawn() functions needs to have (1) a
+		symbol table that provides the list of symbols exported by the base
+		code, and (2) the number of symbols in that table.  This selection
+		provides the name of that symbol table.
+
+config NSH_SYMTAB_COUNTNAME
+	string "Variable holding the number of symbols"
+	default "g_nexports"
+	---help---
+		The exec[l|v] and posix_spawn() functions needs to have (1) a
+		symbol table that provides the list of symbols exported by the base
+		code, and (2) the number of symbols in that table.  This selection
+		provides the name of 'int' variable that holds the number of symbol
+		in the table.
+
+endif # NSH_SYMTAB
+
 menu "Disable Individual commands"
 
 config NSH_DISABLE_ADDROUTE
@@ -245,10 +293,6 @@ config NSH_DISABLE_CMP
 	bool "Disable cmp"
 	default DEFAULT_SMALL
 
-config NSH_DISABLE_TIMEDATECTL
-	bool "Disable TIMEDATECTL"
-	default DEFAULT_SMALL || !LIBC_LOCALTIME || !RTC
-
 config NSH_DISABLE_DATE
 	bool "Disable date"
 	default DEFAULT_SMALL || !RTC
@@ -273,7 +317,6 @@ config NSH_DISABLE_DIRNAME
 config NSH_DISABLE_DMESG
 	bool "Disable dmesg"
 	default DEFAULT_SMALL
-	depends on RAMLOG_SYSLOG
 
 config NSH_DISABLE_ECHO
 	bool "Disable echo"
@@ -495,13 +538,13 @@ config NSH_DISABLE_TIME
 	bool "Disable time"
 	default DEFAULT_SMALL
 
+config NSH_DISABLE_TIMEDATECTL
+	bool "Disable timedatectl"
+	default DEFAULT_SMALL || !LIBC_LOCALTIME || !RTC
+
 config NSH_DISABLE_TEST
 	bool "Disable test"
 	default DEFAULT_SMALL
-
-config NSH_DISABLE_TELNETD
-	bool "Disable telnetd"
-	default DEFAULT_SMALL || NSH_NETLOCAL
 
 config NSH_DISABLE_TRUNCATE
 	bool "Disable truncate"
@@ -517,6 +560,10 @@ config NSH_DISABLE_UNAME
 
 config NSH_DISABLE_UNSET
 	bool "Disable unset"
+	default DEFAULT_SMALL
+
+config NSH_DISABLE_UPTIME
+	bool "Disable uptime"
 	default DEFAULT_SMALL
 
 config NSH_DISABLE_URLDECODE
@@ -1105,59 +1152,24 @@ endif # NSH_DISABLE_WGET
 endmenu # Networking Configuration"
 
 menu "Telnet Configuration"
-	depends on NETUTILS_TELNETD
 
 config NSH_TELNET
 	bool "Use Telnet console"
 	default !DEFAULT_SMALL
-	depends on NETUTILS_TELNETD
+	depends on SYSTEM_TELNETD
 	---help---
 		If NSH_TELNET is set to 'y', then a TELENET
 		server front-end is selected.  When this option is provided,
 		you may log into NuttX remotely using telnet in order to
 		access NSH.
 
-if NSH_TELNET
-
-config NSH_TELNETD_PORT
-	int "Telnet port number"
-	default 23
+config NSH_DISABLE_TELNETSTART
+	bool "Disable to start telnetd"
+	default DEFAULT_SMALL
+	depends on NSH_TELNET
 	---help---
-		The telnet daemon will listen on this TCP port number for connections.
-		Default: 23
+		Determines if the nsh starts telnetd automatically
 
-config NSH_TELNETD_DAEMONPRIO
-	int "Telnet daemon priority"
-	default 100
-	---help---
-		Priority of the Telnet daemon. Default: 100
-
-config NSH_TELNETD_DAEMONSTACKSIZE
-	int "Telnet daemon stack size"
-	default DEFAULT_TASK_STACKSIZE
-	---help---
-		Stack size allocated for the Telnet daemon. Default: 2048
-
-config NSH_TELNETD_CLIENTPRIO
-	int "Telnet client priority"
-	default 100
-	---help---
-		Priority of the Telnet client. Default: 100
-
-config NSH_TELNETD_CLIENTSTACKSIZE
-	int "Telnet client stack size"
-	default DEFAULT_TASK_STACKSIZE
-	---help---
-		Stack size allocated for the Telnet client. Default: 2048
-
-config NSH_IOBUFFER_SIZE
-	int "Telnet I/O buffer size"
-	default 512
-	---help---
-		Determines the size of the I/O buffer to use for sending/
-		receiving TELNET commands/responses.  Default: 512
-
-endif # NSH_TELNET
 endmenu # Telnet Configuration
 
 config NSH_LOGIN

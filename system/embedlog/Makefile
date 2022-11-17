@@ -32,7 +32,7 @@ EMBEDLOG_EXT = tar.gz
 EMBEDLOG_SOURCES = embedlog-$(EMBEDLOG_VERSION)
 EMBEDLOG_TARBALL = $(EMBEDLOG_SOURCES).$(EMBEDLOG_EXT)
 
-CFLAGS += ${shell $(INCDIR) "$(CC)" $(APPDIR)$(DELIM)include$(DELIM)system}
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)$(DELIM)include$(DELIM)system
 
 CSRCS = $(EMBEDLOG_SOURCES)/src/el-options.c \
 	$(EMBEDLOG_SOURCES)/src/el-perror.c \
@@ -208,6 +208,8 @@ endif
 
 # building of embedlog
 
+# Download and unpack tarball if no git repo found
+ifeq ($(wildcard $(EMBEDLOG_SOURCES)/.git),)
 $(EMBEDLOG_TARBALL):
 	@echo "Downloading: $@"
 	$(Q) curl -L -o $@ $(EMBEDLOG_URL)/$@
@@ -218,6 +220,7 @@ $(EMBEDLOG_SOURCES): $(EMBEDLOG_TARBALL)
 	$(Q) $(call DELDIR, $@)
 	$(Q) $(UNPACK) $<
 	$(Q) touch $@
+endif
 
 $(EMBEDLOG_SOURCES)/include/embedlog.h: $(EMBEDLOG_SOURCES)/include/embedlog.h.in
 	@echo "Generating: $@"

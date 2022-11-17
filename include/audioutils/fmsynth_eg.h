@@ -1,5 +1,5 @@
 /****************************************************************************
- * apps/system/zmodem/host/crc32.h
+ * apps/include/audioutils/fmsynth_eg.h
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,51 +18,83 @@
  *
  ****************************************************************************/
 
-#ifndef __APPS_SYSTEM_ZMODEM_HOST_CRC32_H
-#define __APPS_SYSTEM_ZMODEM_HOST_CRC32_H
+#ifndef __APPS_INCLUDE_AUDIOUTILS_FMSYNTH_EG_H
+#define __APPS_INCLUDE_AUDIOUTILS_FMSYNTH_EG_H
 
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
-#include <sys/types.h>
-#include <stdint.h>
+#include <limits.h>
+
+/****************************************************************************
+ * Pre-processor Definitions
+ ****************************************************************************/
+
+#define FMSYNTH_MAX_EGLEVEL  (SHRT_MAX / 8)
+
+#define EGSTATE_ATTACK     (0)
+#define EGSTATE_DECAYBREAK (1)
+#define EGSTATE_DECAY      (2)
+#define EGSTATE_SUSTAIN    (3)
+#define EGSTATE_RELEASE    (4)
+#define EGSTATE_RELEASED   (5)
+#define EGSTATE_MAX        (6)
+
+#define EGSTATE_NUM        EGSTATE_RELEASED
+
+/****************************************************************************
+ * Public Types
+ ****************************************************************************/
+
+struct fmsynth_eglevel_s
+{
+  float level;
+  int period_ms;
+};
+
+typedef struct fmsynth_eglevels_s
+{
+  struct fmsynth_eglevel_s attack;
+  struct fmsynth_eglevel_s decaybrk;
+  struct fmsynth_eglevel_s decay;
+  struct fmsynth_eglevel_s sustain;
+  struct fmsynth_eglevel_s release;
+} fmsynth_eglevels_t;
+
+typedef struct fmsynth_egparam_s
+{
+  int initval;
+  int period;
+  int diff2next;
+} fmsynth_egparam_t;
+
+typedef struct fmsynth_eg_s
+{
+  int state;
+  int state_counter;
+  fmsynth_egparam_t state_params[EGSTATE_MAX];
+} fmsynth_eg_t;
 
 /****************************************************************************
  * Public Function Prototypes
  ****************************************************************************/
 
 #ifdef __cplusplus
-#define EXTERN extern "C"
 extern "C"
 {
-#else
-#define EXTERN extern
 #endif
 
-/****************************************************************************
- * Name: crc32part
- *
- * Description:
- *   Continue CRC calculation on a part of the buffer.
- *
- ****************************************************************************/
+FAR fmsynth_eg_t *fmsyntheg_create(void);
+void fmsyntheg_delete(FAR fmsynth_eg_t *eg);
+int fmsyntheg_set_param(FAR fmsynth_eg_t *eg,
+                        int fs, FAR fmsynth_eglevels_t *levels);
+void fmsyntheg_start(FAR fmsynth_eg_t *eg);
+void fmsyntheg_stop(FAR fmsynth_eg_t *eg);
+int fmsyntheg_operate(FAR fmsynth_eg_t *eg);
 
-uint32_t crc32part(const uint8_t *src, size_t len, uint32_t crc32val);
-
-/****************************************************************************
- * Name: crc32
- *
- * Description:
- *   Return a 32-bit CRC of the contents of the 'src' buffer, length 'len'
- *
- ****************************************************************************/
-
-uint32_t crc32(const uint8_t *src, size_t len);
-
-#undef EXTERN
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __APPS_SYSTEM_ZMODEM_HOST_CRC32_H */
+#endif  /* __APPS_INCLUDE_AUDIOUTILS_FMSYNTH_EG_H */

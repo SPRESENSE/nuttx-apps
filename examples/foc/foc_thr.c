@@ -69,7 +69,8 @@ static int g_fixed16_thr_cntr = 0;
 
 static FAR void *foc_control_thr(FAR void *arg)
 {
-  FAR struct foc_ctrl_env_s *envp = (FAR struct foc_ctrl_env_s *) arg;
+  FAR struct foc_ctrl_env_s *envp = (FAR struct foc_ctrl_env_s *)arg;
+  char                       buffer[CONTROL_MQ_MSGSIZE];
   char                       mqname[10];
   int                        ret  = OK;
 
@@ -114,6 +115,26 @@ static FAR void *foc_control_thr(FAR void *arg)
     {
       PRINTF("ERROR: mq_open failed errno=%d\n", errno);
       goto errout;
+    }
+
+  /* Make sure that the queue is empty */
+
+  while (1)
+    {
+      ret = mq_receive(envp->mqd, buffer, CONTROL_MQ_MSGSIZE, 0);
+      if (ret < 0)
+        {
+          if (errno == EAGAIN)
+            {
+              break;
+            }
+          else
+            {
+              PRINTF("ERROR: mq_receive failed errno=%d\n", errno);
+              ret = -errno;
+              goto errout;
+            }
+        }
     }
 
   /* Select control logic according to FOC device type */
@@ -182,7 +203,6 @@ errout:
     }
 
   PRINTFV("foc_control_thr %d exit\n", envp->id);
-
   return NULL;
 }
 
@@ -256,11 +276,11 @@ bool foc_threads_terminated(void)
 int foc_ctrlthr_init(FAR struct foc_ctrl_env_s *foc, int i, FAR mqd_t *mqd,
                      FAR pthread_t *thread)
 {
-  char                mqname[10];
-  int                 ret = OK;
-  pthread_attr_t      attr;
-  struct mq_attr      mqattr;
-  struct sched_param  param;
+  char               mqname[10];
+  int                ret = OK;
+  pthread_attr_t     attr;
+  struct mq_attr     mqattr;
+  struct sched_param param;
 
   DEBUGASSERT(foc);
   DEBUGASSERT(mqd);

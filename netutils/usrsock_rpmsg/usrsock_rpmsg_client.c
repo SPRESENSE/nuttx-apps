@@ -262,11 +262,12 @@ int main(int argc, char *argv[])
       while (1)
         {
           struct pollfd pfd;
-          void  *buf;
+          FAR void *buf;
           uint32_t len;
 
           /* Wait the packet ready */
 
+          memset(&pfd, 0, sizeof(struct pollfd));
           pfd.ptr = &priv.file;
           pfd.events = POLLIN | POLLFILE;
           ret = poll(&pfd, 1, -1);

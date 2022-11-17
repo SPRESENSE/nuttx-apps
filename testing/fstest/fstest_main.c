@@ -28,6 +28,10 @@
 #include <sys/ioctl.h>
 #include <sys/statfs.h>
 
+#ifdef CONFIG_TESTING_FSTEST_POWEROFF
+#include <sys/boardctl.h>
+#endif
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -37,9 +41,10 @@
 #include <dirent.h>
 #include <string.h>
 #include <errno.h>
-#include <crc32.h>
 #include <debug.h>
 #include <assert.h>
+
+#include <nuttx/crc32.h>
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -1174,5 +1179,14 @@ int main(int argc, FAR char *argv[])
   fstest_endmemusage(ctx);
   fflush(stdout);
   free(ctx);
+
+#ifdef CONFIG_TESTING_FSTEST_POWEROFF
+  /* Power down. This is useful when used with the simulator and gcov,
+   * as the graceful shutdown allows for the generation of the .gcda files.
+   */
+
+  boardctl(BOARDIOC_POWEROFF, 0);
+#endif
+
   return 0;
 }

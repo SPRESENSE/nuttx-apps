@@ -1,5 +1,5 @@
 /****************************************************************************
- * apps/system/zmodem/host/crc16.h
+ * apps/include/audioutils/nxaudio.h
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,51 +18,62 @@
  *
  ****************************************************************************/
 
-#ifndef __APPS_SYSTEM_ZMODEM_HOST_CRC16_H
-#define __APPS_SYSTEM_ZMODEM_HOST_CRC16_H
+#ifndef __APPS_INCLUDE_AUDIOUTILS_NXAUDIO_H
+#define __APPS_INCLUDE_AUDIOUTILS_NXAUDIO_H
 
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
-#include <sys/types.h>
 #include <stdint.h>
+#include <mqueue.h>
+#include <nuttx/audio/audio.h>
+
+/****************************************************************************
+ * Public Data Types
+ ****************************************************************************/
+
+struct nxaudio_s
+{
+  int fd;
+
+  int abufnum;
+  FAR struct ap_buffer_s **abufs;
+  mqd_t mq;
+
+  int chnum;
+};
+
+struct nxaudio_callbacks_s
+{
+  void CODE (*dequeue)(unsigned long arg, FAR struct ap_buffer_s *apb);
+  void CODE (*complete)(unsigned long arg);
+  void CODE (*user)(unsigned long arg, FAR struct audio_msg_s *msg,
+                    FAR bool *running);
+};
 
 /****************************************************************************
  * Public Function Prototypes
  ****************************************************************************/
 
 #ifdef __cplusplus
-#define EXTERN extern "C"
 extern "C"
 {
-#else
-#define EXTERN extern
 #endif
 
-/****************************************************************************
- * Name: crc16part
- *
- * Description:
- *   Continue CRC calculation on a part of the buffer.
- *
- ****************************************************************************/
+int init_nxaudio(FAR struct nxaudio_s *nxaudio,
+                 int fs, int bps, int chnum);
+void fin_nxaudio(FAR struct nxaudio_s *nxaudio);
+int nxaudio_enqbuffer(FAR struct nxaudio_s *nxaudio,
+                      FAR struct ap_buffer_s *apb);
+int nxaudio_setvolume(FAR struct nxaudio_s *nxaudio, uint16_t vol);
+int nxaudio_start(FAR struct nxaudio_s *nxaudio);
+int nxaudio_msgloop(FAR struct nxaudio_s *nxaudio,
+                    FAR struct nxaudio_callbacks_s *cbs, unsigned long arg);
+int nxaudio_stop(FAR struct nxaudio_s *nxaudio);
 
-uint16_t crc16part(const uint8_t *src, size_t len, uint16_t crc16val);
-
-/****************************************************************************
- * Name: crc16
- *
- * Description:
- *   Return a 16-bit CRC of the contents of the 'src' buffer, length 'len'
- *
- ****************************************************************************/
-
-uint16_t crc16(const uint8_t *src, size_t len);
-
-#undef EXTERN
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __APPS_SYSTEM_ZMODEM_HOST_CRC16_H */
+#endif /* __APPS_INCLUDE_AUDIOUTILS_NXAUDIO_H */

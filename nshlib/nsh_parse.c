@@ -125,7 +125,7 @@ static void nsh_memlist_free(FAR struct nsh_memlist_s *memlist);
 static void nsh_releaseargs(struct cmdarg_s *arg);
 static pthread_addr_t nsh_child(pthread_addr_t arg);
 static struct cmdarg_s *nsh_cloneargs(FAR struct nsh_vtbl_s *vtbl,
-               int fd, int argc, char *argv[]);
+               int fd, int argc, FAR char *argv[]);
 #endif
 
 static int nsh_saveresult(FAR struct nsh_vtbl_s *vtbl, bool result);
@@ -164,8 +164,10 @@ static void nsh_dequote(FAR char *cmdline);
 
 static FAR char *nsh_argexpand(FAR struct nsh_vtbl_s *vtbl,
                FAR char *cmdline, FAR char **allocation, FAR int *isenvvar);
-static FAR char *nsh_argument(FAR struct nsh_vtbl_s *vtbl, char **saveptr,
-               FAR NSH_MEMLIST_TYPE *memlist, FAR int *isenvvar);
+static FAR char *nsh_argument(FAR struct nsh_vtbl_s *vtbl,
+                              FAR char **saveptr,
+                              FAR NSH_MEMLIST_TYPE *memlist,
+                              FAR int *isenvvar);
 
 #ifndef CONFIG_NSH_DISABLESCRIPT
 #ifndef CONFIG_NSH_DISABLE_LOOPS
@@ -392,7 +394,7 @@ static pthread_addr_t nsh_child(pthread_addr_t arg)
 
 #ifndef CONFIG_NSH_DISABLEBG
 static struct cmdarg_s *nsh_cloneargs(FAR struct nsh_vtbl_s *vtbl,
-                                      int fd, int argc, char *argv[])
+                                      int fd, int argc, FAR char *argv[])
 {
   struct cmdarg_s *ret = (struct cmdarg_s *)zalloc(sizeof(struct cmdarg_s));
   int i;
@@ -794,7 +796,7 @@ static FAR char *nsh_filecat(FAR struct nsh_vtbl_s *vtbl, FAR char *s1,
   size_t allocsize;
   ssize_t nbytesread;
   FAR char *argument;
-  int index;
+  unsigned index;
   int fd;
   int ret;
 
@@ -1186,7 +1188,7 @@ static FAR char *nsh_argexpand(FAR struct nsh_vtbl_s *vtbl,
       while (len > 0 && *ptr != '\0')
         {
           FAR char *prev = working + len - 1;
-          int bcount;
+          unsigned bcount;
           bool quoted;
 
           /* Check if the current character is quoted */
@@ -2223,7 +2225,7 @@ static int nsh_nice(FAR struct nsh_vtbl_s *vtbl, FAR char **ppcmd,
               FAR char *val = nsh_argument(vtbl, saveptr, memlist, NULL);
               if (val)
                 {
-                  char *endptr;
+                  FAR char *endptr;
                   vtbl->np.np_nice = (int)strtol(val, &endptr, 0);
                   if (vtbl->np.np_nice > 19 || vtbl->np.np_nice < -20 ||
                       endptr == val || *endptr != '\0')
@@ -2738,8 +2740,11 @@ int nsh_parse(FAR struct nsh_vtbl_s *vtbl, FAR char *cmdline)
  ****************************************************************************/
 
 #if !defined(CONFIG_NSH_DISABLESCRIPT) && !defined(CONFIG_NSH_DISABLE_LOOPS)
-int cmd_break(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
+int cmd_break(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv)
 {
+  UNUSED(argc);
+  UNUSED(argv);
+
   FAR struct nsh_parser_s *np = &vtbl->np;
 
   /* Break outside of a loop is ignored */

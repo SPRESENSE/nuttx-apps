@@ -131,6 +131,21 @@ int altdevice_powercontrol(int fd, uint32_t cmd)
   return ioctl_wrapper(fd, ALT1250_IOC_POWER, (unsigned long)&req);
 }
 
+#ifdef CONFIG_LTE_ALT1250_ENABLE_HIBERNATION_MODE
+/****************************************************************************
+ * name: altdevice_powerresponse
+ ****************************************************************************/
+
+int altdevice_powerresponse(int fd, uint32_t cmd, int resp)
+{
+  struct alt_power_s req;
+
+  req.cmdid = cmd;
+  req.resp = resp;
+  return ioctl_wrapper(fd, ALT1250_IOC_POWER, (unsigned long)&req);
+}
+#endif
+
 /****************************************************************************
  * name: altdevice_seteventbuff
  ****************************************************************************/

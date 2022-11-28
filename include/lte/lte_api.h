@@ -177,6 +177,7 @@
  * | lte_send_atcmd_sync          |                                   |
  * | lte_factory_reset_sync       |                                   |
  * | lte_set_context_save_cb      |                                   |
+ * | lte_hibernation_resume       |                                   |
  */
 
 /****************************************************************************
@@ -1548,6 +1549,18 @@ int lte_factory_reset_sync(void);
  */
 
 int lte_set_context_save_cb(context_save_cb_t callback);
+
+/* Resume LTE status from hibernation mode.
+ *
+ * [in] res_ctx: Context data for resume daemon.
+ *
+ * [in] len    : Context data size.
+ *
+ * On success, 0 is returned. On failure,
+ * negative value is returned according to <errno.h>.
+ */
+
+int lte_hibernation_resume(const uint8_t *res_ctx, int len);
 
 #undef EXTERN
 #ifdef __cplusplus

@@ -256,6 +256,21 @@ exit:
 
   altdevice_powerresponse(dev->altfd, LTE_CMDID_STOPAPI, ret);
 }
+
+/****************************************************************************
+ * Name: perform_alt1250_suspendevt
+ ****************************************************************************/
+
+static void perform_alt1250_suspendevt(FAR struct alt1250_s *dev)
+{
+  /* TODO: Register select for suspended sockets */
+
+  /* Collect context for resume and call context save callback */
+
+  alt1250_collect_daemon_context(dev);
+
+  altdevice_powerresponse(dev->altfd, LTE_CMDID_SUSPEND, 0);
+}
 #endif
 
 /****************************************************************************
@@ -298,6 +313,12 @@ int perform_alt1250events(FAR struct alt1250_s *dev)
       /* Handling API stop request */
 
       perform_alt1250_apistopevt(dev);
+    }
+  else if (bitmap & ALT1250_EVTBIT_SUSPEND)
+    {
+      /* Handling Suspend request */
+
+      perform_alt1250_suspendevt(dev);
     }
 #endif
   else

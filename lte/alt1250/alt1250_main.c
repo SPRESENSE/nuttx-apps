@@ -306,4 +306,14 @@ int alt1250_count_opened_sockets(FAR struct alt1250_s *dev)
 
   return ret;
 }
+
+int alt1250_is_api_in_progress(FAR struct alt1250_s *dev)
+{
+  if (!dev)
+    {
+      return ERROR;
+    }
+
+  return dev->is_usockrcvd ? 1 : 0;
+}
 #endif

@@ -283,4 +283,27 @@ int alt1250_set_api_enable(FAR struct alt1250_s *dev, bool enable)
 
   return OK;
 }
+
+int alt1250_count_opened_sockets(FAR struct alt1250_s *dev)
+{
+  int ret = 0;
+  int i = 0;
+  FAR struct usock_s *sock;
+
+  if (!dev)
+    {
+      return ERROR;
+    }
+
+  for (i = 0; i < ARRAY_SZ(dev->sockets); i++)
+    {
+      sock = &dev->sockets[i];
+      if (sock->state != SOCKET_STATE_CLOSED)
+        {
+          ret ++;
+        }
+    }
+
+  return ret;
+}
 #endif

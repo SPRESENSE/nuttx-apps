@@ -133,6 +133,7 @@ struct alt1250_s
 
 #ifdef CONFIG_LTE_ALT1250_ENABLE_HIBERNATION_MODE
 int alt1250_set_api_enable(FAR struct alt1250_s *dev, bool enable);
+int alt1250_count_opened_sockets(FAR struct alt1250_s *dev);
 #endif
 
 #endif  /* __LTE_ALT1250_ALT1250_DAEMON_H__ */

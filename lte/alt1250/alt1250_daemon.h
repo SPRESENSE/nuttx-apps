@@ -124,6 +124,15 @@ struct alt1250_s
   struct sms_info_s sms_info;
   bool is_support_lwm2m;
   int64_t lwm2m_apply_xid;
+  bool api_enable;
 };
+
+/****************************************************************************
+ * Public Functions
+ ****************************************************************************/
+
+#ifdef CONFIG_LTE_ALT1250_ENABLE_HIBERNATION_MODE
+int alt1250_set_api_enable(FAR struct alt1250_s *dev, bool enable);
+#endif
 
 #endif  /* __LTE_ALT1250_ALT1250_DAEMON_H__ */

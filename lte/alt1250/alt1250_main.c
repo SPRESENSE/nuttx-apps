@@ -255,6 +255,7 @@ int main(int argc, FAR char *argv[])
   g_daemon->usock_enable = TRUE;
   g_daemon->is_support_lwm2m = false;
   g_daemon->lwm2m_apply_xid = -1;
+  g_daemon->api_enable = true;
   MODEM_STATE_POFF(g_daemon);
 
   reset_fwupdate_info(g_daemon);
@@ -269,3 +270,17 @@ int main(int argc, FAR char *argv[])
 
   return ret;
 }
+
+#ifdef CONFIG_LTE_ALT1250_ENABLE_HIBERNATION_MODE
+int alt1250_set_api_enable(FAR struct alt1250_s *dev, bool enable)
+{
+  if (!dev)
+    {
+      return ERROR;
+    }
+
+  dev->api_enable = enable;
+
+  return OK;
+}
+#endif

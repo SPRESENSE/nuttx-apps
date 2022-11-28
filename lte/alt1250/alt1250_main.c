@@ -208,6 +208,30 @@ static int alt1250_loop(FAR struct alt1250_s *dev)
   return OK;
 }
 
+#ifdef CONFIG_LTE_ALT1250_ENABLE_HIBERNATION_MODE
+/****************************************************************************
+ * Name: calc_checksum
+ ****************************************************************************/
+
+static uint16_t calc_checksum(FAR uint8_t *ptr, uint16_t len)
+{
+  uint32_t ret = 0x00;
+  uint32_t calctmp = 0x00;
+  uint16_t i;
+
+  /* Data accumulating */
+
+  for (i = 0; i < len; i++)
+    {
+      calctmp += ptr[i];
+    }
+
+  ret = ~((calctmp & 0xffff) + (calctmp >> 16));
+
+  return (uint16_t)ret;
+}
+#endif
+
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
@@ -326,6 +350,102 @@ int alt1250_set_context_save_cb(FAR struct alt1250_s *dev, context_save_cb_t con
     }
 
   dev->context_cb = context_cb;
+
+  return OK;
+}
+
+int alt1250_collect_daemon_context(FAR struct alt1250_s *dev)
+{
+  struct alt1250_save_ctx ctx = {0};
+
+  if (!dev)
+    {
+      return ERROR;
+    }
+
+  if (!dev->context_cb)
+    {
+      return ERROR;
+    }
+
+  /* Copy APN settings */
+
+  ctx.ip_type = dev->apn.ip_type;
+  ctx.auth_type = dev->apn.auth_type;
+  ctx.apn_type = dev->apn.apn_type;
+  memcpy(ctx.apn_name, dev->apn_name, LTE_APN_LEN);
+  memcpy(ctx.user_name, dev->user_name, LTE_APN_USER_NAME_LEN);
+  memcpy(ctx.pass, dev->pass, LTE_APN_PASSWD_LEN);
+
+  /* Copy connection information */
+
+  ctx.d_flags = dev->net_dev.d_flags;
+
+  memcpy(&ctx.d_ipaddr, &dev->net_dev.d_ipaddr, sizeof(in_addr_t));
+  memcpy(&ctx.d_draddr, &dev->net_dev.d_draddr, sizeof(in_addr_t));
+  memcpy(&ctx.d_netmask, &dev->net_dev.d_netmask, sizeof(in_addr_t));
+
+  memcpy(&ctx.d_ipv6addr, &dev->net_dev.d_ipv6addr, sizeof(net_ipv6addr_t));
+  memcpy(&ctx.d_ipv6draddr, &dev->net_dev.d_ipv6draddr, sizeof(net_ipv6addr_t));
+  memcpy(&ctx.d_ipv6netmask, &dev->net_dev.d_ipv6netmask, sizeof(net_ipv6addr_t));
+
+  /* Save checksum without checksum for validation */
+
+  ctx.checksum = calc_checksum((uint8_t *) &ctx,
+                               sizeof(struct alt1250_save_ctx) - 2);
+
+  /* Call user application callback */
+
+  dev->context_cb((uint8_t *)&ctx, sizeof(ctx));
+
+  return OK;
+}
+
+int alt1250_apply_daemon_context(FAR struct alt1250_s *dev, FAR struct alt1250_save_ctx *ctx)
+{
+  uint16_t checksum;
+
+  if (!dev)
+    {
+      return ERROR;
+    }
+
+  /* Calc checksum without checksum parameter */
+
+  checksum = calc_checksum((uint8_t *) ctx,
+                           sizeof(struct alt1250_save_ctx) - 2);
+
+  if (ctx->checksum != checksum)
+    {
+      dbg_alt1250("Saved context is invalid.\n");
+      return ERROR;
+    }
+
+  /* Copy APN settings */
+
+  dev->apn.ip_type = ctx->ip_type;
+  dev->apn.auth_type = ctx->auth_type;
+  dev->apn.apn_type = ctx->apn_type;
+  memcpy(dev->apn_name, ctx->apn_name, LTE_APN_LEN);
+  memcpy(dev->user_name, ctx->user_name, LTE_APN_USER_NAME_LEN);
+  memcpy(dev->pass, ctx->pass, LTE_APN_PASSWD_LEN);
+
+  /* Set apn related pointers */
+  dev->apn.apn = dev->apn_name;
+  dev->apn.user_name = dev->user_name;
+  dev->apn.password = dev->pass;
+
+  /* Copy connection information */
+
+  dev->net_dev.d_flags = ctx->d_flags;
+
+  memcpy(&dev->net_dev.d_ipaddr, &ctx->d_ipaddr, sizeof(in_addr_t));
+  memcpy(&dev->net_dev.d_draddr, &ctx->d_draddr, sizeof(in_addr_t));
+  memcpy(&dev->net_dev.d_netmask, &ctx->d_netmask, sizeof(in_addr_t));
+
+  memcpy(&dev->net_dev.d_ipv6addr, &ctx->d_ipv6addr, sizeof(net_ipv6addr_t));
+  memcpy(&dev->net_dev.d_ipv6draddr, &ctx->d_ipv6draddr, sizeof(net_ipv6addr_t));
+  memcpy(&dev->net_dev.d_ipv6netmask, &ctx->d_ipv6netmask, sizeof(net_ipv6addr_t));
 
   return OK;
 }

@@ -176,6 +176,7 @@
  * | lte_release_wakelock         |                                   |
  * | lte_send_atcmd_sync          |                                   |
  * | lte_factory_reset_sync       |                                   |
+ * | lte_set_context_save_cb      |                                   |
  */
 
 /****************************************************************************
@@ -1536,6 +1537,17 @@ int lte_send_atcmd_sync(const char *cmd, int cmdlen,
  */
 
 int lte_factory_reset_sync(void);
+
+/* Set callback function for context save.
+ *
+ * [in] callback: Callback function to notify a context data
+ *                when modem entering hibernation mode.
+ *
+ * On success, 0 is returned. On failure,
+ * negative value is returned according to <errno.h>.
+ */
+
+int lte_set_context_save_cb(context_save_cb_t callback);
 
 #undef EXTERN
 #ifdef __cplusplus

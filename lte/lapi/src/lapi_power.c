@@ -272,3 +272,12 @@ int lte_release_wakelock(void)
 {
   return lapi_req(LTE_CMDID_GIVEWLOCK, NULL, 0, NULL, 0, NULL);
 }
+
+/****************************************************************************
+ * Name: lte_set_context_save_cb
+ ****************************************************************************/
+
+int lte_set_context_save_cb(context_save_cb_t callback)
+{
+  return lapi_req(LTE_CMDID_SETCTXCB, NULL, 0, NULL, 0, callback);
+}

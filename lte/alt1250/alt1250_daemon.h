@@ -125,6 +125,7 @@ struct alt1250_s
   bool is_support_lwm2m;
   int64_t lwm2m_apply_xid;
   bool api_enable;
+  context_save_cb_t context_cb;
 };
 
 /****************************************************************************
@@ -135,6 +136,7 @@ struct alt1250_s
 int alt1250_set_api_enable(FAR struct alt1250_s *dev, bool enable);
 int alt1250_count_opened_sockets(FAR struct alt1250_s *dev);
 int alt1250_is_api_in_progress(FAR struct alt1250_s *dev);
+int alt1250_set_context_save_cb(FAR struct alt1250_s *dev, context_save_cb_t context_cb);
 #endif
 
 #endif  /* __LTE_ALT1250_ALT1250_DAEMON_H__ */

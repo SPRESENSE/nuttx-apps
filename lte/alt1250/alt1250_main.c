@@ -256,6 +256,7 @@ int main(int argc, FAR char *argv[])
   g_daemon->is_support_lwm2m = false;
   g_daemon->lwm2m_apply_xid = -1;
   g_daemon->api_enable = true;
+  g_daemon->context_cb = NULL;
   MODEM_STATE_POFF(g_daemon);
 
   reset_fwupdate_info(g_daemon);
@@ -315,5 +316,17 @@ int alt1250_is_api_in_progress(FAR struct alt1250_s *dev)
     }
 
   return dev->is_usockrcvd ? 1 : 0;
+}
+
+int alt1250_set_context_save_cb(FAR struct alt1250_s *dev, context_save_cb_t context_cb)
+{
+  if (!dev)
+    {
+      return ERROR;
+    }
+
+  dev->context_cb = context_cb;
+
+  return OK;
 }
 #endif

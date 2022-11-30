@@ -190,4 +190,12 @@ int lwm2mstub_send_objevent(FAR struct alt1250_s *dev,
       FAR int32_t *ures, char *token, FAR struct lwm2mstub_instance_s *inst,
       char *retval);
 
+int lwm2mstub_send_changerat(FAR struct alt1250_s *dev,
+      FAR struct alt_container_s *container, int16_t usockid,
+      FAR int32_t *ures, int rat);
+
+int lwm2mstub_send_getrat(FAR struct alt1250_s *dev,
+      FAR struct alt_container_s *container, int16_t usockid,
+      atcmd_postproc_t proc, unsigned long arg, FAR int32_t *ures);
+
 #endif  /* __LTE_ALT1250_ALT1250_ATCMD_H__ */

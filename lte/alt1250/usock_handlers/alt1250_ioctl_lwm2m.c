@@ -470,6 +470,33 @@ static int atcmdreply_getobjdef(FAR struct alt1250_s *dev,
 }
 
 /****************************************************************************
+ * name: atcmdreply_getrat
+ ****************************************************************************/
+
+static int atcmdreply_getrat(FAR struct alt1250_s *dev,
+                             FAR struct alt_container_s *reply,
+                             FAR char *rdata, int len, unsigned long arg,
+                             FAR int32_t *usock_result)
+{
+  *usock_result = -ENODEV;
+
+  if (check_atreply_ok(rdata, len, NULL) == OK)
+    {
+      *usock_result = -EIO;
+      if (strstr(rdata, "CATM") != NULL)
+        {
+          *usock_result = LTE_RAT_CATM;
+        }
+      else if (strstr(rdata, "NBIOT") != NULL)
+        {
+          *usock_result = LTE_RAT_NBIOT;
+        }
+    }
+
+  return REP_SEND_ACK;
+}
+
+/****************************************************************************
  * name: atcmdreply_setsrvinfo_step4
  ****************************************************************************/
 
@@ -653,6 +680,21 @@ static int commands_on_any_state(FAR struct alt1250_s *dev,
                                        (unsigned long)ltecmd->outparam,
                                        usock_result,
                                        *((uint16_t *)ltecmd->inparam));
+        break;
+
+      case LTE_CMDID_LWM2M_CHANGERAT:
+        ret = lwm2mstub_send_changerat(dev, container,
+                                       USOCKET_USOCKID(usock),
+                                       usock_result,
+                                       *((int *)ltecmd->inparam));
+        break;
+
+      case LTE_CMDID_LWM2M_GETRAT:
+        ret = lwm2mstub_send_getrat(dev, container,
+                                    USOCKET_USOCKID(usock),
+                                    atcmdreply_getrat,
+                                    (unsigned long)ltecmd->outparam,
+                                    usock_result);
         break;
     }
 

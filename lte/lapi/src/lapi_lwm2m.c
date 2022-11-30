@@ -29,6 +29,7 @@
 #include <string.h>
 #include <errno.h>
 #include <nuttx/wireless/lte/lte_ioctl.h>
+#include <nuttx/wireless/lte/lte.h>
 
 #include "lte/lapi.h"
 #include "lte/lte_api.h"
@@ -343,6 +344,39 @@ int lte_getm2m_objresourceinfo(uint16_t objid, int res_num,
 
   return lapi_req(LTE_CMDID_LWM2M_GETOBJRESOURCE,
                   &objid, 1, outarg, 2, NULL);
+}
+
+/****************************************************************************
+ * Name: lte_setm2m_rat
+ ****************************************************************************/
+
+int lte_setm2m_rat(int rat)
+{
+  int dummy_arg; /* Dummy for blocking API call */
+
+  switch (rat)
+    {
+      case LTE_RAT_CATM:
+      case LTE_RAT_NBIOT:
+        break;
+      default:
+        return -EINVAL;
+        break;
+    }
+
+  return lapi_req(LTE_CMDID_LWM2M_CHANGERAT, &rat, 1,
+                           (FAR void *)&dummy_arg, 0, NULL);
+}
+
+/****************************************************************************
+ * Name: lte_getm2m_rat
+ ****************************************************************************/
+
+int lte_getm2m_rat(void)
+{
+  int dummy_arg; /* Dummy for blocking API call */
+  return lapi_req(LTE_CMDID_LWM2M_GETRAT, NULL, 0,
+                           (FAR void *)&dummy_arg, 0, NULL);
 }
 
 /****************************************************************************

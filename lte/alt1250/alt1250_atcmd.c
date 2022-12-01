@@ -406,6 +406,32 @@ int ltenwop_send_setnwoptp(FAR struct alt1250_s *dev,
 }
 
 /****************************************************************************
+ * name: lwm2mstub_send_getqueuemode
+ ****************************************************************************/
+
+int lwm2mstub_send_getqueuemode(FAR struct alt1250_s *dev,
+      FAR struct alt_container_s *container)
+{
+  int32_t dummy;
+  snprintf((char *)dev->tx_buff, _TX_BUFF_SIZE,
+      "AT%%GETACFG=LWM2M.TransportBindings_1_1.Queue\r");
+  return send_internal_at_command(dev, container, -1, NULL, 0, &dummy);
+}
+
+/****************************************************************************
+ * name: lwm2mstub_send_setqueuemodef
+ ****************************************************************************/
+
+int lwm2mstub_send_setqueuemodef(FAR struct alt1250_s *dev,
+      FAR struct alt_container_s *container)
+{
+  int32_t dummy;
+  snprintf((char *)dev->tx_buff, _TX_BUFF_SIZE,
+      "AT%%SETACFG=LWM2M.TransportBindings_1_1.Queue,false\r");
+  return send_internal_at_command(dev, container, -1, NULL, 0, &dummy);
+}
+
+/****************************************************************************
  * name: lwm2mstub_send_m2mopev
  ****************************************************************************/
 
@@ -646,7 +672,7 @@ int lwm2mstub_send_bscreateobj1(FAR struct alt1250_s *dev,
       FAR struct lwm2mstub_serverinfo_s *info)
 {
   snprintf((char *)dev->tx_buff, _TX_BUFF_SIZE,
-    "AT%%LWM2MBSCMD=\"CREATE\",1,0,0,0%s\r",
+    "AT%%LWM2MBSCMD=\"CREATE\",1,0,0,0,1,%u,%s\r", info->lifetime,
       info->nonip ? ",7,\"N\",22,\"N\"" : "");
 
   return send_internal_at_command(dev, container, usockid, proc, arg, ures);

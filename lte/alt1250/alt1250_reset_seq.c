@@ -293,6 +293,28 @@ static int alt1250_lwm2m_ponreset(FAR struct alt1250_s *dev,
       ret = REP_SEND_ACK;
     }
 
+  /* Make sure QUEUE mode is false */
+
+  t_or_f.target_str = "\nFALSE\r";
+  lwm2mstub_send_getqueuemode(dev, container);
+  recv_ret = recv_atreply_onreset(check_atreply_truefalse, dev, &t_or_f);
+  if (recv_ret == REP_MODEM_RESET)
+    {
+      return recv_ret;
+    }
+
+  if (!t_or_f.result)
+    {
+      lwm2mstub_send_setqueuemodef(dev, container);
+      recv_ret = recv_atreply_onreset(check_atreply_ok, dev, NULL);
+      if (recv_ret == REP_MODEM_RESET)
+        {
+          return recv_ret;
+        }
+
+      ret = REP_SEND_ACK;
+    }
+
   /* Make sure NWOPER is not DEFAULT */
 
   t_or_f.target_str = "DEFAULT";

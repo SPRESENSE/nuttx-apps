@@ -227,6 +227,7 @@ struct lwm2mstub_serverinfo_s
   bool bootstrap;
   bool nonip;
   int security_mode;
+  unsigned short lifetime;
   char server_uri[LWM2MSTUB_MAX_SERVER_NAME];
   char device_id[LWM2MSTUB_MAX_DEVID];
   char security_key[LWM2MSTUB_MAX_SEQKEY];

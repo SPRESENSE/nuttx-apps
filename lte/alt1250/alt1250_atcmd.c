@@ -494,6 +494,36 @@ int lwm2mstub_send_getobjdef(FAR struct alt1250_s *dev,
 }
 
 /****************************************************************************
+ * name: lwm2mstub_send_changerat
+ ****************************************************************************/
+
+int lwm2mstub_send_changerat(FAR struct alt1250_s *dev,
+      FAR struct alt_container_s *container, int16_t usockid,
+      FAR int32_t *ures, int rat)
+{
+  snprintf((char *)dev->tx_buff, _TX_BUFF_SIZE,
+      "AT%%setacfg=radiom.config.preferred_rat_list,\"%s\"\r",
+      (rat == LTE_RAT_CATM) ? "CATM" : "NBIOT");
+
+  return send_internal_at_command(dev, container, usockid,
+                                  atcmdreply_ok_error, 0, ures);
+}
+
+/****************************************************************************
+ * name: lwm2mstub_send_getrat
+ ****************************************************************************/
+
+int lwm2mstub_send_getrat(FAR struct alt1250_s *dev,
+      FAR struct alt_container_s *container, int16_t usockid,
+      atcmd_postproc_t proc, unsigned long arg, FAR int32_t *ures)
+{
+  snprintf((char *)dev->tx_buff, _TX_BUFF_SIZE,
+      "AT%%getacfg=radiom.config.preferred_rat_list\r");
+  return send_internal_at_command(dev, container, usockid, proc,
+                                  arg, ures);
+}
+
+/****************************************************************************
  * name: lwm2mstub_send_setepname
  ****************************************************************************/
 

@@ -98,6 +98,12 @@ int lwm2mstub_send_getautoconnect(FAR struct alt1250_s *dev,
 int lwm2mstub_send_setautoconnect(FAR struct alt1250_s *dev,
       FAR struct alt_container_s *container, bool en);
 
+int ltenwop_send_getnwop(FAR struct alt1250_s *dev,
+      FAR struct alt_container_s *container);
+
+int ltenwop_send_setnwoptp(FAR struct alt1250_s *dev,
+      FAR struct alt_container_s *container);
+
 int lwm2mstub_send_m2mopev(FAR struct alt1250_s *dev,
       FAR struct alt_container_s *container, int16_t usockid,
       FAR int32_t *ures, bool en);

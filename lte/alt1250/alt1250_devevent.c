@@ -191,7 +191,7 @@ static void perform_alt1250_apistopevt(FAR struct alt1250_s *dev)
 {
   int ret = OK;
 
-  /* Stop accepting new LTE(usockreq_ioctl)/Socket API(Reject to open)  */
+  /* All LTE API/Socket requests must be stopped to enter Suspend mode. */
 
   ret = alt1250_set_api_enable(dev, false);
 
@@ -202,7 +202,8 @@ static void perform_alt1250_apistopevt(FAR struct alt1250_s *dev)
       goto exit;
     }
 
-  /* Check callback function for save context data */
+  /* Application need to context data when LTE function resume from
+   * hibernation. */
 
   if (!dev->context_cb)
     {
@@ -211,7 +212,7 @@ static void perform_alt1250_apistopevt(FAR struct alt1250_s *dev)
       goto exit;
     }
 
-  /* Check opened socket */
+  /* When entering Suspend mode, all Sockets must be closed. */
 
   ret = alt1250_count_opened_sockets(dev);
 
@@ -228,7 +229,8 @@ static void perform_alt1250_apistopevt(FAR struct alt1250_s *dev)
       goto exit;
     }
 
-  /* Check for presence of LTE API in process */
+  /* Refuse to enter Suspend mode if the LTE API already running has not yet
+   * completed. */
 
   ret = alt1250_is_api_in_progress(dev);
 
@@ -245,7 +247,8 @@ static void perform_alt1250_apistopevt(FAR struct alt1250_s *dev)
       goto exit;
     }
 
-  /* TODO: Check wakelock counter */
+  /* TODO: When Wakelock is acquired, Suspend mode is rejected because
+   * it is not possible to enter Suspend mode. */
 
 exit:
 
@@ -263,9 +266,10 @@ exit:
 
 static void perform_alt1250_suspendevt(FAR struct alt1250_s *dev)
 {
-  /* TODO: Register select for suspended sockets */
+  /* TODO: Register Select to be notified by ALT1250 when an event is
+   * received during Sleep for a Socket in Suspend. */
 
-  /* Collect context for resume and call context save callback */
+  /* Notify the application of the context data required for resume. */
 
   alt1250_collect_daemon_context(dev);
 

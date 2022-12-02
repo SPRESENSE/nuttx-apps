@@ -222,24 +222,21 @@ static int lte_context_resume(FAR struct alt1250_s *dev,
       goto error;
     }
 
-  /* Disable SPI retry mode */
+  /* Retry mode is released in order to resume reception from ALT 1250. */
 
   ret = altdevice_powercontrol(dev->altfd, LTE_CMDID_RETRYDISABLE);
 
-  /* Check power supply status */
+  /* If the ALT1250 is not powered on, return Resume as failure. */
 
   power = altdevice_powercontrol(dev->altfd, LTE_CMDID_GET_POWER_STAT);
-
-  /* If LTE is powered off, return NG */
 
   if (!power)
     {
       return -1;
     }
 
-  /* TODO: Check callback functions(g_cbtable) */
-
-  /* TODO: Register report function for all callbacks */
+  /* TODO: Register events so that event notifications are made to the report-based
+   * Callbacks registered in advance with lte_set_report*(). */
 
   return OK;
 

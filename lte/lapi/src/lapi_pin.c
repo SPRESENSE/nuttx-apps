@@ -318,6 +318,8 @@ int lte_enter_pin_sync(char *pincode, char *new_pincode,
 
 /* Asynchronous APIs */
 
+#ifdef CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API
+
 int lte_get_pinset(get_pinset_cb_t callback)
 {
   if (callback == NULL)
@@ -397,3 +399,5 @@ int lte_enter_pin(char *pincode, char *new_pincode,
                   (FAR void *)inarg, ARRAY_SZ(inarg),
                   NULL, 0, callback);
 }
+#endif /* CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API */
+

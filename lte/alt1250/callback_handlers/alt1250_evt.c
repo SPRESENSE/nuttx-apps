@@ -68,12 +68,15 @@
 
 static uint64_t lte_set_report_restart_exec_cb(FAR void *cb,
   FAR void **cbarg, FAR bool *set_writable);
+#ifdef CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API
 static uint64_t lte_radio_on_exec_cb(FAR void *cb, FAR void **cbarg,
   FAR bool *set_writable);
 static uint64_t lte_radio_off_exec_cb(FAR void *cb, FAR void **cbarg,
   FAR bool *set_writable);
+#endif /* CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API */
 static uint64_t lte_activate_pdn_exec_cb(FAR void *cb, FAR void **cbarg,
   FAR bool *set_writable);
+#ifdef CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API
 static uint64_t lte_deactivate_pdn_exec_cb(FAR void *cb, FAR void **cbarg,
   FAR bool *set_writable);
 static uint64_t lte_get_netinfo_exec_cb(FAR void *cb, FAR void **cbarg,
@@ -120,6 +123,7 @@ static uint64_t lte_get_current_psm_exec_cb(FAR void *cb, FAR void **cbarg,
   FAR bool *set_writable);
 static uint64_t lte_get_quality_exec_cb(FAR void *cb, FAR void **cbarg,
   FAR bool *set_writable);
+#endif /* CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API */
 static uint64_t lte_set_report_netinfo_exec_cb(FAR void *cb,
 FAR void **cbarg, FAR bool *set_writable);
 static uint64_t lte_set_report_simstat_exec_cb(FAR void *cb,
@@ -188,6 +192,8 @@ static void *g_getverargs[] =
   &g_getverret, &g_ver
 };
 
+#ifdef CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API
+
 /* event argument for LTE_CMDID_RADIOON */
 
 static int g_radioonret;
@@ -204,6 +210,8 @@ static void *g_radiooffargs[] =
   &g_radiooffret
 };
 
+#endif /* CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API */
+
 /* event argument for LTE_CMDID_ACTPDN */
 
 static int g_actpdnret;
@@ -212,6 +220,8 @@ static void *g_actpdnargs[] =
 {
   &g_actpdnret, &g_pdn
 };
+
+#ifdef CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API
 
 /* event argument for LTE_CMDID_DEACTPDN */
 
@@ -462,6 +472,8 @@ static void *g_getcellargs[] =
   &g_getcellret, &g_getcell
 };
 
+#endif /* CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API */
+
 /* event argument for LTE_CMDID_GETRAT */
 
 static int g_getratret;
@@ -628,9 +640,12 @@ static struct alt_evtbuf_inst_s g_evtbuffers[] =
 {
   TABLE_CONTENT(SETRESTART, POWER_ON, g_setrestartargs),
   TABLE_CONTENT(GETVER, GET_VERSION, g_getverargs),
+#ifdef CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API
   TABLE_CONTENT(RADIOON, RADIO_ON, g_radioonargs),
   TABLE_CONTENT(RADIOOFF, RADIO_OFF, g_radiooffargs),
+#endif /* CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API */
   TABLE_CONTENT(ACTPDN, ACTIVATE_PDN, g_actpdnargs),
+#ifdef CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API
   TABLE_CONTENT(DEACTPDN, DEACTIVATE_PDN, g_deactpdnargs),
   TABLE_CONTENT(GETNETINFO, GET_NETINFO, g_netinfoargs),
   TABLE_CONTENT(IMSCAP, GET_IMS_CAP, g_imscapargs),
@@ -654,6 +669,7 @@ static struct alt_evtbuf_inst_s g_evtbuffers[] =
   TABLE_CONTENT(GETCPSM, GET_DYNAMICPSM, g_getcpsmargs),
   TABLE_CONTENT(GETQUAL, GET_QUALITY, g_getqualargs),
   TABLE_CONTENT(GETCELL, GET_CELLINFO, g_getcellargs),
+#endif /* CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API */
   TABLE_CONTENT(GETRAT, GET_RAT, g_getratargs),
   TABLE_CONTENT(SETRAT, SET_RAT, g_setratargs),
   TABLE_CONTENT(GETRATINFO, GET_RAT, g_getratinfoargs),
@@ -695,10 +711,13 @@ static struct alt_evtbuf_inst_s g_evtbuffers[] =
 static struct cbinfo_s g_execbtable[] =
 {
   {LTE_CMDID_SETRESTART, lte_set_report_restart_exec_cb},
+#ifdef CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API
   {LTE_CMDID_GETVER, lte_get_version_exec_cb},
   {LTE_CMDID_RADIOON, lte_radio_on_exec_cb},
   {LTE_CMDID_RADIOOFF, lte_radio_off_exec_cb},
+#endif /* CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API */
   {LTE_CMDID_ACTPDN, lte_activate_pdn_exec_cb},
+#ifdef CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API
   {LTE_CMDID_DEACTPDN, lte_deactivate_pdn_exec_cb},
   {LTE_CMDID_GETNETINFO, lte_get_netinfo_exec_cb},
   {LTE_CMDID_IMSCAP, lte_get_imscap_exec_cb},
@@ -721,6 +740,7 @@ static struct cbinfo_s g_execbtable[] =
   {LTE_CMDID_GETCEDRX, lte_get_current_edrx_exec_cb},
   {LTE_CMDID_GETCPSM, lte_get_current_psm_exec_cb},
   {LTE_CMDID_GETQUAL, lte_get_quality_exec_cb},
+#endif /* CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API */
   {LTE_CMDID_REPNETINFO, lte_set_report_netinfo_exec_cb},
   {LTE_CMDID_REPSIMSTAT, lte_set_reportevt_exec_cb},
   {LTE_CMDID_REPLTIME, lte_set_reportevt_exec_cb},
@@ -757,6 +777,8 @@ static uint64_t lte_set_report_restart_exec_cb(FAR void *cb,
   return 0ULL;
 }
 
+#ifdef CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API
+
 static uint64_t lte_radio_on_exec_cb(FAR void *cb, FAR void **cbarg,
   FAR bool *set_writable)
 {
@@ -785,6 +807,8 @@ static uint64_t lte_radio_off_exec_cb(FAR void *cb, FAR void **cbarg,
   return 0ULL;
 }
 
+#endif /* CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API */
+
 static uint64_t lte_activate_pdn_exec_cb(FAR void *cb, FAR void **cbarg,
   FAR bool *set_writable)
 {
@@ -799,6 +823,8 @@ static uint64_t lte_activate_pdn_exec_cb(FAR void *cb, FAR void **cbarg,
 
   return 0ULL;
 }
+
+#ifdef CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API
 
 static uint64_t lte_deactivate_pdn_exec_cb(FAR void *cb, FAR void **cbarg,
   FAR bool *set_writable)
@@ -1171,6 +1197,8 @@ static uint64_t lte_get_quality_exec_cb(FAR void *cb, FAR void **cbarg,
 
   return 0ULL;
 }
+
+#endif /* CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API */
 
 static uint64_t lte_set_report_netinfo_exec_cb(FAR void *cb,
   FAR void **cbarg, FAR bool *set_writable)

@@ -34,6 +34,7 @@
 #include "alt1250_evt.h"
 #include "alt1250_ioctl_subhdlr.h"
 #include "alt1250_usrsock_hdlr.h"
+#include "alt1250_netdev.h"
 
 /****************************************************************************
  * Public Functions
@@ -77,6 +78,7 @@ int usockreq_ioctl_power(FAR struct alt1250_s *dev,
         alt1250_clrevtcb(ALT1250_CLRMODE_WO_RESTART);
         *usock_result = altdevice_powercontrol(dev->altfd, ltecmd->cmdid);
         MODEM_STATE_POFF(dev);
+        alt1250_netdev_ifdown(dev);
         break;
 
       case LTE_CMDID_FIN:

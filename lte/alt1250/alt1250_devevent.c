@@ -316,6 +316,48 @@ static void perform_alt1250_suspendevt(FAR struct alt1250_s *dev)
 #endif
 
 /****************************************************************************
+ * Name: perform_netinfo_report_event
+ ****************************************************************************/
+
+uint64_t perform_netinfo_report_event(FAR struct alt1250_s *dev,
+                                      uint64_t bitmap)
+{
+  uint64_t bit = 0ULL;
+  FAR void **arg;
+  FAR lte_netinfo_t *info;
+  FAR lte_pdn_t *pdn;
+
+  if (alt1250_checkcmdid(LTE_CMDID_REPNETINFO, bitmap, &bit))
+    {
+      arg = alt1250_getevtarg(LTE_CMDID_REPNETINFO);
+      if (arg && arg[0])
+        {
+          /* arg[0]: Network information (see lte_netinfo_t) */
+
+          info = (FAR lte_netinfo_t *)arg[0];
+          if (info->pdn_num == 0)
+            {
+              alt1250_netdev_ifdown(dev);
+            }
+          else
+            {
+              pdn = &info->pdn_stat[0];
+              if (pdn->active == LTE_PDN_ACTIVE)
+                {
+                  alt1250_netdev_ifup(dev, pdn);
+                }
+              else
+                {
+                  alt1250_netdev_ifdown(dev);
+                }
+            }
+        }
+    }
+
+  return bit;
+}
+
+/****************************************************************************
  * Public functions
  ****************************************************************************/
 
@@ -327,8 +369,7 @@ int perform_alt1250events(FAR struct alt1250_s *dev)
 {
   int ret = OK;
   uint64_t bitmap;
-  uint64_t select_bit;
-  uint64_t smsreport_bit;
+  uint64_t eventbit;
   FAR struct alt_container_s *reply_list;
   FAR struct alt_container_s *container;
 
@@ -383,17 +424,23 @@ int perform_alt1250events(FAR struct alt1250_s *dev)
 
       /* Handling select async event */
 
-      if ((select_bit = perform_select_event(dev, bitmap)) != 0ULL)
+      if ((eventbit = perform_select_event(dev, bitmap)) != 0ULL)
         {
-          bitmap &= ~select_bit;
+          bitmap &= ~eventbit;
         }
 
       /* Handling sms report event */
 
-      if ((smsreport_bit = perform_sms_report_event(dev, bitmap)) != 0ULL)
+      if ((eventbit = perform_sms_report_event(dev, bitmap)) != 0ULL)
         {
-          bitmap &= ~smsreport_bit;
+          bitmap &= ~eventbit;
         }
+
+      /* Handling report network information event */
+
+      perform_netinfo_report_event(dev, bitmap);
+
+      /* Do not clear the bit here to notify the event task */
     }
 
   if (bitmap)

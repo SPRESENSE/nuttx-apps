@@ -468,6 +468,12 @@ int usockreq_ioctl_normal(FAR struct alt1250_s *dev,
         }
         break;
 
+      case LTE_CMDID_DEACTPDN:
+        {
+          alt1250_netdev_ifdown(dev);
+        }
+        break;
+
       case LTE_CMDID_TLS_SSL_BIO:
         {
           /* Override socket id on input parameter from usock file descriptor
@@ -523,7 +529,9 @@ int usockreq_ioctl_normal(FAR struct alt1250_s *dev,
       case LTE_CMDID_RADIOOFF:
         {
           MODEM_STATE_PON(dev);
+          alt1250_netdev_ifdown(dev);
         }
+        break;
 
       default:
         break;

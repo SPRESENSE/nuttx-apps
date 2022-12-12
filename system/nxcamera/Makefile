@@ -1,5 +1,5 @@
 ############################################################################
-# apps/platform/Makefile
+# apps/system/nxcamera/Makefile
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -20,45 +20,17 @@
 
 include $(APPDIR)/Make.defs
 
-CONFIG_ARCH_BOARD ?= dummy
+# NxCamera Library
 
-# Directories
+CSRCS     = nxcamera.c
 
-PLATFORMDIR = board
-DUMMYDIR    = $(APPDIR)$(DELIM)platform$(DELIM)dummy
+ifneq ($(CONFIG_SYSTEM_NXCAMERA),)
+PROGNAME  = nxcamera
+PRIORITY  = SCHED_PRIORITY_DEFAULT
+STACKSIZE = $(CONFIG_NXCAMERA_MAINTHREAD_STACKSIZE)
+MODULE    = $(CONFIG_SYSTEM_NXCAMERA)
 
-ifeq ($(CONFIG_ARCH_BOARD_CUSTOM),y)
-  LINKDIR   = $(DUMMYDIR)
-else
-  BOARDDIR  = $(APPDIR)$(DELIM)platform$(DELIM)$(CONFIG_ARCH_BOARD)
-  LINKDIR   = $(if $(wildcard $(BOARDDIR)$(DELIM)Make.defs),$(BOARDDIR),$(DUMMYDIR))
+MAINSRC   = nxcamera_main.c
 endif
-
-VPATH       += board
-DEPPATH += --obj-path bin
-DEPPATH += --obj-suffix $(OBJEXT)
-DEPPATH += --dep-path $(PLATFORMDIR)
-
-# Binaries
-
--include $(PLATFORMDIR)$(DELIM)Make.defs
-
-# Build context setup
-
-$(TOPDIR)$(DELIM).config:
-
-$(PLATFORMDIR): $(TOPDIR)$(DELIM).config
-	@echo "LN: platform$(DELIM)board to $(LINKDIR)"
-	$(Q) $(DIRLINK) $(LINKDIR) $(PLATFORMDIR)
-
-dirlinks: $(PLATFORMDIR)
-
-context:: dirlinks
-
-clean_context:
-	$(Q) $(DIRUNLINK) $(PLATFORMDIR)
-
-clean::
-	$(Q) $(MAKE) -C bin TOPDIR="$(TOPDIR)" APPDIR="$(APPDIR)" clean
 
 include $(APPDIR)/Application.mk

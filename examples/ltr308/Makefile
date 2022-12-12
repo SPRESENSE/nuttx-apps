@@ -1,5 +1,5 @@
 ############################################################################
-# apps/system/nxplayer/Makefile
+# apps/examples/ltr308/Makefile
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -20,19 +20,15 @@
 
 include $(APPDIR)/Make.defs
 
-# NxPlayer Library
+# LTR308 ambient light sensor example built-in application info
 
-CSRCS     = nxplayer.c
-CSRCS    += nxplayer_mp3.c
-CSRCS    += nxplayer_pcm.c
+PROGNAME = $(CONFIG_EXAMPLES_LTR308_PROGNAME)
+PRIORITY = $(CONFIG_EXAMPLES_LTR308_PRIORITY)
+STACKSIZE = $(CONFIG_EXAMPLES_LTR308_STACKSIZE)
+MODULE = $(CONFIG_EXAMPLES_LTR308)
 
-ifneq ($(CONFIG_NXPLAYER_COMMAND_LINE),)
-PROGNAME  = nxplayer
-PRIORITY  = SCHED_PRIORITY_DEFAULT
-STACKSIZE = $(CONFIG_NXPLAYER_MAINTHREAD_STACKSIZE)
-MODULE    = $(CONFIG_NXPLAYER_COMMAND_LINE)
+# LTR308 ambient light sensor example
 
-MAINSRC   = nxplayer_main.c
-endif
+MAINSRC = ltr308_main.c
 
 include $(APPDIR)/Application.mk

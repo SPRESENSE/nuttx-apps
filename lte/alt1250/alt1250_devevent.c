@@ -203,7 +203,8 @@ static void perform_alt1250_apistopevt(FAR struct alt1250_s *dev)
     }
 
   /* Application need to context data when LTE function resume from
-   * hibernation. */
+   * hibernation.
+   */
 
   if (!dev->context_cb)
     {
@@ -224,13 +225,15 @@ static void perform_alt1250_apistopevt(FAR struct alt1250_s *dev)
     }
   else if (ret > 0)
     {
-      dbg_alt1250("There are opened socket, could not entering hibernation mode.\n");
+      dbg_alt1250("There are opened socket, "
+                  "could not entering hibernation mode.\n");
       ret = ERROR;
       goto exit;
     }
 
   /* Refuse to enter Suspend mode if the LTE API already running has not yet
-   * completed. */
+   * completed.
+   */
 
   ret = alt1250_is_api_in_progress(dev);
 
@@ -242,13 +245,15 @@ static void perform_alt1250_apistopevt(FAR struct alt1250_s *dev)
     }
   else if (ret > 0)
     {
-      dbg_alt1250("There are in progress API call, could not entering hibernation mode.\n");
+      dbg_alt1250("There are in progress API call, "
+                  "could not entering hibernation mode.\n");
       ret = ERROR;
       goto exit;
     }
 
   /* TODO: When Wakelock is acquired, Suspend mode is rejected because
-   * it is not possible to enter Suspend mode. */
+   * it is not possible to enter Suspend mode.
+   */
 
 exit:
 
@@ -267,7 +272,8 @@ exit:
 static void perform_alt1250_suspendevt(FAR struct alt1250_s *dev)
 {
   /* TODO: Register Select to be notified by ALT1250 when an event is
-   * received during Sleep for a Socket in Suspend. */
+   * received during Sleep for a Socket in Suspend.
+   */
 
   /* Notify the application of the context data required for resume. */
 

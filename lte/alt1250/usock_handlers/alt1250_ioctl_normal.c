@@ -213,7 +213,8 @@ static int lte_context_resume(FAR struct alt1250_s *dev,
       goto error;
     }
 
-  ret = alt1250_apply_daemon_context(dev, (FAR struct alt1250_save_ctx *) ctx_data);
+  ret = alt1250_apply_daemon_context(dev,
+                                     (FAR struct alt1250_save_ctx *)ctx_data);
 
   if (ret < 0)
     {
@@ -232,11 +233,12 @@ static int lte_context_resume(FAR struct alt1250_s *dev,
 
   if (!power)
     {
-      return -1;
+      return -ENETDOWN;
     }
 
-  /* TODO: Register events so that event notifications are made to the report-based
-   * Callbacks registered in advance with lte_set_report*(). */
+  /* TODO: Register events so that event notifications are made to the
+   * report-based Callbacks registered in advance with lte_set_report*().
+   */
 
   return OK;
 

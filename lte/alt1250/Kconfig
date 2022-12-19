@@ -29,7 +29,7 @@ config LTE_ALT1250_STACKSIZE
 config LTE_ALT1250_ENABLE_HIBERNATION_MODE
 	bool "Enable LTE hibernation mode"
 	default n
-	select PM
+	depends on PM
 	---help---
 		Enable LTE hibernation mode to reduce current
 		consumption during communication standby.

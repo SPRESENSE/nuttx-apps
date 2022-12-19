@@ -233,8 +233,8 @@ int usockreq_ioctl_other(FAR struct alt1250_s *dev,
 #ifdef CONFIG_LTE_ALT1250_ENABLE_HIBERNATION_MODE
       case LTE_CMDID_SETCTXCB:
         func = perform_setctxcb;
-#endif
         break;
+#endif
 
       default:
         break;

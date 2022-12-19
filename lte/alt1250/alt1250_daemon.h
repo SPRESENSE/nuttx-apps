@@ -128,7 +128,7 @@ struct alt1250_s
   context_save_cb_t context_cb;
 };
 
-begin_packed_struct struct alt1250_save_ctx
+struct alt1250_save_ctx
 {
   uint8_t        ip_type;
   uint8_t        auth_type;
@@ -152,10 +152,10 @@ begin_packed_struct struct alt1250_save_ctx
 #endif
 
   uint16_t       checksum;
-} end_packed_struct;
+};
 
 /****************************************************************************
- * Public Functions
+ * Public Functions Prototypes
  ****************************************************************************/
 
 #ifdef CONFIG_LTE_ALT1250_ENABLE_HIBERNATION_MODE

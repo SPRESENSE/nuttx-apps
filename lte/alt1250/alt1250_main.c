@@ -325,7 +325,7 @@ int alt1250_count_opened_sockets(FAR struct alt1250_s *dev)
       sock = &dev->sockets[i];
       if (sock->state != SOCKET_STATE_CLOSED)
         {
-          ret ++;
+          ret++;
         }
     }
 
@@ -342,7 +342,8 @@ int alt1250_is_api_in_progress(FAR struct alt1250_s *dev)
   return dev->is_usockrcvd ? 1 : 0;
 }
 
-int alt1250_set_context_save_cb(FAR struct alt1250_s *dev, context_save_cb_t context_cb)
+int alt1250_set_context_save_cb(FAR struct alt1250_s *dev,
+                                context_save_cb_t context_cb)
 {
   if (!dev)
     {
@@ -356,7 +357,7 @@ int alt1250_set_context_save_cb(FAR struct alt1250_s *dev, context_save_cb_t con
 
 int alt1250_collect_daemon_context(FAR struct alt1250_s *dev)
 {
-  struct alt1250_save_ctx ctx = {0};
+  struct alt1250_save_ctx ctx;
 
   if (!dev)
     {
@@ -367,6 +368,8 @@ int alt1250_collect_daemon_context(FAR struct alt1250_s *dev)
     {
       return ERROR;
     }
+
+  memset(&ctx, 0, sizeof(struct alt1250_save_ctx));
 
   /* Copy APN settings */
 
@@ -381,27 +384,35 @@ int alt1250_collect_daemon_context(FAR struct alt1250_s *dev)
 
   ctx.d_flags = dev->net_dev.d_flags;
 
+#ifdef CONFIG_NET_IPv4
   memcpy(&ctx.d_ipaddr, &dev->net_dev.d_ipaddr, sizeof(in_addr_t));
   memcpy(&ctx.d_draddr, &dev->net_dev.d_draddr, sizeof(in_addr_t));
   memcpy(&ctx.d_netmask, &dev->net_dev.d_netmask, sizeof(in_addr_t));
-
+#endif
+#ifdef CONFIG_NET_IPv6
   memcpy(&ctx.d_ipv6addr, &dev->net_dev.d_ipv6addr, sizeof(net_ipv6addr_t));
-  memcpy(&ctx.d_ipv6draddr, &dev->net_dev.d_ipv6draddr, sizeof(net_ipv6addr_t));
-  memcpy(&ctx.d_ipv6netmask, &dev->net_dev.d_ipv6netmask, sizeof(net_ipv6addr_t));
+  memcpy(&ctx.d_ipv6draddr,
+         &dev->net_dev.d_ipv6draddr,
+         sizeof(net_ipv6addr_t));
+  memcpy(&ctx.d_ipv6netmask,
+         &dev->net_dev.d_ipv6netmask,
+         sizeof(net_ipv6addr_t));
+#endif
 
   /* Save checksum without checksum for validation */
 
-  ctx.checksum = calc_checksum((uint8_t *) &ctx,
-                               sizeof(struct alt1250_save_ctx) - 2);
+  ctx.checksum = calc_checksum((FAR uint8_t *)&ctx,
+                               offsetof(struct alt1250_save_ctx, checksum));
 
   /* Call user application callback */
 
-  dev->context_cb((uint8_t *)&ctx, sizeof(ctx));
+  dev->context_cb((FAR uint8_t *)&ctx, sizeof(ctx));
 
   return OK;
 }
 
-int alt1250_apply_daemon_context(FAR struct alt1250_s *dev, FAR struct alt1250_save_ctx *ctx)
+int alt1250_apply_daemon_context(FAR struct alt1250_s *dev,
+                                 FAR struct alt1250_save_ctx *ctx)
 {
   uint16_t checksum;
 
@@ -412,8 +423,8 @@ int alt1250_apply_daemon_context(FAR struct alt1250_s *dev, FAR struct alt1250_s
 
   /* Calc checksum without checksum parameter */
 
-  checksum = calc_checksum((uint8_t *) ctx,
-                           sizeof(struct alt1250_save_ctx) - 2);
+  checksum = calc_checksum((FAR uint8_t *)ctx,
+                           offsetof(struct alt1250_save_ctx, checksum));
 
   if (ctx->checksum != checksum)
     {
@@ -430,7 +441,8 @@ int alt1250_apply_daemon_context(FAR struct alt1250_s *dev, FAR struct alt1250_s
   memcpy(dev->user_name, ctx->user_name, LTE_APN_USER_NAME_LEN);
   memcpy(dev->pass, ctx->pass, LTE_APN_PASSWD_LEN);
 
-  /* Set apn related pointers */
+  /* Set APN related pointers */
+
   dev->apn.apn = dev->apn_name;
   dev->apn.user_name = dev->user_name;
   dev->apn.password = dev->pass;
@@ -439,13 +451,20 @@ int alt1250_apply_daemon_context(FAR struct alt1250_s *dev, FAR struct alt1250_s
 
   dev->net_dev.d_flags = ctx->d_flags;
 
+#ifdef CONFIG_NET_IPv4
   memcpy(&dev->net_dev.d_ipaddr, &ctx->d_ipaddr, sizeof(in_addr_t));
   memcpy(&dev->net_dev.d_draddr, &ctx->d_draddr, sizeof(in_addr_t));
   memcpy(&dev->net_dev.d_netmask, &ctx->d_netmask, sizeof(in_addr_t));
-
+#endif
+#ifdef CONFIG_NET_IPv6
   memcpy(&dev->net_dev.d_ipv6addr, &ctx->d_ipv6addr, sizeof(net_ipv6addr_t));
-  memcpy(&dev->net_dev.d_ipv6draddr, &ctx->d_ipv6draddr, sizeof(net_ipv6addr_t));
-  memcpy(&dev->net_dev.d_ipv6netmask, &ctx->d_ipv6netmask, sizeof(net_ipv6addr_t));
+  memcpy(&dev->net_dev.d_ipv6draddr,
+         &ctx->d_ipv6draddr,
+         sizeof(net_ipv6addr_t));
+  memcpy(&dev->net_dev.d_ipv6netmask,
+         &ctx->d_ipv6netmask,
+         sizeof(net_ipv6addr_t));
+#endif
 
   return OK;
 }

@@ -1572,12 +1572,20 @@ static int ioctl_request(int fd, FAR struct gs2200m_s *priv,
   struct gs2200m_ifreq_msg imsg;
   uint8_t sock_type;
   bool getreq = false;
+  bool drvreq = true;
   int ret = -EINVAL;
 
   memset(&imsg.ifr, 0, sizeof(imsg.ifr));
 
   switch (req->cmd)
     {
+      case FIONBIO:
+        /* Read int as dummy */
+
+        read(fd, &ret, sizeof(int));
+        ret = OK;
+        drvreq = false;
+        break;
       case SIOCGIFADDR:
       case SIOCGIFHWADDR:
       case SIOCGIWNWID:
@@ -1615,8 +1623,11 @@ static int ioctl_request(int fd, FAR struct gs2200m_s *priv,
         break;
     }
 
-  imsg.cmd = req->cmd;
-  ret = ioctl(priv->gsfd, GS2200M_IOC_IFREQ, (unsigned long)&imsg);
+  if (drvreq)
+    {
+      imsg.cmd = req->cmd;
+      ret = ioctl(priv->gsfd, GS2200M_IOC_IFREQ, (unsigned long)&imsg);
+    }
 
   if (!getreq)
     {

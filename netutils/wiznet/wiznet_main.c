@@ -1662,12 +1662,20 @@ static int ioctl_request(int fd, FAR struct wiznet_s *priv,
   struct wiznet_ifreq_msg cmsg;
   uint8_t sock_type;
   bool getreq = false;
+  bool drvreq = true;
   int ret = -EINVAL;
 
   memset(&cmsg.ifr, 0, sizeof(cmsg.ifr));
 
   switch (req->cmd)
     {
+      case FIONBIO:
+        /* Read int as dummy */
+
+        read(fd, &ret, sizeof(int));
+        ret = OK;
+        drvreq = false;
+        break;
       case SIOCGIFHWADDR:
       case SIOCGIFADDR:
       case SIOCGIFDSTADDR:
@@ -1705,8 +1713,11 @@ static int ioctl_request(int fd, FAR struct wiznet_s *priv,
         break;
     }
 
-  cmsg.cmd = req->cmd;
-  ret = ioctl(priv->gsfd, WIZNET_IOC_IFREQ, (unsigned long)&cmsg);
+  if (drvreq)
+    {
+      cmsg.cmd = req->cmd;
+      ret = ioctl(priv->gsfd, WIZNET_IOC_IFREQ, (unsigned long)&cmsg);
+    }
 
   if (!getreq)
     {

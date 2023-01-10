@@ -205,6 +205,13 @@ static int lte_context_resume(FAR struct alt1250_s *dev,
   int ret = OK;
   int power = 0;
 
+  if (!dev->is_resuming)
+    {
+      dbg_alt1250("Modem is not in a resuming mode.\n");
+      *usock_result = -EPERM;
+      goto error;
+    }
+
   if (len != sizeof(struct alt1250_save_ctx))
     {
       dbg_alt1250("Context data size is invalid(%d!=%d).\n",
@@ -240,10 +247,18 @@ static int lte_context_resume(FAR struct alt1250_s *dev,
    * report-based Callbacks registered in advance with lte_set_report*().
    */
 
+  /* Resume phase is over */
+
+  dev->is_resuming = false;
+
   return OK;
 
 error:
   altdevice_powercontrol(dev->altfd, LTE_CMDID_POWEROFF);
+
+  /* Resume phase is over */
+
+  dev->is_resuming = false;
 
   return ret;
 }

@@ -140,11 +140,30 @@ static void finalize_daemon(FAR struct alt1250_s *dev)
 static int alt1250_loop(FAR struct alt1250_s *dev)
 {
   int ret;
+  int pw_stat;
   struct pollfd fds[2];
   nfds_t nfds;
   bool is_running = true;
 
   initialize_daemon(dev);
+
+  /* Get modem power status. If modem is turned on, it means resuming from
+   * hibernation mode.
+   */
+
+  pw_stat = altdevice_powercontrol(dev->altfd, LTE_CMDID_GET_POWER_STAT);
+
+  dbg_alt1250("Modem power status = %d\n", pw_stat);
+
+  if (pw_stat)
+    {
+      dev->is_resuming = true;
+    }
+  else
+    {
+      dev->is_resuming = false;
+    }
+
   notify_to_lapi_caller(dev->syncsem);
 
   /* Main loop of this daemon */

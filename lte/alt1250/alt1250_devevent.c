@@ -44,6 +44,12 @@
 #include "alt1250_reset_seq.h"
 
 /****************************************************************************
+ * Pre-processor Definitions
+ ****************************************************************************/
+
+#define IS_PV1_FIRMWARE(d) (!strncmp(MODEM_FWVERSION(d), \
+                                     "RK_02_01_", 9))
+/****************************************************************************
  * Private Functions
  ****************************************************************************/
 
@@ -191,6 +197,15 @@ static void perform_alt1250_apistopevt(FAR struct alt1250_s *dev)
 {
   int ret = OK;
   int w_cnt = 0;
+
+  /* The "ALT1250_EVTBIT_STOPAPI" command isn't supported for PV1 firmware */
+
+  if (IS_PV1_FIRMWARE(dev))
+    {
+      dbg_alt1250("This firmware doesn't support hibernation mode.\n");
+      ret = ERROR;
+      goto exit;
+    }
 
   /* All LTE API/Socket requests must be stopped to enter Suspend mode. */
 

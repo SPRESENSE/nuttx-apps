@@ -233,6 +233,11 @@ static int lte_context_resume(FAR struct alt1250_s *dev,
   /* Retry mode is released in order to resume reception from ALT 1250. */
 
   ret = altdevice_powercontrol(dev->altfd, LTE_CMDID_RETRYDISABLE);
+  if (ret != OK)
+    {
+      dbg_alt1250("Failed to stop retry mode(%d).\n", ret);
+      goto error;
+    }
 
   /* If the ALT1250 is not powered on, return Resume as failure. */
 

@@ -53,6 +53,18 @@
                                               "RK_02_01_01", 11))
 
 /****************************************************************************
+ * Private Function Prototypes
+ ****************************************************************************/
+
+#ifdef CONFIG_LTE_ALT1250_ENABLE_HIBERNATION_MODE
+static int send_resume_command(FAR struct alt1250_s *dev,
+                               FAR struct alt_container_s *container,
+                               FAR struct usock_s *usock,
+                               FAR int32_t *usock_result,
+                               int index);
+#endif
+
+/****************************************************************************
  * Private Functions
  ****************************************************************************/
 
@@ -194,15 +206,117 @@ int send_lapi_command(FAR struct alt1250_s *dev,
 
 #ifdef CONFIG_LTE_ALT1250_ENABLE_HIBERNATION_MODE
 /****************************************************************************
+ * name: postproc_setreport
+ ****************************************************************************/
+
+static int postproc_setreport(FAR struct alt1250_s *dev,
+                              FAR struct alt_container_s *reply,
+                              FAR struct usock_s *usock,
+                              FAR int32_t *usock_result,
+                              FAR uint64_t *usock_xid,
+                              FAR struct usock_ackinfo_s *ackinfo,
+                              unsigned long arg)
+{
+  int index = (int)arg + 1;
+
+  /* Register next report command */
+
+  return send_resume_command(dev, reply, usock, usock_result, index);
+}
+
+/****************************************************************************
+ * name: send_getversion_command
+ ****************************************************************************/
+
+static int send_getversion_command(FAR struct alt1250_s *dev,
+                                   FAR struct alt_container_s *container,
+                                   FAR struct usock_s *usock,
+                                   FAR int32_t *usock_result)
+{
+  set_container_ids(container, USOCKET_USOCKID(usock), LTE_CMDID_GETVER);
+  set_container_argument(container, NULL, 0);
+  set_container_response(container, alt1250_getevtarg(LTE_CMDID_GETVER), 2);
+  set_container_postproc(container, postproc_fwgetversion, 0);
+
+  return altdevice_send_command(dev->altfd, container, usock_result);
+}
+
+/****************************************************************************
+ * name: send_register_command
+ ****************************************************************************/
+
+static int send_register_command(FAR struct alt1250_s *dev,
+                                 FAR struct alt_container_s *container,
+                                 FAR struct usock_s *usock,
+                                 FAR int32_t *usock_result,
+                                 FAR struct lte_ioctl_data_s *ltecmd,
+                                 int index)
+{
+  set_container_ids(container, USOCKET_USOCKID(usock), ltecmd->cmdid);
+  set_container_argument(container, ltecmd->inparam, ltecmd->inparamlen);
+  set_container_response(container, ltecmd->outparam, ltecmd->outparamlen);
+  set_container_postproc(container, postproc_setreport, index);
+
+  return altdevice_send_command(dev->altfd, container, usock_result);
+}
+
+/****************************************************************************
+ * name: send_resume_command
+ ****************************************************************************/
+
+static int send_resume_command(FAR struct alt1250_s *dev,
+                               FAR struct alt_container_s *container,
+                               FAR struct usock_s *usock,
+                               FAR int32_t *usock_result,
+                               int index)
+{
+  int ret;
+  int cb_index = index;
+  uint32_t cmdid;
+  struct lte_ioctl_data_s ltecmd;
+
+  /* Search report CB from table from index */
+
+  cmdid = alt1250_search_registered_callback(&cb_index);
+  if (cmdid != 0x00)
+    {
+      ret = alt1250_get_report_ltecmd(dev, cmdid, &ltecmd);
+      if (ret == OK)
+        {
+          /* Register report command */
+
+          ret = send_register_command(dev, container, usock, usock_result,
+                                      &ltecmd, cb_index);
+        }
+      else
+        {
+          *usock_result = ret;
+          ret = REP_SEND_ACK;
+        }
+    }
+  else
+    {
+      /* Finally, get firmware version from ALT1250 */
+
+      ret = send_getversion_command(dev, container, usock, usock_result);
+    }
+
+  return ret;
+}
+
+/****************************************************************************
  * name: lte_context_resume
  ****************************************************************************/
 
 static int lte_context_resume(FAR struct alt1250_s *dev,
-                              FAR struct lte_ioctl_data_s *cmd)
+                              FAR struct lte_ioctl_data_s *cmd,
+                              FAR struct alt_container_s *container,
+                              FAR struct usock_s *usock,
+                              FAR int32_t *usock_result)
 {
   FAR uint8_t *ctx_data = (FAR uint8_t *)cmd->inparam[0];
   int len = *(FAR int *)cmd->inparam[1];
-  int ret = OK;
+  int ret = REP_SEND_ACK;
   int power = 0;
 
   if (!dev->is_resuming)
@@ -216,17 +330,16 @@ static int lte_context_resume(FAR struct alt1250_s *dev,
     {
       dbg_alt1250("Context data size is invalid(%d!=%d).\n",
                   sizeof(struct alt1250_save_ctx), len);
-      ret = -EINVAL;
+      *usock_result = -EINVAL;
       goto error;
     }
 
   ret = alt1250_apply_daemon_context(dev,
                                      (FAR struct alt1250_save_ctx *)ctx_data);
-
   if (ret < 0)
     {
       dbg_alt1250("Failed to apply saved alt1250 context(%d).\n", ret);
-      ret = -EINVAL;
+      *usock_result = -EINVAL;
       goto error;
     }
 
@@ -236,27 +349,37 @@ static int lte_context_resume(FAR struct alt1250_s *dev,
   if (ret != OK)
     {
       dbg_alt1250("Failed to stop retry mode(%d).\n", ret);
+      *usock_result = ret;
+      ret = REP_SEND_ACK;
       goto error;
     }
 
   /* If the ALT1250 is not powered on, return Resume as failure. */
 
   power = altdevice_powercontrol(dev->altfd, LTE_CMDID_GET_POWER_STAT);
-
   if (!power)
     {
-      return -ENETDOWN;
+      dbg_alt1250("Modem is turned off.\n");
+      *usock_result = -ENETDOWN;
+      return REP_SEND_ACK;
     }
 
-  /* TODO: Register events so that event notifications are made to the
+  /* Register events so that event notifications are made to the
    * report-based Callbacks registered in advance with lte_set_report*().
    */
+
+  ret = send_resume_command(dev, container, usock, usock_result, 0);
+
+  if (*usock_result != OK)
+    {
+      dbg_alt1250("Failed to send resume commands.\n");
+    }
 
   /* Resume phase is over */
 
   dev->is_resuming = false;
 
-  return OK;
+  return ret;
 
 error:
   altdevice_powercontrol(dev->altfd, LTE_CMDID_POWEROFF);
@@ -278,10 +401,10 @@ error:
  ****************************************************************************/
 
 int usockreq_ioctl_normal(FAR struct alt1250_s *dev,
-                              FAR struct usrsock_request_buff_s *req,
-                              FAR int32_t *usock_result,
-                              FAR uint64_t *usock_xid,
-                              FAR struct usock_ackinfo_s *ackinfo)
+                          FAR struct usrsock_request_buff_s *req,
+                          FAR int32_t *usock_result,
+                          FAR uint64_t *usock_xid,
+                          FAR struct usock_ackinfo_s *ackinfo)
 {
   FAR struct usrsock_request_ioctl_s *request = &req->request.ioctl_req;
   FAR struct lte_ioctl_data_s *ltecmd = &req->req_ioctl.ltecmd;
@@ -377,8 +500,7 @@ int usockreq_ioctl_normal(FAR struct alt1250_s *dev,
 
 #ifdef CONFIG_LTE_ALT1250_ENABLE_HIBERNATION_MODE
       case LTE_CMDID_RESUME:
-        *usock_result = lte_context_resume(dev, ltecmd);
-        return REP_SEND_ACK_WOFREE;
+        return lte_context_resume(dev, ltecmd, container, usock, usock_result);
 #endif
 
       case LTE_CMDID_SAVE_LOG:

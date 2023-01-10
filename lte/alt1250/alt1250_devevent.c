@@ -190,6 +190,7 @@ static int perform_alt1250_resetevt(FAR struct alt1250_s *dev,
 static void perform_alt1250_apistopevt(FAR struct alt1250_s *dev)
 {
   int ret = OK;
+  int w_cnt = 0;
 
   /* All LTE API/Socket requests must be stopped to enter Suspend mode. */
 
@@ -251,9 +252,25 @@ static void perform_alt1250_apistopevt(FAR struct alt1250_s *dev)
       goto exit;
     }
 
-  /* TODO: When Wakelock is acquired, Suspend mode is rejected because
+  /* When Wakelock is acquired, Suspend mode is rejected because
    * it is not possible to enter Suspend mode.
    */
+
+  w_cnt = altdevice_powercontrol(dev->altfd, LTE_CMDID_COUNTWLOCK);
+  if (w_cnt == 0)
+    {
+      ret = OK;
+    }
+  else if (w_cnt > 0)
+    {
+      dbg_alt1250("Cannot enter hibernation due to wakelock is aquired.\n");
+      ret = -EBUSY;
+    }
+  else
+    {
+      dbg_alt1250("Failed to get wakelock count.\n");
+      ret = w_cnt;
+    }
 
 exit:
 

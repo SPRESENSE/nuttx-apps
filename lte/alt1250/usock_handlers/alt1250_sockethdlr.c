@@ -384,13 +384,14 @@ int usockreq_socket(FAR struct alt1250_s *dev,
   *usock_xid = request->head.xid;
 
   if (!IS_SUPPORTED_INET_DOMAIN(request->domain) &&
-      request->domain != PF_USRSOCK && request->domain != PF_SMSSOCK)
+      request->domain != PF_SMSSOCK)
     {
       dbg_alt1250("Not support this domain: %u\n", request->domain);
       *usock_result = -EAFNOSUPPORT;
       return REP_SEND_ACK_WOFREE;
     }
-  else if (!dev->usock_enable && IS_SUPPORTED_INET_DOMAIN(request->domain))
+  else if (!dev->usock_enable && IS_SUPPORTED_INET_DOMAIN(request->domain) &&
+           request->type != SOCK_CTRL)
     {
       /* If domain is AF_INET while usock_enable is false,
        * set usockid to -EPROTONOSUPPORT to fallback kernel
@@ -418,6 +419,7 @@ int usockreq_socket(FAR struct alt1250_s *dev,
   switch (request->type)
     {
       case SOCK_STREAM:
+      case SOCK_CTRL:
         if (IS_SMS_SOCKET(usock))
           {
             dbg_alt1250("SOCK_STREAM is not supported by PF_SMSSOCK\n");

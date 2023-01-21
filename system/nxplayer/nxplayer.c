@@ -719,6 +719,36 @@ static int nxplayer_enqueuebuffer(FAR struct nxplayer_s *pplayer,
 }
 
 /****************************************************************************
+ * Name: nxplayer_jointhread
+ ****************************************************************************/
+
+static void nxplayer_jointhread(FAR struct nxplayer_s *pplayer)
+{
+  FAR void *value;
+  int id = 0;
+
+  if (gettid() == pplayer->play_id)
+    {
+      return;
+    }
+
+  pthread_mutex_lock(&pplayer->mutex);
+
+  if (pplayer->play_id > 0)
+    {
+      id = pplayer->play_id;
+      pplayer->play_id = 0;
+    }
+
+  pthread_mutex_unlock(&pplayer->mutex);
+
+  if (id > 0)
+    {
+      pthread_join(id, &value);
+    }
+}
+
+/****************************************************************************
  * Name: nxplayer_thread_playthread
  *
  *  This is the thread that reads the audio file file and enqueues /
@@ -1113,8 +1143,7 @@ err_out:
 
   /* Cleanup */
 
-  while (sem_wait(&pplayer->sem) < 0)
-    ;
+  pthread_mutex_lock(&pplayer->mutex);
 
   /* Close the files */
 
@@ -1131,7 +1160,7 @@ err_out:
   pplayer->ops   = NULL;                  /* Clear offload parser */
   pplayer->state = NXPLAYER_STATE_IDLE;   /* Go to IDLE */
 
-  sem_post(&pplayer->sem);                /* Release the semaphore */
+  pthread_mutex_unlock(&pplayer->mutex);
 
   /* The playthread is done with the context.  Release it, which may
    * actually cause the context to be freed if the creator has already
@@ -1162,10 +1191,7 @@ int nxplayer_setvolume(FAR struct nxplayer_s *pplayer, uint16_t volume)
   struct audio_caps_desc_s  cap_desc;
   int ret;
 
-  /* Thread sync using the semaphore */
-
-  while (sem_wait(&pplayer->sem) < 0)
-    ;
+  pthread_mutex_lock(&pplayer->mutex);
 
   /* If we are currently playing, then we need to post a message to
    * the playthread to perform the volume change operation.  If we
@@ -1192,7 +1218,7 @@ int nxplayer_setvolume(FAR struct nxplayer_s *pplayer, uint16_t volume)
           DEBUGASSERT(errcode > 0);
 
           auderr("ERROR: AUDIOIOC_CONFIGURE ioctl failed: %d\n", errcode);
-          sem_post(&pplayer->sem);
+          pthread_mutex_unlock(&pplayer->mutex);
           return -errcode;
         }
     }
@@ -1200,7 +1226,7 @@ int nxplayer_setvolume(FAR struct nxplayer_s *pplayer, uint16_t volume)
   /* Store the volume setting */
 
   pplayer->volume = volume;
-  sem_post(&pplayer->sem);
+  pthread_mutex_unlock(&pplayer->mutex);
 
   return OK;
 }
@@ -1250,10 +1276,7 @@ int nxplayer_setbass(FAR struct nxplayer_s *pplayer, uint8_t level)
 {
   struct audio_caps_desc_s  cap_desc;
 
-  /* Thread sync using the semaphore */
-
-  while (sem_wait(&pplayer->sem) < 0)
-    ;
+  pthread_mutex_lock(&pplayer->mutex);
 
   /* If we are currently playing, then we need to post a message to
    * the playthread to perform the volume change operation.  If we
@@ -1279,7 +1302,7 @@ int nxplayer_setbass(FAR struct nxplayer_s *pplayer, uint8_t level)
 
   pplayer->bass = level;
 
-  sem_post(&pplayer->sem);
+  pthread_mutex_unlock(&pplayer->mutex);
 
   return -ENOENT;
 }
@@ -1302,10 +1325,7 @@ int nxplayer_settreble(FAR struct nxplayer_s *pplayer, uint8_t level)
 {
   struct audio_caps_desc_s  cap_desc;
 
-  /* Thread sync using the semaphore */
-
-  while (sem_wait(&pplayer->sem) < 0)
-    ;
+  pthread_mutex_lock(&pplayer->mutex);
 
   /* If we are currently playing, then we need to post a message to
    * the playthread to perform the volume change operation.  If we
@@ -1331,7 +1351,7 @@ int nxplayer_settreble(FAR struct nxplayer_s *pplayer, uint8_t level)
 
   pplayer->treble = level;
 
-  sem_post(&pplayer->sem);
+  pthread_mutex_unlock(&pplayer->mutex);
 
   return -ENOENT;
 }
@@ -1350,10 +1370,7 @@ int nxplayer_setbalance(FAR struct nxplayer_s *pplayer, uint16_t balance)
 {
   struct audio_caps_desc_s cap_desc;
 
-  /* Thread sync using the semaphore */
-
-  while (sem_wait(&pplayer->sem) < 0)
-    ;
+  pthread_mutex_lock(&pplayer->mutex);
 
   /* If we are currently playing, then we need to post a message to
    * the playthread to perform the volume change operation.  If we
@@ -1379,7 +1396,7 @@ int nxplayer_setbalance(FAR struct nxplayer_s *pplayer, uint16_t balance)
 
   pplayer->balance = balance;
 
-  sem_post(&pplayer->sem);
+  pthread_mutex_unlock(&pplayer->mutex);
 
   return -ENOENT;
 }
@@ -1683,20 +1700,19 @@ int nxplayer_setdevice(FAR struct nxplayer_s *pplayer,
 int nxplayer_stop(FAR struct nxplayer_s *pplayer)
 {
   struct audio_msg_s term_msg;
-  FAR void           *value;
 
   DEBUGASSERT(pplayer != NULL);
 
   /* Validate we are not in IDLE state */
 
-  sem_wait(&pplayer->sem);                      /* Get the semaphore */
+  pthread_mutex_lock(&pplayer->mutex);
   if (pplayer->state == NXPLAYER_STATE_IDLE)
     {
-      sem_post(&pplayer->sem);                  /* Release the semaphore */
+      pthread_mutex_unlock(&pplayer->mutex);
       return OK;
     }
 
-  sem_post(&pplayer->sem);
+  pthread_mutex_unlock(&pplayer->mutex);
 
   /* Notify the playback thread that it needs to cancel the playback */
 
@@ -1707,8 +1723,7 @@ int nxplayer_stop(FAR struct nxplayer_s *pplayer)
 
   /* Join the thread.  The thread will do all the cleanup. */
 
-  pthread_join(pplayer->play_id, &value);
-  pplayer->play_id = 0;
+  nxplayer_jointhread(pplayer);
 
   return OK;
 }
@@ -1751,7 +1766,6 @@ static int nxplayer_playinternal(FAR struct nxplayer_s *pplayer,
   struct mq_attr      attr;
   struct sched_param  sparam;
   pthread_attr_t      tattr;
-  FAR void           *value;
   struct audio_caps_desc_s cap_desc;
   struct ap_buffer_info_s  buf_info;
 #ifdef CONFIG_NXPLAYER_INCLUDE_MEDIADIR
@@ -1949,10 +1963,7 @@ static int nxplayer_playinternal(FAR struct nxplayer_s *pplayer,
    * to perform clean-up.
    */
 
-  if (pplayer->play_id != 0)
-    {
-      pthread_join(pplayer->play_id, &value);
-    }
+  nxplayer_jointhread(pplayer);
 
   /* Start the playfile thread to stream the media file to the
    * audio device.
@@ -2150,7 +2161,8 @@ FAR struct nxplayer_s *nxplayer_create(void)
   strncpy(pplayer->mediadir, CONFIG_NXPLAYER_DEFAULT_MEDIADIR,
       sizeof(pplayer->mediadir));
 #endif
-  sem_init(&pplayer->sem, 0, 1);
+
+  pthread_mutex_init(&pplayer->mutex, NULL);
 
   return pplayer;
 }
@@ -2171,47 +2183,17 @@ FAR struct nxplayer_s *nxplayer_create(void)
 void nxplayer_release(FAR struct nxplayer_s *pplayer)
 {
   int         refcount;
-  FAR void    *value;
-
-  /* Grab the semaphore */
-
-  while (sem_wait(&pplayer->sem) < 0)
-    {
-      int errcode = errno;
-      DEBUGASSERT(errcode > 0);
-
-      if (errcode != EINTR)
-        {
-          auderr("ERROR: sem_wait failed: %d\n", errcode);
-          return;
-        }
-    }
 
   /* Check if there was a previous thread and join it if there was */
 
-  if (pplayer->play_id != 0)
-    {
-      sem_post(&pplayer->sem);
-      pthread_join(pplayer->play_id, &value);
-      pplayer->play_id = 0;
+  nxplayer_jointhread(pplayer);
 
-      while (sem_wait(&pplayer->sem) < 0)
-        {
-          int errcode = errno;
-          DEBUGASSERT(errcode > 0);
-
-          if (errcode != -EINTR)
-            {
-              auderr("ERROR: sem_wait failed: %d\n", errcode);
-              return;
-            }
-        }
-    }
+  pthread_mutex_lock(&pplayer->mutex);
 
   /* Reduce the reference count */
 
   refcount = pplayer->crefs--;
-  sem_post(&pplayer->sem);
+  pthread_mutex_unlock(&pplayer->mutex);
 
   /* If the ref count *was* one, then free the context */
 
@@ -2235,67 +2217,12 @@ void nxplayer_release(FAR struct nxplayer_s *pplayer)
 
 void nxplayer_reference(FAR struct nxplayer_s *pplayer)
 {
-  /* Grab the semaphore */
-
-  while (sem_wait(&pplayer->sem) < 0)
-    {
-      int errcode = errno;
-      DEBUGASSERT(errcode > 0);
-
-      if (errcode != -EINTR)
-        {
-          auderr("ERROR: sem_wait failed: %d\n", errcode);
-          return;
-        }
-    }
+  pthread_mutex_lock(&pplayer->mutex);
 
   /* Increment the reference count */
 
   pplayer->crefs++;
-  sem_post(&pplayer->sem);
-}
-
-/****************************************************************************
- * Name: nxplayer_detach
- *
- *   nxplayer_detach() detaches from the playthread to make it independent
- *     so the caller can abandon the context while the file is still
- *     being played.
- *
- * Input Parameters:
- *   pplayer    Pointer to the NxPlayer context
- *
- * Returned values:    None
- *
- ****************************************************************************/
-
-void nxplayer_detach(FAR struct nxplayer_s *pplayer)
-{
-#if 0
-  /* Grab the semaphore */
-
-  while (sem_wait(&pplayer->sem) < 0)
-    {
-      int errcode = errno;
-      DEBUGASSERT(errcode > 0);
-
-      if (errcode != -EINTR)
-        {
-          auderr("ERROR: sem_wait failed: %d\n", errcode);
-          return;
-        }
-    }
-
-  if (pplayer->play_id != NULL)
-    {
-      /* Do a pthread detach */
-
-      pthread_detach(pplayer->play_id);
-      pplayer->play_id = NULL;
-    }
-
-  sem_post(&pplayer->sem);
-#endif
+  pthread_mutex_unlock(&pplayer->mutex);
 }
 
 /****************************************************************************

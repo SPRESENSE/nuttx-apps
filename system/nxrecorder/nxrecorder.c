@@ -216,6 +216,36 @@ static int nxrecorder_enqueuebuffer(FAR struct nxrecorder_s *precorder,
 }
 
 /****************************************************************************
+ * Name: nxrecorder_jointhread
+ ****************************************************************************/
+
+static void nxrecorder_jointhread(FAR struct nxrecorder_s *precorder)
+{
+  FAR void *value;
+  int id = 0;
+
+  if (gettid() == precorder->record_id)
+    {
+      return;
+    }
+
+  pthread_mutex_lock(&precorder->mutex);
+
+  if (precorder->record_id > 0)
+    {
+      id = precorder->record_id;
+      precorder->record_id = 0;
+    }
+
+  pthread_mutex_unlock(&precorder->mutex);
+
+  if (id > 0)
+    {
+      pthread_join(id, &value);
+    }
+}
+
+/****************************************************************************
  * Name: nxrecorder_thread_recordthread
  *
  *  This is the thread that write the audio file file and enqueues /
@@ -566,9 +596,7 @@ err_out:
 
   /* Cleanup */
 
-  while (sem_wait(&precorder->sem) < 0)
-    {
-    }
+  pthread_mutex_lock(&precorder->mutex);
 
   /* Close the files */
 
@@ -584,7 +612,7 @@ err_out:
   mq_unlink(precorder->mqname);             /* Unlink the message queue */
   precorder->state = NXRECORDER_STATE_IDLE; /* Go to IDLE */
 
-  sem_post(&precorder->sem);                /* Release the semaphore */
+  pthread_mutex_unlock(&precorder->mutex);
 
   /* The record thread is done with the context.  Release it, which may
    * actually cause the context to be freed if the creator has already
@@ -712,20 +740,19 @@ int nxrecorder_setdevice(FAR struct nxrecorder_s *precorder,
 int nxrecorder_stop(FAR struct nxrecorder_s *precorder)
 {
   struct audio_msg_s term_msg;
-  FAR void           *value;
 
   DEBUGASSERT(precorder != NULL);
 
   /* Validate we are not in IDLE state */
 
-  sem_wait(&precorder->sem);                      /* Get the semaphore */
+  pthread_mutex_lock(&precorder->mutex);
   if (precorder->state == NXRECORDER_STATE_IDLE)
     {
-      sem_post(&precorder->sem);                  /* Release the semaphore */
+      pthread_mutex_unlock(&precorder->mutex);
       return OK;
     }
 
-  sem_post(&precorder->sem);
+  pthread_mutex_unlock(&precorder->mutex);
 
   /* Notify the recordback thread that it needs to cancel the recordback */
 
@@ -736,8 +763,7 @@ int nxrecorder_stop(FAR struct nxrecorder_s *precorder)
 
   /* Join the thread.  The thread will do all the cleanup. */
 
-  pthread_join(precorder->record_id, &value);
-  precorder->record_id = 0;
+  nxrecorder_jointhread(precorder);
 
   return OK;
 }
@@ -775,7 +801,6 @@ int nxrecorder_recordraw(FAR struct nxrecorder_s *precorder,
   pthread_attr_t           tattr;
   struct audio_caps_desc_s cap_desc;
   struct ap_buffer_info_s  buf_info;
-  FAR void                 *value;
   int                      ret;
 
   DEBUGASSERT(precorder != NULL);
@@ -886,10 +911,7 @@ int nxrecorder_recordraw(FAR struct nxrecorder_s *precorder,
    * to perform clean-up.
    */
 
-  if (precorder->record_id != 0)
-    {
-      pthread_join(precorder->record_id, &value);
-    }
+  nxrecorder_jointhread(precorder);
 
   /* Start the recordfile thread to stream the media file to the
    * audio device.
@@ -976,7 +998,7 @@ FAR struct nxrecorder_s *nxrecorder_create(void)
   precorder->session = NULL;
 #endif
 
-  sem_init(&precorder->sem, 0, 1);
+  pthread_mutex_init(&precorder->mutex, NULL);
 
   return precorder;
 }
@@ -997,52 +1019,23 @@ FAR struct nxrecorder_s *nxrecorder_create(void)
 void nxrecorder_release(FAR struct nxrecorder_s *precorder)
 {
   int         refcount;
-  FAR void    *value;
-
-  /* Grab the semaphore */
-
-  while (sem_wait(&precorder->sem) < 0)
-    {
-      int errcode = errno;
-      DEBUGASSERT(errcode > 0);
-
-      if (errcode != EINTR)
-        {
-          auderr("ERROR: sem_wait failed: %d\n", errcode);
-          return;
-        }
-    }
 
   /* Check if there was a previous thread and join it if there was */
 
-  if (precorder->record_id != 0)
-    {
-      sem_post(&precorder->sem);
-      pthread_join(precorder->record_id, &value);
-      precorder->record_id = 0;
+  nxrecorder_jointhread(precorder);
 
-      while (sem_wait(&precorder->sem) < 0)
-        {
-          int errcode = errno;
-          DEBUGASSERT(errcode > 0);
-
-          if (errcode != EINTR)
-            {
-              auderr("ERROR: sem_wait failed: %d\n", errcode);
-              return;
-            }
-        }
-    }
+  pthread_mutex_lock(&precorder->mutex);
 
   /* Reduce the reference count */
 
   refcount = precorder->crefs--;
-  sem_post(&precorder->sem);
+  pthread_mutex_unlock(&precorder->mutex);
 
   /* If the ref count *was* one, then free the context */
 
   if (refcount == 1)
     {
+      pthread_mutex_destroy(&precorder->mutex);
       free(precorder);
     }
 }
@@ -1061,22 +1054,10 @@ void nxrecorder_release(FAR struct nxrecorder_s *precorder)
 
 void nxrecorder_reference(FAR struct nxrecorder_s *precorder)
 {
-  /* Grab the semaphore */
-
-  while (sem_wait(&precorder->sem) < 0)
-    {
-      int errcode = errno;
-      DEBUGASSERT(errcode > 0);
-
-      if (errcode != EINTR)
-        {
-          auderr("ERROR: sem_wait failed: %d\n", errcode);
-          return;
-        }
-    }
+  pthread_mutex_lock(&precorder->mutex);
 
   /* Increment the reference count */
 
   precorder->crefs++;
-  sem_post(&precorder->sem);
+  pthread_mutex_unlock(&precorder->mutex);
 }

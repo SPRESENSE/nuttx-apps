@@ -401,6 +401,13 @@ int usockreq_socket(FAR struct alt1250_s *dev,
       return REP_SEND_ACK_WOFREE;
     }
 
+  if (!dev->api_enable)
+    {
+      dbg_alt1250("Don't allow to call any API now.\n");
+      *usock_result = -EBUSY;
+      return REP_SEND_ACK_WOFREE;
+    }
+
   usock = usocket_alloc(dev);
   if (usock == NULL)
     {

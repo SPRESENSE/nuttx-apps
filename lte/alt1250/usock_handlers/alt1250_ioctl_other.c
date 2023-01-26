@@ -151,6 +151,25 @@ static int perform_getapn(FAR struct alt1250_s *dev,
   return REP_SEND_ACK_WOFREE;
 }
 
+#ifdef CONFIG_LTE_ALT1250_ENABLE_HIBERNATION_MODE
+/****************************************************************************
+ * name: perform_setctxcb
+ ****************************************************************************/
+
+static int perform_setctxcb(FAR struct alt1250_s *dev,
+                            FAR struct usrsock_request_buff_s *req,
+                            FAR int32_t *usock_result,
+                            FAR uint64_t *usock_xid,
+                            FAR struct usock_ackinfo_s *ackinfo)
+{
+  FAR struct lte_ioctl_data_s *ltecmd = &req->req_ioctl.ltecmd;
+
+  *usock_result = alt1250_set_context_save_cb(dev, ltecmd->cb);
+
+  return REP_SEND_ACK_WOFREE;
+}
+#endif
+
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
@@ -210,6 +229,12 @@ int usockreq_ioctl_other(FAR struct alt1250_s *dev,
       case LTE_CMDID_GETAPN:
         func = perform_getapn;
         break;
+
+#ifdef CONFIG_LTE_ALT1250_ENABLE_HIBERNATION_MODE
+      case LTE_CMDID_SETCTXCB:
+        func = perform_setctxcb;
+        break;
+#endif
 
       default:
         break;

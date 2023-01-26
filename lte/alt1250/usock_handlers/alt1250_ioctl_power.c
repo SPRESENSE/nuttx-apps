@@ -84,6 +84,13 @@ int usockreq_ioctl_power(FAR struct alt1250_s *dev,
         MODEM_STATE_POFF(dev);
         break;
 
+#ifdef CONFIG_LTE_ALT1250_ENABLE_HIBERNATION_MODE
+      case LTE_CMDID_RETRYDISABLE:
+      case LTE_CMDID_GET_POWER_STAT:
+        *usock_result = altdevice_powercontrol(dev->altfd, ltecmd->cmdid);
+        break;
+#endif
+
       default:
         *usock_result = -EINVAL;
         break;

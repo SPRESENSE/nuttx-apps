@@ -26,6 +26,14 @@ config LTE_ALT1250_STACKSIZE
 	int "alt1250 stack size"
 	default 2048
 
+config LTE_ALT1250_ENABLE_HIBERNATION_MODE
+	bool "Enable LTE hibernation mode"
+	default n
+	depends on PM
+	---help---
+		Enable LTE hibernation mode to reduce current
+		consumption during communication standby.
+
 menu "SMS configuration"
 
 config LTE_ALT1250_SMS_TOA

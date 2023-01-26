@@ -272,3 +272,36 @@ int lte_release_wakelock(void)
 {
   return lapi_req(LTE_CMDID_GIVEWLOCK, NULL, 0, NULL, 0, NULL);
 }
+
+/****************************************************************************
+ * Name: lte_set_context_save_cb
+ ****************************************************************************/
+
+int lte_set_context_save_cb(context_save_cb_t callback)
+{
+  return lapi_req(LTE_CMDID_SETCTXCB, NULL, 0, NULL, 0, callback);
+}
+
+/****************************************************************************
+ * Name: lte_hibernation_resume
+ ****************************************************************************/
+
+int lte_hibernation_resume(FAR const uint8_t *res_ctx, int len)
+{
+  FAR void *inarg[] =
+    {
+      (FAR void *)res_ctx,
+      &len
+    };
+
+  int dummy_arg; /* Dummy for blocking API call */
+
+  if (res_ctx == NULL || len < 0)
+    {
+      return -EINVAL;
+    }
+
+  return lapi_req(LTE_CMDID_RESUME,
+                  (FAR void *)inarg, ARRAY_SZ(inarg),
+                  (FAR void *)&dummy_arg, 0, NULL);
+}

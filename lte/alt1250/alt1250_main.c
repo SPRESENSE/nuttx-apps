@@ -208,6 +208,30 @@ static int alt1250_loop(FAR struct alt1250_s *dev)
   return OK;
 }
 
+#ifdef CONFIG_LTE_ALT1250_ENABLE_HIBERNATION_MODE
+/****************************************************************************
+ * Name: calc_checksum
+ ****************************************************************************/
+
+static uint16_t calc_checksum(FAR uint8_t *ptr, uint16_t len)
+{
+  uint32_t ret = 0x00;
+  uint32_t calctmp = 0x00;
+  uint16_t i;
+
+  /* Data accumulating */
+
+  for (i = 0; i < len; i++)
+    {
+      calctmp += ptr[i];
+    }
+
+  ret = ~((calctmp & 0xffff) + (calctmp >> 16));
+
+  return (uint16_t)ret;
+}
+#endif
+
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
@@ -255,6 +279,8 @@ int main(int argc, FAR char *argv[])
   g_daemon->usock_enable = TRUE;
   g_daemon->is_support_lwm2m = false;
   g_daemon->lwm2m_apply_xid = -1;
+  g_daemon->api_enable = true;
+  g_daemon->context_cb = NULL;
   MODEM_STATE_POFF(g_daemon);
 
   reset_fwupdate_info(g_daemon);
@@ -269,3 +295,177 @@ int main(int argc, FAR char *argv[])
 
   return ret;
 }
+
+#ifdef CONFIG_LTE_ALT1250_ENABLE_HIBERNATION_MODE
+int alt1250_set_api_enable(FAR struct alt1250_s *dev, bool enable)
+{
+  if (!dev)
+    {
+      return ERROR;
+    }
+
+  dev->api_enable = enable;
+
+  return OK;
+}
+
+int alt1250_count_opened_sockets(FAR struct alt1250_s *dev)
+{
+  int ret = 0;
+  int i = 0;
+  FAR struct usock_s *sock;
+
+  if (!dev)
+    {
+      return ERROR;
+    }
+
+  for (i = 0; i < ARRAY_SZ(dev->sockets); i++)
+    {
+      sock = &dev->sockets[i];
+      if (sock->state != SOCKET_STATE_CLOSED)
+        {
+          ret++;
+        }
+    }
+
+  return ret;
+}
+
+int alt1250_is_api_in_progress(FAR struct alt1250_s *dev)
+{
+  if (!dev)
+    {
+      return ERROR;
+    }
+
+  return dev->is_usockrcvd ? 1 : 0;
+}
+
+int alt1250_set_context_save_cb(FAR struct alt1250_s *dev,
+                                context_save_cb_t context_cb)
+{
+  if (!dev)
+    {
+      return ERROR;
+    }
+
+  dev->context_cb = context_cb;
+
+  return OK;
+}
+
+int alt1250_collect_daemon_context(FAR struct alt1250_s *dev)
+{
+  struct alt1250_save_ctx ctx;
+
+  if (!dev)
+    {
+      return ERROR;
+    }
+
+  if (!dev->context_cb)
+    {
+      return ERROR;
+    }
+
+  memset(&ctx, 0, sizeof(struct alt1250_save_ctx));
+
+  /* Copy APN settings */
+
+  ctx.ip_type = dev->apn.ip_type;
+  ctx.auth_type = dev->apn.auth_type;
+  ctx.apn_type = dev->apn.apn_type;
+  memcpy(ctx.apn_name, dev->apn_name, LTE_APN_LEN);
+  memcpy(ctx.user_name, dev->user_name, LTE_APN_USER_NAME_LEN);
+  memcpy(ctx.pass, dev->pass, LTE_APN_PASSWD_LEN);
+
+  /* Copy connection information */
+
+  ctx.d_flags = dev->net_dev.d_flags;
+
+#ifdef CONFIG_NET_IPv4
+  memcpy(&ctx.d_ipaddr, &dev->net_dev.d_ipaddr, sizeof(in_addr_t));
+  memcpy(&ctx.d_draddr, &dev->net_dev.d_draddr, sizeof(in_addr_t));
+  memcpy(&ctx.d_netmask, &dev->net_dev.d_netmask, sizeof(in_addr_t));
+#endif
+#ifdef CONFIG_NET_IPv6
+  memcpy(&ctx.d_ipv6addr, &dev->net_dev.d_ipv6addr, sizeof(net_ipv6addr_t));
+  memcpy(&ctx.d_ipv6draddr,
+         &dev->net_dev.d_ipv6draddr,
+         sizeof(net_ipv6addr_t));
+  memcpy(&ctx.d_ipv6netmask,
+         &dev->net_dev.d_ipv6netmask,
+         sizeof(net_ipv6addr_t));
+#endif
+
+  /* Save checksum without checksum for validation */
+
+  ctx.checksum = calc_checksum((FAR uint8_t *)&ctx,
+                               offsetof(struct alt1250_save_ctx, checksum));
+
+  /* Call user application callback */
+
+  dev->context_cb((FAR uint8_t *)&ctx, sizeof(ctx));
+
+  return OK;
+}
+
+int alt1250_apply_daemon_context(FAR struct alt1250_s *dev,
+                                 FAR struct alt1250_save_ctx *ctx)
+{
+  uint16_t checksum;
+
+  if (!dev)
+    {
+      return ERROR;
+    }
+
+  /* Calc checksum without checksum parameter */
+
+  checksum = calc_checksum((FAR uint8_t *)ctx,
+                           offsetof(struct alt1250_save_ctx, checksum));
+
+  if (ctx->checksum != checksum)
+    {
+      dbg_alt1250("Saved context is invalid.\n");
+      return ERROR;
+    }
+
+  /* Copy APN settings */
+
+  dev->apn.ip_type = ctx->ip_type;
+  dev->apn.auth_type = ctx->auth_type;
+  dev->apn.apn_type = ctx->apn_type;
+  memcpy(dev->apn_name, ctx->apn_name, LTE_APN_LEN);
+  memcpy(dev->user_name, ctx->user_name, LTE_APN_USER_NAME_LEN);
+  memcpy(dev->pass, ctx->pass, LTE_APN_PASSWD_LEN);
+
+  /* Set APN related pointers */
+
+  dev->apn.apn = dev->apn_name;
+  dev->apn.user_name = dev->user_name;
+  dev->apn.password = dev->pass;
+
+  /* Copy connection information */
+
+  dev->net_dev.d_flags = ctx->d_flags;
+
+#ifdef CONFIG_NET_IPv4
+  memcpy(&dev->net_dev.d_ipaddr, &ctx->d_ipaddr, sizeof(in_addr_t));
+  memcpy(&dev->net_dev.d_draddr, &ctx->d_draddr, sizeof(in_addr_t));
+  memcpy(&dev->net_dev.d_netmask, &ctx->d_netmask, sizeof(in_addr_t));
+#endif
+#ifdef CONFIG_NET_IPv6
+  memcpy(&dev->net_dev.d_ipv6addr, &ctx->d_ipv6addr, sizeof(net_ipv6addr_t));
+  memcpy(&dev->net_dev.d_ipv6draddr,
+         &ctx->d_ipv6draddr,
+         sizeof(net_ipv6addr_t));
+  memcpy(&dev->net_dev.d_ipv6netmask,
+         &ctx->d_ipv6netmask,
+         sizeof(net_ipv6addr_t));
+#endif
+
+  return OK;
+}
+#endif

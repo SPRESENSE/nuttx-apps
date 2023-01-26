@@ -182,6 +182,107 @@ static int perform_alt1250_resetevt(FAR struct alt1250_s *dev,
   return ret;
 }
 
+#ifdef CONFIG_LTE_ALT1250_ENABLE_HIBERNATION_MODE
+/****************************************************************************
+ * Name: perform_alt1250_apistopevt
+ ****************************************************************************/
+
+static void perform_alt1250_apistopevt(FAR struct alt1250_s *dev)
+{
+  int ret = OK;
+
+  /* All LTE API/Socket requests must be stopped to enter Suspend mode. */
+
+  ret = alt1250_set_api_enable(dev, false);
+
+  if (ret < 0)
+    {
+      dbg_alt1250("Failed to stop API call.\n");
+      ret = ERROR;
+      goto exit;
+    }
+
+  /* Application need to context data when LTE function resume from
+   * hibernation.
+   */
+
+  if (!dev->context_cb)
+    {
+      dbg_alt1250("Context save callback not registered.\n");
+      ret = ERROR;
+      goto exit;
+    }
+
+  /* When entering Suspend mode, all Sockets must be closed. */
+
+  ret = alt1250_count_opened_sockets(dev);
+
+  if (ret < 0)
+    {
+      dbg_alt1250("Failed to count opened sockets.\n");
+      ret = ERROR;
+      goto exit;
+    }
+  else if (ret > 0)
+    {
+      dbg_alt1250("There are opened socket, "
+                  "could not entering hibernation mode.\n");
+      ret = ERROR;
+      goto exit;
+    }
+
+  /* Refuse to enter Suspend mode if the LTE API already running has not yet
+   * completed.
+   */
+
+  ret = alt1250_is_api_in_progress(dev);
+
+  if (ret < 0)
+    {
+      dbg_alt1250("Failed to check API call status.\n");
+      ret = ERROR;
+      goto exit;
+    }
+  else if (ret > 0)
+    {
+      dbg_alt1250("There are in progress API call, "
+                  "could not entering hibernation mode.\n");
+      ret = ERROR;
+      goto exit;
+    }
+
+  /* TODO: When Wakelock is acquired, Suspend mode is rejected because
+   * it is not possible to enter Suspend mode.
+   */
+
+exit:
+
+  if (ret < 0)
+    {
+      alt1250_set_api_enable(dev, true);
+    }
+
+  altdevice_powerresponse(dev->altfd, LTE_CMDID_STOPAPI, ret);
+}
+
+/****************************************************************************
+ * Name: perform_alt1250_suspendevt
+ ****************************************************************************/
+
+static void perform_alt1250_suspendevt(FAR struct alt1250_s *dev)
+{
+  /* TODO: Register Select to be notified by ALT1250 when an event is
+   * received during Sleep for a Socket in Suspend.
+   */
+
+  /* Notify the application of the context data required for resume. */
+
+  alt1250_collect_daemon_context(dev);
+
+  altdevice_powerresponse(dev->altfd, LTE_CMDID_SUSPEND, 0);
+}
+#endif
+
 /****************************************************************************
  * Public functions
  ****************************************************************************/
@@ -216,6 +317,20 @@ int perform_alt1250events(FAR struct alt1250_s *dev)
           bitmap &= ~ALT1250_EVTBIT_RESET;
         }
     }
+#ifdef CONFIG_LTE_ALT1250_ENABLE_HIBERNATION_MODE
+  else if (bitmap & ALT1250_EVTBIT_STOPAPI)
+    {
+      /* Handling API stop request */
+
+      perform_alt1250_apistopevt(dev);
+    }
+  else if (bitmap & ALT1250_EVTBIT_SUSPEND)
+    {
+      /* Handling Suspend request */
+
+      perform_alt1250_suspendevt(dev);
+    }
+#endif
   else
     {
       /* Handling reply containers */

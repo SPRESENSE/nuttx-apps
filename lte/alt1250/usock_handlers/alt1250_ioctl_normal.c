@@ -192,6 +192,63 @@ int send_lapi_command(FAR struct alt1250_s *dev,
   return altdevice_send_command(dev->altfd, container, usock_result);
 }
 
+#ifdef CONFIG_LTE_ALT1250_ENABLE_HIBERNATION_MODE
+/****************************************************************************
+ * name: lte_context_resume
+ ****************************************************************************/
+
+static int lte_context_resume(FAR struct alt1250_s *dev,
+                              FAR struct lte_ioctl_data_s *cmd)
+{
+  FAR uint8_t *ctx_data = (FAR uint8_t *)cmd->inparam[0];
+  int len = *(FAR int *)cmd->inparam[1];
+  int ret = OK;
+  int power = 0;
+
+  if (len != sizeof(struct alt1250_save_ctx))
+    {
+      dbg_alt1250("Context data size is invalid(%d!=%d).\n",
+                  sizeof(struct alt1250_save_ctx), len);
+      ret = -EINVAL;
+      goto error;
+    }
+
+  ret = alt1250_apply_daemon_context(dev,
+                                     (FAR struct alt1250_save_ctx *)ctx_data);
+
+  if (ret < 0)
+    {
+      dbg_alt1250("Failed to apply saved alt1250 context(%d).\n", ret);
+      ret = -EINVAL;
+      goto error;
+    }
+
+  /* Retry mode is released in order to resume reception from ALT 1250. */
+
+  ret = altdevice_powercontrol(dev->altfd, LTE_CMDID_RETRYDISABLE);
+
+  /* If the ALT1250 is not powered on, return Resume as failure. */
+
+  power = altdevice_powercontrol(dev->altfd, LTE_CMDID_GET_POWER_STAT);
+
+  if (!power)
+    {
+      return -ENETDOWN;
+    }
+
+  /* TODO: Register events so that event notifications are made to the
+   * report-based Callbacks registered in advance with lte_set_report*().
+   */
+
+  return OK;
+
+error:
+  altdevice_powercontrol(dev->altfd, LTE_CMDID_POWEROFF);
+
+  return ret;
+}
+#endif
+
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
@@ -297,6 +354,12 @@ int usockreq_ioctl_normal(FAR struct alt1250_s *dev,
                    RADIOON_ASYNC : RADIOON_SYNC;
         }
         break;
+
+#ifdef CONFIG_LTE_ALT1250_ENABLE_HIBERNATION_MODE
+      case LTE_CMDID_RESUME:
+        *usock_result = lte_context_resume(dev, ltecmd);
+        return REP_SEND_ACK_WOFREE;
+#endif
 
       case LTE_CMDID_SAVE_LOG:
       case LTE_CMDID_GET_LOGLIST:

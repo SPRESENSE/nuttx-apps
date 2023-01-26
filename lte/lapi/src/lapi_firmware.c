@@ -133,8 +133,12 @@ int lte_factory_reset_sync(void)
 
 /* Asynchronous APIs */
 
+#ifdef CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API
+
 int lte_get_version(get_ver_cb_t callback)
 {
   printf("This API is discarded. Please use lte_get_version_sync().\n");
   return -ENOTSUP;
 }
+#endif /* CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API */
+

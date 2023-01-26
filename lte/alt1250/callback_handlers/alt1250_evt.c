@@ -2087,3 +2087,82 @@ int alt1250_evttask_msgconnect(FAR const char *qname,
 
   return ret;
 }
+
+uint32_t alt1250_search_registered_callback(FAR int *index)
+{
+  uint32_t ret = 0x00;
+  int i;
+
+  for (i = *index; i < NCBTABLES; i++)
+    {
+      if (g_cbtable[i].cb != NULL && IS_LTE_REPORT_EVENT(g_cbtable[i].cmdid))
+        {
+          ret = g_cbtable[i].cmdid;
+          *index = i;
+          break;
+        }
+    }
+
+  return ret;
+}
+
+int alt1250_get_report_ltecmd(FAR struct alt1250_s *dev,
+                              uint32_t cmdid,
+                              FAR struct lte_ioctl_data_s *ltecmd)
+{
+  int ret = OK;
+  static int result;
+  static int32_t param;
+  static FAR void *inparam[2];
+  static FAR void *outparam[1];
+
+  /* Generate ltecmd:
+   *   cmdid      : LAPI command ID
+   *   inparam    : Array of input arguments
+   *                (First argument is callback pointer.)
+   *   inparamlen : Size of inparam array
+   *   outparam   : Array of output arguments
+   *                (The result parameter only.)
+   *   outparamlen: Size of outparam array
+   */
+
+  ltecmd->cmdid       = cmdid;
+  ltecmd->inparam     = inparam;
+  ltecmd->outparam    = outparam;
+  ltecmd->outparamlen = 1;
+
+  inparam[0]  = get_cbfunc(cmdid);
+  outparam[0] = (FAR void *)&result;
+
+  switch (cmdid)
+    {
+      case LTE_CMDID_REPNETINFO:
+        ltecmd->inparamlen = 1;
+        break;
+      case LTE_CMDID_REPSIMSTAT:
+        param = cmdid;
+        inparam[1] = (FAR void *)&param;
+        ltecmd->inparamlen = 2;
+        break;
+      case LTE_CMDID_REPLTIME:
+        param = cmdid;
+        inparam[1] = (FAR void *)&param;
+        ltecmd->inparamlen = 2;
+        break;
+      case LTE_CMDID_REPQUAL:
+        param = dev->quality_report_period;
+        inparam[1] = (FAR void *)&param;
+        ltecmd->inparamlen = 2;
+        break;
+      case LTE_CMDID_REPCELL:
+        param = dev->cellinfo_report_period;
+        inparam[1] = (FAR void *)&param;
+        ltecmd->inparamlen = 2;
+        break;
+      default:
+        ret = -EINVAL;
+        break;
+    }
+
+  return ret;
+}

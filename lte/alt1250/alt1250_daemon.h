@@ -126,6 +126,9 @@ struct alt1250_s
   int64_t lwm2m_apply_xid;
   bool api_enable;
   context_save_cb_t context_cb;
+  bool is_resuming;
+  uint32_t quality_report_period;
+  uint32_t cellinfo_report_period;
 };
 
 struct alt1250_save_ctx

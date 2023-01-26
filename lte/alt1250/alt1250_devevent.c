@@ -44,6 +44,12 @@
 #include "alt1250_reset_seq.h"
 
 /****************************************************************************
+ * Pre-processor Definitions
+ ****************************************************************************/
+
+#define IS_PV1_FIRMWARE(d) (!strncmp(MODEM_FWVERSION(d), \
+                                     "RK_02_01_", 9))
+/****************************************************************************
  * Private Functions
  ****************************************************************************/
 
@@ -190,6 +196,16 @@ static int perform_alt1250_resetevt(FAR struct alt1250_s *dev,
 static void perform_alt1250_apistopevt(FAR struct alt1250_s *dev)
 {
   int ret = OK;
+  int w_cnt = 0;
+
+  /* The "ALT1250_EVTBIT_STOPAPI" command isn't supported for PV1 firmware */
+
+  if (IS_PV1_FIRMWARE(dev))
+    {
+      dbg_alt1250("This firmware doesn't support hibernation mode.\n");
+      ret = ERROR;
+      goto exit;
+    }
 
   /* All LTE API/Socket requests must be stopped to enter Suspend mode. */
 
@@ -251,9 +267,25 @@ static void perform_alt1250_apistopevt(FAR struct alt1250_s *dev)
       goto exit;
     }
 
-  /* TODO: When Wakelock is acquired, Suspend mode is rejected because
+  /* When Wakelock is acquired, Suspend mode is rejected because
    * it is not possible to enter Suspend mode.
    */
+
+  w_cnt = altdevice_powercontrol(dev->altfd, LTE_CMDID_COUNTWLOCK);
+  if (w_cnt == 0)
+    {
+      ret = OK;
+    }
+  else if (w_cnt > 0)
+    {
+      dbg_alt1250("Cannot enter hibernation due to wakelock is aquired.\n");
+      ret = -EBUSY;
+    }
+  else
+    {
+      dbg_alt1250("Failed to get wakelock count.\n");
+      ret = w_cnt;
+    }
 
 exit:
 

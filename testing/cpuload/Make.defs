@@ -1,5 +1,5 @@
 ############################################################################
-# apps/modbus/nuttx/Make.defs
+# apps/testing/cpuload/Make.defs
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -18,16 +18,6 @@
 #
 ############################################################################
 
-CSRCS += portother.c
-
-ifeq ($(CONFIG_MODBUS_SLAVE),y)
-CSRCS += portevent.c portserial.c porttimer.c
+ifneq ($(CONFIG_TESTING_CPULOAD),)
+CONFIGURED_APPS += $(APPDIR)/testing/cpuload
 endif
-
-ifeq ($(CONFIG_MB_RTU_MASTER),y)
-CSRCS += portother_m.c portserial_m.c porttimer_m.c portevent_m.c
-endif
-
-DEPPATH += --dep-path nuttx
-VPATH += :nuttx
-CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/modbus/nuttx

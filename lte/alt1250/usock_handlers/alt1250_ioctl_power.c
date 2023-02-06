@@ -63,6 +63,7 @@ int usockreq_ioctl_power(FAR struct alt1250_s *dev,
       case LTE_CMDID_POWERON:
       case LTE_CMDID_TAKEWLOCK:
       case LTE_CMDID_GIVEWLOCK:
+      case LTE_CMDID_COUNTWLOCK:
         *usock_result = altdevice_powercontrol(dev->altfd, ltecmd->cmdid);
         if (MODEM_STATE_IS_POFF(dev) && ltecmd->cmdid == LTE_CMDID_POWERON)
           {

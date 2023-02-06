@@ -45,6 +45,7 @@
 #include <errno.h>
 #include <dirent.h>
 #include <debug.h>
+#include <unistd.h>
 
 #include <netutils/netlib.h>
 #include <nuttx/audio/audio.h>
@@ -131,12 +132,12 @@ static const struct nxplayer_dec_ops_s g_dec_ops[] =
   {
     AUDIO_FMT_MP3,
     nxplayer_parse_mp3,
-    nxplayer_fill_mp3
+    nxplayer_fill_common
   },
   {
     AUDIO_FMT_PCM,
     NULL,
-    nxplayer_fill_pcm
+    nxplayer_fill_common
   }
 };
 
@@ -520,10 +521,19 @@ int nxplayer_getmidisubformat(int fd)
 }
 #endif
 
+/****************************************************************************
+ * Name: nxplayer_getmp3subformat
+ *
+ *   nxplayer_getmp3subformat() just return AUDIO_SUBFMT_PCM_MP3
+ *
+ ****************************************************************************/
+
+#ifdef CONFIG_AUDIO_FORMAT_MP3
 int nxplayer_getmp3subformat(int fd)
 {
   return AUDIO_SUBFMT_PCM_MP3;
 }
+#endif
 
 /****************************************************************************
  * Name: nxplayer_fmtfromextension

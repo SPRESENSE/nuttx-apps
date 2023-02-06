@@ -28,6 +28,7 @@
 
 #include <nuttx/compiler.h>
 
+#include <sys/param.h>
 #include <sys/stat.h>    /* Needed for open */
 #include <stdint.h>
 #include <stdbool.h>
@@ -114,12 +115,6 @@
 #    define HAVE_HWADDR    1
 #    define HAVE_RADIOADDR 1
 #  endif
-#endif
-
-/* Get the larger value */
-
-#ifndef MAX
-#  define MAX(a,b) ((a) > (b) ? (a) : (b))
 #endif
 
 /****************************************************************************
@@ -595,6 +590,11 @@ int cmd_ifconfig(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv)
 
   if (argc <= 2)
     {
+      if (argc == 2)
+        {
+          return ifconfig_callback(vtbl, argv[1]);
+        }
+
       ret = nsh_foreach_netdev(ifconfig_callback, vtbl, "ifconfig");
       if (ret < 0)
         {

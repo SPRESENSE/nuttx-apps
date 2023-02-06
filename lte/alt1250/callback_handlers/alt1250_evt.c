@@ -51,6 +51,10 @@
   { .cmdid = LTE_CMDID_##cid, .altcid = APICMDID_##acid, \
     .outparam = outp, .outparamlen = ARRAY_SZ(outp) }
 
+#define TABLE_CONTENT_NOARG(cid, acid) \
+  { .cmdid = LTE_CMDID_##cid, .altcid = APICMDID_##acid, \
+    .outparam = NULL, .outparamlen = 0 }
+
 #define NCBTABLES (8 + ALTCOM_NSOCKET) /* 8 is the maximum number of events */
 
 #define IS_REPORT_API(cmdid) \
@@ -130,8 +134,6 @@ static uint64_t lte_set_report_simstat_exec_cb(FAR void *cb,
   FAR void **cbarg, FAR bool *set_writable);
 static uint64_t lte_set_report_localtime_exec_cb(FAR void *cb,
   FAR void **cbarg, FAR bool *set_writable);
-static uint64_t lte_set_reportevt_exec_cb(FAR void *cb, FAR void **cbarg,
-  FAR bool *set_writable);
 static uint64_t lte_set_report_quality_exec_cb(FAR void *cb,
   FAR void **cbarg, FAR bool *set_writable);
 static uint64_t lte_set_report_cellinfo_exec_cb(FAR void *cb,
@@ -514,14 +516,20 @@ static void *g_repnetinfoargs[] =
   &g_repnetinfo, &g_ndnsaddrs, g_dnsaddrs
 };
 
-/* event argument for LTE_CMDID_REPSIMSTAT and LTE_CMDID_REPLTIME */
+/* event argument for LTE_CMDID_REPSIMSTAT */
 
-static uint8_t g_repevtflag;
 static uint32_t g_repsimstat;
-static lte_localtime_t g_repltime;
-static void *g_repevtargs[] =
+static void *g_repsimstatargs[] =
 {
-  &g_repevtflag, &g_repsimstat, &g_repltime
+  &g_repsimstat
+};
+
+/* event argument for LTE_CMDID_REPLTIME */
+
+static lte_localtime_t g_repltime;
+static void *g_repltimeargs[] =
+{
+  &g_repltime
 };
 
 /* event argument for LTE_CMDID_REPQUAL */
@@ -674,8 +682,9 @@ static struct alt_evtbuf_inst_s g_evtbuffers[] =
   TABLE_CONTENT(SETRAT, SET_RAT, g_setratargs),
   TABLE_CONTENT(GETRATINFO, GET_RAT, g_getratinfoargs),
   TABLE_CONTENT(REPNETINFO, REPORT_NETINFO, g_repnetinfoargs),
-  TABLE_CONTENT(REPSIMSTAT, REPORT_EVT, g_repevtargs),
-  TABLE_CONTENT(REPLTIME, REPORT_EVT, g_repevtargs),
+  TABLE_CONTENT_NOARG(REPEVT_DUMMY, REPORT_EVT),
+  TABLE_CONTENT(REPSIMSTAT, UNKNOWN, g_repsimstatargs),
+  TABLE_CONTENT(REPLTIME, UNKNOWN, g_repltimeargs),
   TABLE_CONTENT(REPQUAL, REPORT_QUALITY, g_repqualargs),
   TABLE_CONTENT(REPCELL, REPORT_CELLINFO, g_repcellargs),
   TABLE_CONTENT(GETERRINFO, ERRINFO, g_geterrinfoargs),
@@ -685,10 +694,7 @@ static struct alt_evtbuf_inst_s g_evtbuffers[] =
 
   /* For Unsolicited event */
 
-  {
-    .cmdid = LTE_CMDID_LWM2M_URC_DUMMY, .altcid = APICMDID_URC_EVENT,
-    .outparam = NULL, .outparamlen = 0
-  },
+  TABLE_CONTENT_NOARG(LWM2M_URC_DUMMY, URC_EVENT),
   TABLE_CONTENT(LWM2M_READ_EVT, UNKNOWN, g_lwm2mreadargs),
   TABLE_CONTENT(LWM2M_WRITE_EVT, UNKNOWN, g_lwm2mwriteargs),
   TABLE_CONTENT(LWM2M_EXEC_EVT, UNKNOWN, g_lwm2mexecargs),
@@ -702,10 +708,7 @@ static struct alt_evtbuf_inst_s g_evtbuffers[] =
    * The output parameter is NULL since a container for select is used.
    */
 
-  {
-    .cmdid = LTE_CMDID_SELECT, .altcid = APICMDID_SOCK_SELECT,
-    .outparam = NULL, .outparamlen = 0
-  }
+  TABLE_CONTENT_NOARG(SELECT, SOCK_SELECT)
 };
 
 static struct cbinfo_s g_execbtable[] =
@@ -742,8 +745,8 @@ static struct cbinfo_s g_execbtable[] =
   {LTE_CMDID_GETQUAL, lte_get_quality_exec_cb},
 #endif /* CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API */
   {LTE_CMDID_REPNETINFO, lte_set_report_netinfo_exec_cb},
-  {LTE_CMDID_REPSIMSTAT, lte_set_reportevt_exec_cb},
-  {LTE_CMDID_REPLTIME, lte_set_reportevt_exec_cb},
+  {LTE_CMDID_REPSIMSTAT, lte_set_report_simstat_exec_cb},
+  {LTE_CMDID_REPLTIME, lte_set_report_localtime_exec_cb},
   {LTE_CMDID_REPQUAL, lte_set_report_quality_exec_cb},
   {LTE_CMDID_REPCELL, lte_set_report_cellinfo_exec_cb},
   {LTE_CMDID_TLS_CONFIG_VERIFY, tls_config_verify_exec_cb},
@@ -1259,29 +1262,6 @@ static uint64_t lte_set_report_localtime_exec_cb(FAR void *cb,
   if (callback)
     {
       callback(localtime);
-    }
-
-  return 0ULL;
-}
-
-static uint64_t lte_set_reportevt_exec_cb(FAR void *cb, FAR void **cbarg,
-  FAR bool *set_writable)
-{
-  FAR void *func = NULL;
-  uint8_t flag = *((FAR uint8_t *)cbarg[0]);
-
-  if (flag & ALTCOM_REPEVT_FLAG_SIMSTAT)
-    {
-      flag &= ~ALTCOM_REPEVT_FLAG_SIMSTAT;
-      func = get_cbfunc(LTE_CMDID_REPSIMSTAT);
-      lte_set_report_simstat_exec_cb(func, &cbarg[1], set_writable);
-    }
-
-  if (flag & ALTCOM_REPEVT_FLAG_LTIME)
-    {
-      flag &= ~ALTCOM_REPEVT_FLAG_LTIME;
-      func = get_cbfunc(LTE_CMDID_REPLTIME);
-      lte_set_report_localtime_exec_cb(func, &cbarg[2], set_writable);
     }
 
   return 0ULL;

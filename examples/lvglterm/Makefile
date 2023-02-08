@@ -1,5 +1,5 @@
 ############################################################################
-# apps/testing/drivertest/Makefile
+# apps/examples/lvglterm/Makefile
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -20,24 +20,13 @@
 
 include $(APPDIR)/Make.defs
 
-PRIORITY  = $(CONFIG_TESTING_DRIVER_TEST_PRIORITY)
-STACKSIZE = $(CONFIG_TESTING_DRIVER_TEST_STACKSIZE)
-MODULE    = $(CONFIG_TESTING_DRIVER_TEST)
+PROGNAME = lvglterm
+PRIORITY = $(CONFIG_EXAMPLES_LVGLTERM_PRIORITY)
+STACKSIZE = $(CONFIG_EXAMPLES_LVGLTERM_STACKSIZE)
+MODULE = $(CONFIG_EXAMPLES_LVGLTERM)
 
-ifneq ($(CONFIG_TESTING_DRIVER_TEST_SIMPLE),)
-MAINSRC  += drivertest_simple.c
-PROGNAME += cmocka_driver_simple
-endif
+# LVGL Terminal
 
-ifneq ($(CONFIG_RTC),)
-MAINSRC  += drivertest_rtc.c
-PROGNAME += cmocka_driver_rtc
-endif
-
-ifneq ($(CONFIG_TIMER),)
-MAINSRC  += drivertest_timer.c
-PROGNAME += cmocka_driver_timer
-endif
-
+MAINSRC = lvglterm.c
 
 include $(APPDIR)/Application.mk

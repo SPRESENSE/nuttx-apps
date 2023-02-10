@@ -103,11 +103,11 @@ static int initialize_daemon(FAR struct alt1250_s *dev)
   ret = alt1250_evttask_start();
   ASSERT(ret > 0);
 
-  dev->usockfd = init_usock_device();
-  ASSERT(dev->usockfd >= 0);
-
   dev->altfd = init_alt1250_device();
   ASSERT(dev->altfd >= 0);
+
+  dev->usockfd = init_usock_device();
+  ASSERT(dev->usockfd >= 0);
 
   ret = altdevice_seteventbuff(dev->altfd, init_event_buffer());
   ASSERT(ret >= 0);

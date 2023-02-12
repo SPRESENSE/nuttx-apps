@@ -105,10 +105,12 @@ int ltenwop_send_setnwoptp(FAR struct alt1250_s *dev,
       FAR struct alt_container_s *container);
 
 int lwm2mstub_send_getqueuemode(FAR struct alt1250_s *dev,
-      FAR struct alt_container_s *container);
+      FAR struct alt_container_s *container, int16_t usockid,
+      FAR int32_t *ures);
 
-int lwm2mstub_send_setqueuemodef(FAR struct alt1250_s *dev,
-      FAR struct alt_container_s *container);
+int lwm2mstub_send_setqueuemode(FAR struct alt1250_s *dev,
+      FAR struct alt_container_s *container, int16_t usockid,
+      FAR int32_t *ures, int en);
 
 int lwm2mstub_send_m2mopev(FAR struct alt1250_s *dev,
       FAR struct alt_container_s *container, int16_t usockid,

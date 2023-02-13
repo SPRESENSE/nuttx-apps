@@ -141,6 +141,25 @@ static const char *get_m2mrespstr(int resp)
  ****************************************************************************/
 
 /****************************************************************************
+ * name: atcmdreply_true_false
+ ****************************************************************************/
+
+int atcmdreply_true_false(FAR struct alt1250_s *dev,
+                          FAR struct alt_container_s *reply,
+                          FAR char *rdata, int len, unsigned long arg,
+                          FAR int32_t *usock_result)
+{
+  *usock_result = 0;
+
+  if (strcasestr(rdata, "\nTRUE\r"))
+    {
+      *usock_result = 1;
+    }
+
+  return REP_SEND_ACK;
+}
+
+/****************************************************************************
  * name: atcmdreply_ok_error
  ****************************************************************************/
 
@@ -410,25 +429,28 @@ int ltenwop_send_setnwoptp(FAR struct alt1250_s *dev,
  ****************************************************************************/
 
 int lwm2mstub_send_getqueuemode(FAR struct alt1250_s *dev,
-      FAR struct alt_container_s *container)
+      FAR struct alt_container_s *container, int16_t usockid,
+      FAR int32_t *ures)
 {
-  int32_t dummy;
   snprintf((char *)dev->tx_buff, _TX_BUFF_SIZE,
       "AT%%GETACFG=LWM2M.TransportBindings_1_1.Queue\r");
-  return send_internal_at_command(dev, container, -1, NULL, 0, &dummy);
+  return send_internal_at_command(dev, container, usockid,
+                                  atcmdreply_true_false, 0, ures);
 }
 
 /****************************************************************************
- * name: lwm2mstub_send_setqueuemodef
+ * name: lwm2mstub_send_setqueuemode
  ****************************************************************************/
 
-int lwm2mstub_send_setqueuemodef(FAR struct alt1250_s *dev,
-      FAR struct alt_container_s *container)
+int lwm2mstub_send_setqueuemode(FAR struct alt1250_s *dev,
+      FAR struct alt_container_s *container, int16_t usockid,
+      FAR int32_t *ures, int en)
 {
-  int32_t dummy;
   snprintf((char *)dev->tx_buff, _TX_BUFF_SIZE,
-      "AT%%SETACFG=LWM2M.TransportBindings_1_1.Queue,false\r");
-  return send_internal_at_command(dev, container, -1, NULL, 0, &dummy);
+      "AT%%SETACFG=LWM2M.TransportBindings_1_1.Queue,%s\r",
+      (en == 1) ? "true" : "false");
+  return send_internal_at_command(dev, container, usockid,
+                                  atcmdreply_ok_error, 0, ures);
 }
 
 /****************************************************************************

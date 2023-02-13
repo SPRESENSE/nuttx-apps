@@ -682,19 +682,18 @@ static int commands_on_any_state(FAR struct alt1250_s *dev,
                                        *((uint16_t *)ltecmd->inparam));
         break;
 
-      case LTE_CMDID_LWM2M_CHANGERAT:
-        ret = lwm2mstub_send_changerat(dev, container,
-                                       USOCKET_USOCKID(usock),
-                                       usock_result,
-                                       *((int *)ltecmd->inparam));
-        break;
-
       case LTE_CMDID_LWM2M_GETRAT:
         ret = lwm2mstub_send_getrat(dev, container,
                                     USOCKET_USOCKID(usock),
                                     atcmdreply_getrat,
                                     (unsigned long)ltecmd->outparam,
                                     usock_result);
+        break;
+
+      case LTE_CMDID_LWM2M_GETQMODE:
+        ret = lwm2mstub_send_getqueuemode(dev, container,
+                                          USOCKET_USOCKID(usock),
+                                          usock_result);
         break;
     }
 
@@ -742,6 +741,20 @@ static int commands_on_poweron_state(FAR struct alt1250_s *dev,
                     usock_result, (uint16_t)(uint32_t)ltecmd->inparam[0],
                     (int)ltecmd->inparam[1],
                     (struct lwm2mstub_resource_s *)ltecmd->inparam[2]);
+        break;
+
+      case LTE_CMDID_LWM2M_CHANGERAT:
+        ret = lwm2mstub_send_changerat(dev, container,
+                                       USOCKET_USOCKID(usock),
+                                       usock_result,
+                                       *((int *)ltecmd->inparam));
+        break;
+
+      case LTE_CMDID_LWM2M_SETQMODE:
+        ret = lwm2mstub_send_setqueuemode(dev, container,
+                                       USOCKET_USOCKID(usock),
+                                       usock_result,
+                                       (int)ltecmd->inparam);
         break;
 
       case LTE_CMDID_LWM2M_APPLY_SETTING:

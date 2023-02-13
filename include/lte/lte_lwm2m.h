@@ -283,6 +283,8 @@ int lte_getm2m_objresourceinfo(uint16_t objids, int res_num,
                                 struct lwm2mstub_resource_s *reses);
 int lte_setm2m_objectdefinition(uint16_t objids, int res_num,
                                 struct lwm2mstub_resource_s *reses);
+bool lte_getm2m_qmode(void);
+int lte_setm2m_qmode(bool en);
 
 int lte_apply_m2msetting(void);
 

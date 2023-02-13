@@ -464,3 +464,24 @@ int lte_set_report_m2mfwupdate(lwm2mstub_fwupstate_cb_t cb)
 {
   return lapi_req(LTE_CMDID_LWM2M_FWUP_EVT, NULL, 0, NULL, 0, cb);
 }
+
+/****************************************************************************
+ * Name: lte_getm2m_qmode
+ ****************************************************************************/
+
+bool lte_getm2m_qmode(void)
+{
+  int dummy_arg; /* Dummy for blocking API call */
+  return lapi_req(LTE_CMDID_LWM2M_GETQMODE, NULL, 0,
+                           (FAR void **)&dummy_arg, 0, NULL);
+}
+
+/****************************************************************************
+ * Name: lte_set_report_m2mfwupdate
+ ****************************************************************************/
+
+int lte_setm2m_qmode(bool en)
+{
+  return lapi_req(LTE_CMDID_LWM2M_SETQMODE,
+                  (void **)(en ? 1 : 0), 1, NULL, 0, NULL);
+}

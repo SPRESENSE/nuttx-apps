@@ -482,6 +482,14 @@ static int socket_request(int fd, FAR struct wiznet_s *priv,
     }
   else
     {
+      /* If SOCK_CTRL type is requested, the implementation should not
+       * open the socket on the device side. However, for now, the
+       * implementation is equivalent to the case where the type of
+       * SOCK_STREAM is requested. This will be corrected in the future.
+       */
+
+      req->type = (req->type == SOCK_CTRL) ? SOCK_STREAM : req->type;
+
       /* Allocate socket. */
 
       usockid = f_socket_alloc(priv, req->type);

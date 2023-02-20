@@ -425,6 +425,7 @@ int usockreq_socket(FAR struct alt1250_s *dev,
   switch (request->type)
     {
       case SOCK_STREAM:
+      case SOCK_CTRL:
         if (IS_SMS_SOCKET(usock))
           {
             dbg_alt1250("SOCK_STREAM is not supported by PF_SMSSOCK\n");

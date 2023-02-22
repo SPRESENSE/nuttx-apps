@@ -1618,6 +1618,9 @@ static int ioctl_request(int fd, FAR struct gs2200m_s *priv,
 
             priv->usock_enable = TRUE;
           }
+
+        ret = OK;
+        drvreq = false;
         break;
 
       default:

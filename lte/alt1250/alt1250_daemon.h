@@ -108,7 +108,7 @@ struct alt1250_s
   char pass[LTE_APN_PASSWD_LEN];
   lte_pdn_t o_pdn;
 
-  struct usock_s sockets[SOCKET_COUNT];
+  struct usock_s sockets[SOCKET_COUNT + CONFIG_LTE_ALT1250_CONTROL_SOCKETS];
 
   struct usrsock_request_buff_s usockreq;
   bool is_usockrcvd;  /* A flag indicates that daemon has already read

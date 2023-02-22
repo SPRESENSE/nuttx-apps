@@ -467,11 +467,12 @@ static int socket_request(int fd, FAR struct wiznet_s *priv,
 
   /* Check domain requested */
 
-  if (req->domain != AF_INET && req->domain != PF_USRSOCK)
+  if (req->domain != AF_INET)
     {
       usockid = -EAFNOSUPPORT;
     }
-  else if (!priv->usock_enable && req->domain == AF_INET)
+  else if (!priv->usock_enable && req->domain == AF_INET &&
+           req->type != SOCK_CTRL)
     {
       /* If domain is AF_INET while usock_enable is false,
        * set usockid to -EPROTONOSUPPORT to fallback kernel
@@ -1715,6 +1716,9 @@ static int ioctl_request(int fd, FAR struct wiznet_s *priv,
 
             priv->usock_enable = TRUE;
           }
+
+        ret = OK;
+        drvreq = false;
         break;
 
       default:

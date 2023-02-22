@@ -34,6 +34,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <nuttx/wireless/lte/lte_ioctl.h>
+#include <nuttx/net/netconfig.h>
 
 #include "lte/lte_api.h"
 #include "lte/lapi.h"
@@ -69,7 +70,7 @@ int lapi_req(uint32_t cmdid, FAR void *inp, size_t ilen, FAR void *outp,
   int sock;
   struct lte_ioctl_data_s cmd;
 
-  sock = socket(PF_USRSOCK, SOCK_STREAM, 0);
+  sock = socket(NET_SOCK_FAMILY, NET_SOCK_TYPE, NET_SOCK_PROTOCOL);
   if (sock < 0)
     {
       ret = -errno;

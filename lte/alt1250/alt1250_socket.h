@@ -128,7 +128,7 @@
 #define IS_STATE_READABLE(s) ((s)->select_condition & SELECT_READABLE)
 #define IS_STATE_WRITABLE(s) ((s)->select_condition & SELECT_WRITABLE)
 
-#define IS_SMS_SOCKET(s) ((s)->domain == PF_SMSSOCK)
+#define IS_SMS_SOCKET(s) ((s)->type == SOCK_SMS)
 
 #define _OUTPUT_ARG_MAX 7
 #define _OPTVAL_LEN_MAX 16
@@ -238,7 +238,7 @@ struct usock_s
  ****************************************************************************/
 
 FAR struct usock_s *usocket_search(FAR struct alt1250_s *dev, int usockid);
-FAR struct usock_s *usocket_alloc(FAR struct alt1250_s *dev);
+FAR struct usock_s *usocket_alloc(FAR struct alt1250_s *dev, int16_t type);
 void usocket_free(FAR struct usock_s *sock);
 void usocket_freeall(FAR struct alt1250_s *dev);
 void usocket_commitstate(FAR struct alt1250_s *dev);

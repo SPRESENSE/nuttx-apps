@@ -53,6 +53,8 @@ int usockreq_ioctl_denyinetsock(FAR struct alt1250_s *dev,
 
   dbg_alt1250("%s start\n", __func__);
 
+  *usock_result = OK;
+
   if (sock_type == DENY_INET_SOCK_ENABLE)
     {
       /* Block to create INET socket */

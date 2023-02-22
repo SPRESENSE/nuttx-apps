@@ -1716,6 +1716,9 @@ static int ioctl_request(int fd, FAR struct wiznet_s *priv,
 
             priv->usock_enable = TRUE;
           }
+
+        ret = OK;
+        drvreq = false;
         break;
 
       default:

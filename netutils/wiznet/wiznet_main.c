@@ -853,6 +853,7 @@ static int recvfrom_request(int fd, FAR struct wiznet_s *priv,
   FAR struct usrsock_request_recvfrom_s *req
     = (FAR struct usrsock_request_recvfrom_s *)hdrbuf;
   struct usrsock_message_datareq_ack_s resp;
+  struct usrsock_message_req_ack_s reqack;
   struct wiznet_recv_msg cmsg;
   struct sockaddr_in *addr = (struct sockaddr_in *)&cmsg.addr;
   FAR struct usock_s *usock;
@@ -916,11 +917,19 @@ prepare:
       resp.valuelen = MIN(resp.valuelen_nontrunc,
                           req->max_addrlen);
 
-      if (0 == ret)
+      if ((0 == ret) && (0 != cmsg.len))
         {
           usock_send_event(fd, priv, usock,
                            USRSOCK_EVENT_REMOTE_CLOSED
                            );
+
+          /* Send ack only */
+
+          memset(&reqack, 0, sizeof(reqack));
+          reqack.result = ret;
+          ret = f_send_ack_common(fd, 0, req->head.xid, &reqack);
+
+          goto err_out;
         }
     }
 

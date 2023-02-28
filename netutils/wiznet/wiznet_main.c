@@ -1673,6 +1673,7 @@ static int ioctl_request(int fd, FAR struct wiznet_s *priv,
   struct wiznet_ifreq_msg cmsg;
   uint8_t sock_type;
   bool getreq = false;
+  bool drvreq = true;
   int ret = -EINVAL;
 
   memset(&cmsg.ifr, 0, sizeof(cmsg.ifr));
@@ -1683,15 +1684,31 @@ static int ioctl_request(int fd, FAR struct wiznet_s *priv,
       case SIOCGIFADDR:
       case SIOCGIFDSTADDR:
       case SIOCGIFNETMASK:
-        getreq = true;
+        if (priv->usock_enable)
+          {
+            getreq = true;
+          }
+        else
+          {
+            ret = -ENOTTY;
+            drvreq = false;
+          }
+
         break;
 
       case SIOCSIFHWADDR:
       case SIOCSIFADDR:
       case SIOCSIFDSTADDR:
       case SIOCSIFNETMASK:
-
-        read(fd, &cmsg.ifr, sizeof(cmsg.ifr));
+        if (priv->usock_enable)
+          {
+            read(fd, &cmsg.ifr, sizeof(cmsg.ifr));
+          }
+        else
+          {
+            ret = -ENOTTY;
+            drvreq = false;
+          }
         break;
 
       case SIOCDENYINETSOCK:
@@ -1713,11 +1730,19 @@ static int ioctl_request(int fd, FAR struct wiznet_s *priv,
         break;
 
       default:
+        if (!priv->usock_enable)
+          {
+            ret = -ENOTTY;
+            drvreq = false;
+          }
         break;
     }
 
-  cmsg.cmd = req->cmd;
-  ret = ioctl(priv->gsfd, WIZNET_IOC_IFREQ, (unsigned long)&cmsg);
+  if (drvreq)
+    {
+      cmsg.cmd = req->cmd;
+      ret = ioctl(priv->gsfd, WIZNET_IOC_IFREQ, (unsigned long)&cmsg);
+    }
 
   if (!getreq)
     {

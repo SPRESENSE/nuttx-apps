@@ -1688,25 +1688,49 @@ static int ioctl_request(int fd, FAR struct wiznet_s *priv,
   switch (req->cmd)
     {
       case FIONBIO:
-        /* Read int as dummy */
+        if (priv->usock_enable)
+          {
+            /* Read int as dummy */
 
-        read(fd, &ret, sizeof(int));
-        ret = OK;
+            read(fd, &ret, sizeof(int));
+            ret = OK;
+          }
+        else
+          {
+            ret = -ENOTTY;
+          }
+
         drvreq = false;
         break;
       case SIOCGIFHWADDR:
       case SIOCGIFADDR:
       case SIOCGIFDSTADDR:
       case SIOCGIFNETMASK:
-        getreq = true;
+        if (priv->usock_enable)
+          {
+            getreq = true;
+          }
+        else
+          {
+            ret = -ENOTTY;
+            drvreq = false;
+          }
+
         break;
 
       case SIOCSIFHWADDR:
       case SIOCSIFADDR:
       case SIOCSIFDSTADDR:
       case SIOCSIFNETMASK:
-
-        read(fd, &cmsg.ifr, sizeof(cmsg.ifr));
+        if (priv->usock_enable)
+          {
+            read(fd, &cmsg.ifr, sizeof(cmsg.ifr));
+          }
+        else
+          {
+            ret = -ENOTTY;
+            drvreq = false;
+          }
         break;
 
       case SIOCDENYINETSOCK:
@@ -1731,6 +1755,11 @@ static int ioctl_request(int fd, FAR struct wiznet_s *priv,
         break;
 
       default:
+        if (!priv->usock_enable)
+          {
+            ret = -ENOTTY;
+            drvreq = false;
+          }
         break;
     }
 

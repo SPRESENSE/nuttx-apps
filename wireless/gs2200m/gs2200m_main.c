@@ -1581,10 +1581,18 @@ static int ioctl_request(int fd, FAR struct gs2200m_s *priv,
   switch (req->cmd)
     {
       case FIONBIO:
-        /* Read int as dummy */
+        if (priv->usock_enable)
+          {
+            /* Read int as dummy */
 
-        read(fd, &ret, sizeof(int));
-        ret = OK;
+            read(fd, &ret, sizeof(int));
+            ret = OK;
+          }
+        else
+          {
+            ret = -ENOTTY;
+          }
+
         drvreq = false;
         break;
       case SIOCGIFADDR:
@@ -1592,14 +1600,29 @@ static int ioctl_request(int fd, FAR struct gs2200m_s *priv,
       case SIOCGIWNWID:
       case SIOCGIWFREQ:
       case SIOCGIWSENS:
-        getreq = true;
+        if (priv->usock_enable)
+          {
+            getreq = true;
+          }
+        else
+          {
+            ret = -ENOTTY;
+            drvreq = false;
+          }
         break;
 
       case SIOCSIFADDR:
       case SIOCSIFDSTADDR:
       case SIOCSIFNETMASK:
-
-        read(fd, &imsg.ifr, sizeof(imsg.ifr));
+        if (priv->usock_enable)
+          {
+            read(fd, &imsg.ifr, sizeof(imsg.ifr));
+          }
+        else
+          {
+            ret = -ENOTTY;
+            drvreq = false;
+          }
         break;
 
       case SIOCDENYINETSOCK:
@@ -1624,6 +1647,11 @@ static int ioctl_request(int fd, FAR struct gs2200m_s *priv,
         break;
 
       default:
+        if (!priv->usock_enable)
+          {
+            ret = -ENOTTY;
+            drvreq = false;
+          }
         break;
     }
 

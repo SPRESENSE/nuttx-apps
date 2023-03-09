@@ -1,5 +1,5 @@
 ############################################################################
-# apps/system/cachespeed/Make.defs
+# apps/examples/nng_test/Makefile
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -18,6 +18,15 @@
 #
 ############################################################################
 
-ifneq ($(CONFIG_SYSTEM_CACHESPEED),)
-CONFIGURED_APPS += $(APPDIR)/system/cachespeed
-endif
+include $(APPDIR)/Make.defs
+
+MAINSRC = pubsub.c
+
+# Built-in application info
+
+PROGNAME = pubsub
+PRIORITY = $(CONFIG_EXAMPLES_NNG_TEST_PRIORITY)
+STACKSIZE = $(CONFIG_EXAMPLES_NNG_TEST_STACKSIZE)
+MODULE = $(CONFIG_EXAMPLES_NNG_TEST)
+
+include $(APPDIR)/Application.mk

@@ -1,5 +1,5 @@
 ############################################################################
-# apps/system/cachespeed/Make.defs
+# apps/system/tcpdump/Makefile
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -18,6 +18,13 @@
 #
 ############################################################################
 
-ifneq ($(CONFIG_SYSTEM_CACHESPEED),)
-CONFIGURED_APPS += $(APPDIR)/system/cachespeed
-endif
+include $(APPDIR)/Make.defs
+
+PROGNAME = $(CONFIG_SYSTEM_TCPDUMP_PROGNAME)
+PRIORITY = $(CONFIG_SYSTEM_TCPDUMP_PRIORITY)
+STACKSIZE = $(CONFIG_SYSTEM_TCPDUMP_STACKSIZE)
+MODULE = $(CONFIG_SYSTEM_TCPDUMP)
+
+MAINSRC = tcpdump.c
+
+include $(APPDIR)/Application.mk

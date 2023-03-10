@@ -1,5 +1,5 @@
 ############################################################################
-# apps/testing/cxxtest/Makefile
+# apps/sdr/Makefile
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -18,17 +18,6 @@
 #
 ############################################################################
 
-include $(APPDIR)/Make.defs
+MENUDESC = "Software Define Radio Libraries"
 
-# CXX test program
-
-MAINSRC = cxxtest_main.cxx
-
-# cxxtest built-in application info
-
-PROGNAME = cxxtest
-PRIORITY = SCHED_PRIORITY_DEFAULT
-STACKSIZE = $(CONFIG_DEFAULT_TASK_STACKSIZE)
-MODULE = $(CONFIG_TESTING_CXXTEST)
-
-include $(APPDIR)/Application.mk
+include $(APPDIR)/Directory.mk

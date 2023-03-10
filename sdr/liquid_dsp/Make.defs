@@ -1,5 +1,6 @@
 ############################################################################
-# apps/testing/cxxtest/Makefile
+# apps/sdr/liquid_dsp/Make.defs
+# Adds selected applications to apps/ build
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -16,19 +17,11 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 #
-############################################################################
+############################################################################/
 
-include $(APPDIR)/Make.defs
+ifneq ($(CONFIG_SDR_LIQUID_DSP),)
+CONFIGURED_APPS += $(APPDIR)/sdr/liquid_dsp
 
-# CXX test program
-
-MAINSRC = cxxtest_main.cxx
-
-# cxxtest built-in application info
-
-PROGNAME = cxxtest
-PRIORITY = SCHED_PRIORITY_DEFAULT
-STACKSIZE = $(CONFIG_DEFAULT_TASK_STACKSIZE)
-MODULE = $(CONFIG_TESTING_CXXTEST)
-
-include $(APPDIR)/Application.mk
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/sdr/liquid_dsp/liquid-dsp/include
+CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/sdr/liquid_dsp/liquid-dsp/include
+endif

@@ -56,7 +56,7 @@ static int postproc_recvfrom(FAR struct alt1250_s *dev,
                              FAR struct alt_container_s *reply,
                              FAR struct usock_s *usock,
                              FAR int32_t *usock_result,
-                             FAR uint8_t *usock_xid,
+                             FAR uint64_t *usock_xid,
                              FAR struct usock_ackinfo_s *ackinfo,
                              unsigned long arg)
 {
@@ -79,22 +79,26 @@ static int postproc_recvfrom(FAR struct alt1250_s *dev,
   rsize = COMBINE_ERRCODE(*(int *)(resp[0]), *(int *)(resp[1]));
 
   *usock_result = rsize;
+  *usock_xid = USOCKET_XID(usock);
+
+  dbg_alt1250("recv %d bytes\n", rsize);
 
   if (rsize >= 0)
     {
-      if ((rsize == 0) && (_rx_max_buflen != 0))
-        {
-          usockif_sendclose(dev->usockfd, USOCKET_USOCKID(usock));
-        }
-
-      *usock_xid = USOCKET_XID(usock);
-
       ackinfo->valuelen = MIN(USOCKET_REQADDRLEN(usock), addr_len);
       ackinfo->valuelen_nontrunc = addr_len;  /* Total size of addrlen */
       ackinfo->value_ptr = resp[3];           /* Receive from address */
       ackinfo->buf_ptr = resp[4];             /* Actual received data */
 
-      ret = REP_SEND_DACK;
+      if ((rsize == 0) && (_rx_max_buflen != 0))
+        {
+          usockif_sendclose(dev->usockfd, USOCKET_USOCKID(usock));
+        }
+
+      if ((rsize != 0) || (ackinfo->valuelen != 0))
+        {
+          ret = REP_SEND_DACK;
+        }
     }
 
   USOCKET_SET_SELECTABLE(usock, SELECT_READABLE);
@@ -152,7 +156,7 @@ static int send_recvfrom_command(FAR struct alt1250_s *dev,
 int usockreq_recvfrom(FAR struct alt1250_s *dev,
                           FAR struct usrsock_request_buff_s *req,
                           FAR int32_t *usock_result,
-                          FAR uint8_t *usock_xid,
+                          FAR uint64_t *usock_xid,
                           FAR struct usock_ackinfo_s *ackinfo)
 {
   FAR struct usrsock_request_recvfrom_s *request = &req->request.recv_req;

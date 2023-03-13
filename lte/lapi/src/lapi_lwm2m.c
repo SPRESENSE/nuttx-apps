@@ -29,6 +29,7 @@
 #include <string.h>
 #include <errno.h>
 #include <nuttx/wireless/lte/lte_ioctl.h>
+#include <nuttx/wireless/lte/lte.h>
 
 #include "lte/lapi.h"
 #include "lte/lte_api.h"
@@ -346,6 +347,39 @@ int lte_getm2m_objresourceinfo(uint16_t objid, int res_num,
 }
 
 /****************************************************************************
+ * Name: lte_setm2m_rat
+ ****************************************************************************/
+
+int lte_setm2m_rat(int rat)
+{
+  int dummy_arg; /* Dummy for blocking API call */
+
+  switch (rat)
+    {
+      case LTE_RAT_CATM:
+      case LTE_RAT_NBIOT:
+        break;
+      default:
+        return -EINVAL;
+        break;
+    }
+
+  return lapi_req(LTE_CMDID_LWM2M_CHANGERAT, &rat, 1,
+                           (FAR void *)&dummy_arg, 0, NULL);
+}
+
+/****************************************************************************
+ * Name: lte_getm2m_rat
+ ****************************************************************************/
+
+int lte_getm2m_rat(void)
+{
+  int dummy_arg; /* Dummy for blocking API call */
+  return lapi_req(LTE_CMDID_LWM2M_GETRAT, NULL, 0,
+                           (FAR void *)&dummy_arg, 0, NULL);
+}
+
+/****************************************************************************
  * Name: lte_setm2m_objectdefinition
  ****************************************************************************/
 
@@ -429,4 +463,25 @@ int lte_set_report_m2moperation(lwm2mstub_operation_cb_t cb)
 int lte_set_report_m2mfwupdate(lwm2mstub_fwupstate_cb_t cb)
 {
   return lapi_req(LTE_CMDID_LWM2M_FWUP_EVT, NULL, 0, NULL, 0, cb);
+}
+
+/****************************************************************************
+ * Name: lte_getm2m_qmode
+ ****************************************************************************/
+
+bool lte_getm2m_qmode(void)
+{
+  int dummy_arg; /* Dummy for blocking API call */
+  return lapi_req(LTE_CMDID_LWM2M_GETQMODE, NULL, 0,
+                           (FAR void **)&dummy_arg, 0, NULL);
+}
+
+/****************************************************************************
+ * Name: lte_set_report_m2mfwupdate
+ ****************************************************************************/
+
+int lte_setm2m_qmode(bool en)
+{
+  return lapi_req(LTE_CMDID_LWM2M_SETQMODE,
+                  (void **)(en ? 1 : 0), 1, NULL, 0, NULL);
 }

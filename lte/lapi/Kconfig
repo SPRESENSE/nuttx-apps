@@ -34,5 +34,16 @@ config LTE_LAPI_LOG_ACCESS
 		Enable these log access APIs: lte_log_open, lte_log_close,
 		lte_log_read, lte_log_lseek, lte_log_remove.
 
+config LTE_LAPI_ENABLE_DEPRECATED_API
+	bool "Enable deprecated API"
+	default y
+	---help---
+		If your application does not use the deprecated APIs,
+		this option can help to reduce memory usage.
+		Deprecated APIs are asynchronous APIs except lte_activate_pdn.
+		See include/lte/lte_api.h for a list of asynchronous APIs.
+		Deprecated APIs will be removed in the future,
+		please use the synchronous API instead.
+
 endif
 

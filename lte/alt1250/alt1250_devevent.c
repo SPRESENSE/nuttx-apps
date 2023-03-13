@@ -44,6 +44,12 @@
 #include "alt1250_reset_seq.h"
 
 /****************************************************************************
+ * Pre-processor Definitions
+ ****************************************************************************/
+
+#define IS_PV1_FIRMWARE(d) (!strncmp(MODEM_FWVERSION(d), \
+                                     "RK_02_01_", 9))
+/****************************************************************************
  * Private Functions
  ****************************************************************************/
 
@@ -53,7 +59,7 @@
 
 static int handle_replypkt(FAR struct alt1250_s *dev,
   FAR struct alt_container_s *reply,
-  FAR int32_t *usock_result, uint8_t *usock_xid,
+  FAR int32_t *usock_result, uint64_t *usock_xid,
   FAR struct usock_ackinfo_s *ackinfo)
 {
   int ret;
@@ -86,7 +92,7 @@ static int perform_alt1250_reply(FAR struct alt1250_s *dev,
 {
   int ret = REP_NO_ACK;
   int32_t ack_result = OK;
-  uint8_t ack_xid = 0;
+  uint64_t ack_xid = 0;
   struct usock_ackinfo_s ackinfo;
 
   ret = handle_replypkt(dev, container, &ack_result, &ack_xid, &ackinfo);
@@ -131,7 +137,7 @@ static int handle_intentional_reset(FAR struct alt1250_s *dev)
 {
   if (dev->lwm2m_apply_xid >= 0)
     {
-      usockif_sendack(dev->usockfd, 0, (uint8_t)dev->lwm2m_apply_xid, false);
+      usockif_sendack(dev->usockfd, 0, (uint64_t)dev->lwm2m_apply_xid, false);
       dev->lwm2m_apply_xid = -1;
     }
 
@@ -182,6 +188,175 @@ static int perform_alt1250_resetevt(FAR struct alt1250_s *dev,
   return ret;
 }
 
+#ifdef CONFIG_LTE_ALT1250_ENABLE_HIBERNATION_MODE
+/****************************************************************************
+ * Name: perform_alt1250_apistopevt
+ ****************************************************************************/
+
+static void perform_alt1250_apistopevt(FAR struct alt1250_s *dev)
+{
+  int ret = OK;
+  int w_cnt = 0;
+
+  /* The "ALT1250_EVTBIT_STOPAPI" command isn't supported for PV1 firmware */
+
+  if (IS_PV1_FIRMWARE(dev))
+    {
+      dbg_alt1250("This firmware doesn't support hibernation mode.\n");
+      ret = ERROR;
+      goto exit;
+    }
+
+  /* All LTE API/Socket requests must be stopped to enter Suspend mode. */
+
+  ret = alt1250_set_api_enable(dev, false);
+
+  if (ret < 0)
+    {
+      dbg_alt1250("Failed to stop API call.\n");
+      ret = ERROR;
+      goto exit;
+    }
+
+  /* Application need to context data when LTE function resume from
+   * hibernation.
+   */
+
+  if (!dev->context_cb)
+    {
+      dbg_alt1250("Context save callback not registered.\n");
+      ret = ERROR;
+      goto exit;
+    }
+
+  /* When entering Suspend mode, all Sockets must be closed. */
+
+  ret = alt1250_count_opened_sockets(dev);
+
+  if (ret < 0)
+    {
+      dbg_alt1250("Failed to count opened sockets.\n");
+      ret = ERROR;
+      goto exit;
+    }
+  else if (ret > 0)
+    {
+      dbg_alt1250("There are opened socket, "
+                  "could not entering hibernation mode.\n");
+      ret = ERROR;
+      goto exit;
+    }
+
+  /* Refuse to enter Suspend mode if the LTE API already running has not yet
+   * completed.
+   */
+
+  ret = alt1250_is_api_in_progress(dev);
+
+  if (ret < 0)
+    {
+      dbg_alt1250("Failed to check API call status.\n");
+      ret = ERROR;
+      goto exit;
+    }
+  else if (ret > 0)
+    {
+      dbg_alt1250("There are in progress API call, "
+                  "could not entering hibernation mode.\n");
+      ret = ERROR;
+      goto exit;
+    }
+
+  /* When Wakelock is acquired, Suspend mode is rejected because
+   * it is not possible to enter Suspend mode.
+   */
+
+  w_cnt = altdevice_powercontrol(dev->altfd, LTE_CMDID_COUNTWLOCK);
+  if (w_cnt == 0)
+    {
+      ret = OK;
+    }
+  else if (w_cnt > 0)
+    {
+      dbg_alt1250("Cannot enter hibernation due to wakelock is aquired.\n");
+      ret = -EBUSY;
+    }
+  else
+    {
+      dbg_alt1250("Failed to get wakelock count.\n");
+      ret = w_cnt;
+    }
+
+exit:
+
+  if (ret < 0)
+    {
+      alt1250_set_api_enable(dev, true);
+    }
+
+  altdevice_powerresponse(dev->altfd, LTE_CMDID_STOPAPI, ret);
+}
+
+/****************************************************************************
+ * Name: perform_alt1250_suspendevt
+ ****************************************************************************/
+
+static void perform_alt1250_suspendevt(FAR struct alt1250_s *dev)
+{
+  /* TODO: Register Select to be notified by ALT1250 when an event is
+   * received during Sleep for a Socket in Suspend.
+   */
+
+  /* Notify the application of the context data required for resume. */
+
+  alt1250_collect_daemon_context(dev);
+
+  altdevice_powerresponse(dev->altfd, LTE_CMDID_SUSPEND, 0);
+}
+#endif
+
+/****************************************************************************
+ * Name: perform_netinfo_report_event
+ ****************************************************************************/
+
+uint64_t perform_netinfo_report_event(FAR struct alt1250_s *dev,
+                                      uint64_t bitmap)
+{
+  uint64_t bit = 0ULL;
+  FAR void **arg;
+  FAR lte_netinfo_t *info;
+  FAR lte_pdn_t *pdn;
+
+  if (alt1250_checkcmdid(LTE_CMDID_REPNETINFO, bitmap, &bit))
+    {
+      arg = alt1250_getevtarg(LTE_CMDID_REPNETINFO);
+      if (arg && arg[0])
+        {
+          /* arg[0]: Network information (see lte_netinfo_t) */
+
+          info = (FAR lte_netinfo_t *)arg[0];
+          if (info->pdn_num == 0)
+            {
+              alt1250_netdev_ifdown(dev);
+            }
+          else
+            {
+              pdn = &info->pdn_stat[0];
+              if (pdn->active == LTE_PDN_ACTIVE)
+                {
+                  alt1250_netdev_ifup(dev, pdn);
+                }
+              else
+                {
+                  alt1250_netdev_ifdown(dev);
+                }
+            }
+        }
+    }
+
+  return bit;
+}
+
 /****************************************************************************
  * Public functions
  ****************************************************************************/
@@ -194,8 +369,7 @@ int perform_alt1250events(FAR struct alt1250_s *dev)
 {
   int ret = OK;
   uint64_t bitmap;
-  uint64_t select_bit;
-  uint64_t smsreport_bit;
+  uint64_t eventbit;
   FAR struct alt_container_s *reply_list;
   FAR struct alt_container_s *container;
 
@@ -216,6 +390,20 @@ int perform_alt1250events(FAR struct alt1250_s *dev)
           bitmap &= ~ALT1250_EVTBIT_RESET;
         }
     }
+#ifdef CONFIG_LTE_ALT1250_ENABLE_HIBERNATION_MODE
+  else if (bitmap & ALT1250_EVTBIT_STOPAPI)
+    {
+      /* Handling API stop request */
+
+      perform_alt1250_apistopevt(dev);
+    }
+  else if (bitmap & ALT1250_EVTBIT_SUSPEND)
+    {
+      /* Handling Suspend request */
+
+      perform_alt1250_suspendevt(dev);
+    }
+#endif
   else
     {
       /* Handling reply containers */
@@ -236,17 +424,23 @@ int perform_alt1250events(FAR struct alt1250_s *dev)
 
       /* Handling select async event */
 
-      if ((select_bit = perform_select_event(dev, bitmap)) != 0ULL)
+      if ((eventbit = perform_select_event(dev, bitmap)) != 0ULL)
         {
-          bitmap &= ~select_bit;
+          bitmap &= ~eventbit;
         }
 
       /* Handling sms report event */
 
-      if ((smsreport_bit = perform_sms_report_event(dev, bitmap)) != 0ULL)
+      if ((eventbit = perform_sms_report_event(dev, bitmap)) != 0ULL)
         {
-          bitmap &= ~smsreport_bit;
+          bitmap &= ~eventbit;
         }
+
+      /* Handling report network information event */
+
+      perform_netinfo_report_event(dev, bitmap);
+
+      /* Do not clear the bit here to notify the event task */
     }
 
   if (bitmap)

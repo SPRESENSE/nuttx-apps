@@ -35,6 +35,7 @@
 #include "lte/lte_fwupdate.h"
 
 #include "lapi_util.h"
+#include "lapi_dbg.h"
 
 /****************************************************************************
  * Private Functions
@@ -106,6 +107,24 @@ int ltefwupdate_injected_datasize(void)
 
 int ltefwupdate_execute(void)
 {
+  int ret;
+
+  /* If wakelock is not acquired, firmware update
+   * cannot be performed.
+   */
+
+  ret = lte_get_wakelock_count();
+  if (ret <= 0)
+    {
+      if (ret == 0)
+        {
+          lapi_printf("wakelock is not acquired\n");
+          ret = -EPERM;
+        }
+
+      return ret;
+    }
+
   return fw_generic_request(LTE_CMDID_EXEUPDATE);
 }
 
@@ -133,8 +152,12 @@ int lte_factory_reset_sync(void)
 
 /* Asynchronous APIs */
 
+#ifdef CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API
+
 int lte_get_version(get_ver_cb_t callback)
 {
   printf("This API is discarded. Please use lte_get_version_sync().\n");
   return -ENOTSUP;
 }
+#endif /* CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API */
+

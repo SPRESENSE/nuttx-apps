@@ -26,6 +26,14 @@ config LTE_ALT1250_STACKSIZE
 	int "alt1250 stack size"
 	default 2048
 
+config LTE_ALT1250_ENABLE_HIBERNATION_MODE
+	bool "Enable LTE hibernation mode"
+	default n
+	depends on PM
+	---help---
+		Enable LTE hibernation mode to reduce current
+		consumption during communication standby.
+
 menu "SMS configuration"
 
 config LTE_ALT1250_SMS_TOA
@@ -136,6 +144,13 @@ config LTE_ALT1250_CONTAINERS
 		that contains the relevant information for communication.
 		Increasing this value may improve the performance during parallel processing.
 		On the other hand, decreasing this value will reduce the memory usage.
+
+config LTE_ALT1250_CONTROL_SOCKETS
+	int "Number of sockets for control"
+	default 3
+	range 1 10
+	---help---
+		Determines the maximum number of sockets used for LAPI and SMS.
 
 config LTE_ALT1250_DEBUG_MSG
 	bool "Enable debug output messages"

@@ -49,7 +49,7 @@ FAR struct usock_s *usocket_search(FAR struct alt1250_s *dev, int usockid)
 
   dbg_alt1250("%s usockid: %d\n", __func__, usockid);
 
-  if (usockid >= 0 && usockid < SOCKET_COUNT)
+  if (usockid >= 0 && usockid < ARRAY_SZ(dev->sockets))
     {
       ret = &dev->sockets[usockid];
     }
@@ -61,20 +61,38 @@ FAR struct usock_s *usocket_search(FAR struct alt1250_s *dev, int usockid)
  * name: usocket_alloc
  ****************************************************************************/
 
-FAR struct usock_s *usocket_alloc(FAR struct alt1250_s *dev)
+FAR struct usock_s *usocket_alloc(FAR struct alt1250_s *dev, int16_t type)
 {
   int i;
+  int base;
+  int array_num;
   FAR struct usock_s *sock;
 
-  for (i = 0; i < ARRAY_SZ(dev->sockets); i++)
+  switch (type)
     {
-      sock = &dev->sockets[i];
+      case SOCK_CTRL:
+      case SOCK_SMS:
+        base = SOCKET_COUNT;
+        array_num = CONFIG_LTE_ALT1250_CONTROL_SOCKETS;
+        break;
+
+      default:
+        base = 0;
+        array_num = SOCKET_COUNT;
+        break;
+    }
+
+  sock = &dev->sockets[base];
+
+  for (i = base; i < base + array_num; i++, sock++)
+    {
       if (sock->state == SOCKET_STATE_CLOSED)
         {
           sock->usockid = i;
           sock->altsockid = -1;
           sock->state = SOCKET_STATE_PREALLOC;
           sock->select_condition = SELECT_WRITABLE | SELECT_READABLE;
+          dbg_alt1250("allocated usockid: %d, type: %d\n", i, type);
           return sock;
         }
     }

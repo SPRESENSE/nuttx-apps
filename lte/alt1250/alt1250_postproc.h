@@ -37,7 +37,7 @@
 
 typedef int (*postproc_hdlr_t)(FAR struct alt1250_s *dev,
   FAR struct alt_container_s *reply, FAR struct usock_s *usock,
-  FAR int32_t *usock_result, uint8_t *usock_xid,
+  FAR int32_t *usock_result, uint64_t *usock_xid,
   FAR struct usock_ackinfo_s *ackinfo, unsigned long arg);
 
 struct postproc_s

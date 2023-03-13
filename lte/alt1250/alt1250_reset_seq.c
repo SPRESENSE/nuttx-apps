@@ -73,7 +73,7 @@ static postproc_hdlr_t ponreset_seq[] =
 
 static int postproc_ponresetseq(FAR struct alt1250_s *dev,
   FAR struct alt_container_s *reply, FAR struct usock_s *usock,
-  FAR int32_t *usock_result, FAR uint8_t *usock_xid,
+  FAR int32_t *usock_result, FAR uint64_t *usock_xid,
   FAR struct usock_ackinfo_s *ackinfo, unsigned long arg)
 {
   int ret = REP_NO_ACK_WOFREE;
@@ -284,6 +284,28 @@ static int alt1250_lwm2m_ponreset(FAR struct alt1250_s *dev,
   if (!t_or_f.result)
     {
       lwm2mstub_send_setnamemode(dev, container, 0);
+      recv_ret = recv_atreply_onreset(check_atreply_ok, dev, NULL);
+      if (recv_ret == REP_MODEM_RESET)
+        {
+          return recv_ret;
+        }
+
+      ret = REP_SEND_ACK;
+    }
+
+  /* Make sure NWOPER is not DEFAULT */
+
+  t_or_f.target_str = "DEFAULT";
+  ltenwop_send_getnwop(dev, container);
+  recv_ret = recv_atreply_onreset(check_atreply_truefalse, dev, &t_or_f);
+  if (recv_ret == REP_MODEM_RESET)
+    {
+      return recv_ret;
+    }
+
+  if (t_or_f.result)
+    {
+      ltenwop_send_setnwoptp(dev, container);
       recv_ret = recv_atreply_onreset(check_atreply_ok, dev, NULL);
       if (recv_ret == REP_MODEM_RESET)
         {

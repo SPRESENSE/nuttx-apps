@@ -261,7 +261,7 @@ static int f_write_to_usock(int fd, void *buf, size_t count)
  ****************************************************************************/
 
 static int f_send_ack_common(int fd,
-                             uint8_t xid,
+                             uint64_t xid,
                              FAR struct usrsock_message_req_ack_s *resp)
 {
   resp->head.msgid = USRSOCK_MESSAGE_RESPONSE_ACK;
@@ -442,7 +442,7 @@ static int usock_send_event(int fd, FAR struct wiznet_s *priv,
     }
 
   event.usockid = f_sockfd_to_usock(i);
-  event.events  = events;
+  event.head.events = events;
 
   return f_write_to_usock(fd, &event, sizeof(event));
 }
@@ -467,11 +467,12 @@ static int socket_request(int fd, FAR struct wiznet_s *priv,
 
   /* Check domain requested */
 
-  if (req->domain != AF_INET && req->domain != PF_USRSOCK)
+  if (req->domain != AF_INET)
     {
       usockid = -EAFNOSUPPORT;
     }
-  else if (!priv->usock_enable && req->domain == AF_INET)
+  else if (!priv->usock_enable && req->domain == AF_INET &&
+           req->type != SOCK_CTRL)
     {
       /* If domain is AF_INET while usock_enable is false,
        * set usockid to -EPROTONOSUPPORT to fallback kernel
@@ -482,6 +483,14 @@ static int socket_request(int fd, FAR struct wiznet_s *priv,
     }
   else
     {
+      /* If SOCK_CTRL type is requested, the implementation should not
+       * open the socket on the device side. However, for now, the
+       * implementation is equivalent to the case where the type of
+       * SOCK_STREAM is requested. This will be corrected in the future.
+       */
+
+      req->type = (req->type == SOCK_CTRL) ? SOCK_STREAM : req->type;
+
       /* Allocate socket. */
 
       usockid = f_socket_alloc(priv, req->type);
@@ -856,6 +865,7 @@ static int recvfrom_request(int fd, FAR struct wiznet_s *priv,
   FAR struct usrsock_request_recvfrom_s *req
     = (FAR struct usrsock_request_recvfrom_s *)hdrbuf;
   struct usrsock_message_datareq_ack_s resp;
+  struct usrsock_message_req_ack_s reqack;
   struct wiznet_recv_msg cmsg;
   struct sockaddr_in *addr = (struct sockaddr_in *)&cmsg.addr;
   FAR struct usock_s *usock;
@@ -918,11 +928,19 @@ prepare:
       resp.valuelen = MIN(resp.valuelen_nontrunc,
                           req->max_addrlen);
 
-      if (0 == ret)
+      if ((0 == ret) && (0 != cmsg.len))
         {
           usock_send_event(fd, priv, usock,
                            USRSOCK_EVENT_REMOTE_CLOSED
                            );
+
+          /* Send ack only */
+
+          memset(&reqack, 0, sizeof(reqack));
+          reqack.result = ret;
+          ret = f_send_ack_common(fd, req->head.xid, &reqack);
+
+          goto err_out;
         }
     }
 
@@ -1662,25 +1680,57 @@ static int ioctl_request(int fd, FAR struct wiznet_s *priv,
   struct wiznet_ifreq_msg cmsg;
   uint8_t sock_type;
   bool getreq = false;
+  bool drvreq = true;
   int ret = -EINVAL;
 
   memset(&cmsg.ifr, 0, sizeof(cmsg.ifr));
 
   switch (req->cmd)
     {
+      case FIONBIO:
+        if (priv->usock_enable)
+          {
+            /* Read int as dummy */
+
+            read(fd, &ret, sizeof(int));
+            ret = OK;
+          }
+        else
+          {
+            ret = -ENOTTY;
+          }
+
+        drvreq = false;
+        break;
       case SIOCGIFHWADDR:
       case SIOCGIFADDR:
       case SIOCGIFDSTADDR:
       case SIOCGIFNETMASK:
-        getreq = true;
+        if (priv->usock_enable)
+          {
+            getreq = true;
+          }
+        else
+          {
+            ret = -ENOTTY;
+            drvreq = false;
+          }
+
         break;
 
       case SIOCSIFHWADDR:
       case SIOCSIFADDR:
       case SIOCSIFDSTADDR:
       case SIOCSIFNETMASK:
-
-        read(fd, &cmsg.ifr, sizeof(cmsg.ifr));
+        if (priv->usock_enable)
+          {
+            read(fd, &cmsg.ifr, sizeof(cmsg.ifr));
+          }
+        else
+          {
+            ret = -ENOTTY;
+            drvreq = false;
+          }
         break;
 
       case SIOCDENYINETSOCK:
@@ -1699,14 +1749,25 @@ static int ioctl_request(int fd, FAR struct wiznet_s *priv,
 
             priv->usock_enable = TRUE;
           }
+
+        ret = OK;
+        drvreq = false;
         break;
 
       default:
+        if (!priv->usock_enable)
+          {
+            ret = -ENOTTY;
+            drvreq = false;
+          }
         break;
     }
 
-  cmsg.cmd = req->cmd;
-  ret = ioctl(priv->gsfd, WIZNET_IOC_IFREQ, (unsigned long)&cmsg);
+  if (drvreq)
+    {
+      cmsg.cmd = req->cmd;
+      ret = ioctl(priv->gsfd, WIZNET_IOC_IFREQ, (unsigned long)&cmsg);
+    }
 
   if (!getreq)
     {

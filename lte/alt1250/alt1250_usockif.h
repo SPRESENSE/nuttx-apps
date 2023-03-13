@@ -117,9 +117,9 @@ int usockif_readreqsendbuf(int fd, FAR uint8_t *sendbuf, size_t sz);
 int usockif_readreqoption(int fd, FAR uint8_t *option, size_t sz);
 
 void usockif_discard(int fd, size_t sz);
-int usockif_sendack(int fd, int32_t usock_result, uint8_t usock_xid,
+int usockif_sendack(int fd, int32_t usock_result, uint64_t usock_xid,
                     bool inprogress);
-int usockif_senddataack(int fd, int32_t usock_result, uint8_t usock_xid,
+int usockif_senddataack(int fd, int32_t usock_result, uint64_t usock_xid,
                         FAR struct usock_ackinfo_s *ackinfo);
 int usockif_sendevent(int fd, int usockid, int event);
 

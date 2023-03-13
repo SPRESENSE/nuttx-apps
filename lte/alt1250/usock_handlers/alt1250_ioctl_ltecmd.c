@@ -41,7 +41,7 @@
 extern int usockreq_ioctl_extend(FAR struct alt1250_s *dev,
                                  FAR struct usrsock_request_buff_s *req,
                                  FAR int32_t *usock_result,
-                                 FAR uint8_t *usock_xid,
+                                 FAR uint64_t *usock_xid,
                                  FAR struct usock_ackinfo_s *ackinfo);
 
 /****************************************************************************
@@ -55,7 +55,7 @@ extern int usockreq_ioctl_extend(FAR struct alt1250_s *dev,
 int usockreq_ioctl_ltecmd(FAR struct alt1250_s *dev,
                           FAR struct usrsock_request_buff_s *req,
                           FAR int32_t *usock_result,
-                          FAR uint8_t *usock_xid,
+                          FAR uint64_t *usock_xid,
                           FAR struct usock_ackinfo_s *ackinfo)
 {
   FAR struct usrsock_request_ioctl_s *request = &req->request.ioctl_req;
@@ -67,6 +67,18 @@ int usockreq_ioctl_ltecmd(FAR struct alt1250_s *dev,
 
   *usock_result = -EINVAL;
   *usock_xid = request->head.xid;
+
+#ifdef CONFIG_LTE_ALT1250_ENABLE_HIBERNATION_MODE
+  if (dev->is_resuming &&
+      !IS_LTE_REPORT_EVENT(ltecmd->cmdid) &&
+      ltecmd->cmdid != LTE_CMDID_SETEVTCTX &&
+      ltecmd->cmdid != LTE_CMDID_RESUME)
+    {
+      dbg_alt1250("Don't allow to call any API in resuming phase.(cmdid=%lx)\n",
+                  ltecmd->cmdid);
+      return ret;
+    }
+#endif
 
   if (LTE_ISCMDGRP_NORMAL(ltecmd->cmdid))
     {

@@ -66,5 +66,9 @@ int alt1250_evttask_sendmsg(FAR struct alt1250_s *dev, uint64_t msg);
 void alt1250_evttask_msgclose(FAR struct alt1250_s *dev);
 int alt1250_evttask_msgconnect(FAR const char *qname,
       FAR struct alt1250_s *dev);
+uint32_t alt1250_search_registered_callback(FAR int *index);
+int alt1250_get_report_ltecmd(FAR struct alt1250_s *dev,
+                              uint32_t cmdid,
+                              FAR struct lte_ioctl_data_s *ltecmd);
 
 #endif /* __APPS_LTE_ALT1250_CALLBACK_HANDLERS_ALT1250_EVT_H */

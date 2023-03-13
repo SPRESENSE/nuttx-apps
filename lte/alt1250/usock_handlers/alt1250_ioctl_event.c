@@ -67,7 +67,7 @@ static int send_eventnotice_command(FAR struct alt1250_s *dev,
 int usockreq_ioctl_event(FAR struct alt1250_s *dev,
                          FAR struct usrsock_request_buff_s *req,
                          FAR int32_t *usock_result,
-                         FAR uint8_t *usock_xid,
+                         FAR uint64_t *usock_xid,
                          FAR struct usock_ackinfo_s *ackinfo)
 {
   FAR struct usrsock_request_ioctl_s *request = &req->request.ioctl_req;
@@ -97,6 +97,28 @@ int usockreq_ioctl_event(FAR struct alt1250_s *dev,
       *usock_result = ret;
       return REP_SEND_ACK_WOFREE;
     }
+
+#ifdef CONFIG_LTE_ALT1250_ENABLE_HIBERNATION_MODE
+  if (dev->is_resuming)
+    {
+      /* In resuming phase, report API callback can be registered without
+       * sending modem command. Modem command will be sent in calling
+       * resume API.
+       */
+
+      if (ltecmd->cmdid == LTE_CMDID_REPQUAL)
+        {
+          dev->quality_report_period = *((uint32_t *)ltecmd->inparam[1]);
+        }
+      else if (ltecmd->cmdid == LTE_CMDID_REPCELL)
+        {
+          dev->cellinfo_report_period = *((uint32_t *)ltecmd->inparam[1]);
+        }
+
+      *usock_result = ret;
+      return REP_SEND_ACK_WOFREE;
+    }
+#endif
 
   container = container_alloc();
   if (container == NULL)

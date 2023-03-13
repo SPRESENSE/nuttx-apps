@@ -45,13 +45,15 @@
 int usockreq_ioctl_denyinetsock(FAR struct alt1250_s *dev,
                                 FAR struct usrsock_request_buff_s *req,
                                 FAR int32_t *usock_result,
-                                FAR uint8_t *usock_xid,
+                                FAR uint64_t *usock_xid,
                                 FAR struct usock_ackinfo_s *ackinfo)
 {
   uint8_t sock_type = req->req_ioctl.sock_type;
   int ret = REP_SEND_ACK_WOFREE;
 
   dbg_alt1250("%s start\n", __func__);
+
+  *usock_result = OK;
 
   if (sock_type == DENY_INET_SOCK_ENABLE)
     {

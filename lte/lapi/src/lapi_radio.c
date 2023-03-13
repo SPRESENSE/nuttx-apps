@@ -83,6 +83,8 @@ int lte_radio_off_sync(void)
   return ret;
 }
 
+#ifdef CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API
+
 int lte_radio_on(radio_on_cb_t callback)
 {
   if (callback == NULL)
@@ -104,3 +106,5 @@ int lte_radio_off(radio_off_cb_t callback)
   return lapi_req(LTE_CMDID_RADIOOFF | LTE_CMDOPT_ASYNC_BIT,
                   NULL, 0, NULL, 0, callback);
 }
+#endif /* CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API */
+

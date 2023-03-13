@@ -18,8 +18,8 @@
  *
  ****************************************************************************/
 
-#ifndef __EXAMPLES_UDPBLASTER_UDPBLASTER_H
-#define __EXAMPLES_UDPBLASTER_UDPBLASTER_H
+#ifndef __APPS_EXAMPLES_UDPBLASTER_UDPBLASTER_H
+#define __APPS_EXAMPLES_UDPBLASTER_UDPBLASTER_H
 
 /****************************************************************************
  * Included Files
@@ -103,7 +103,7 @@
 #endif
 
 #ifndef MIN
-#  define MIN(a,b) ((a)<(b)?(a):(b))
+#  define MIN(a,b) ((a) < (b) ? (a) : (b))
 #endif
 
 #define UDPBLASTER_SENDSIZE MIN(UDPBLASTER_MSS, g_udpblaster_strlen)
@@ -119,4 +119,4 @@ extern const int g_udpblaster_strlen;
  * Public Function Prototypes
  ****************************************************************************/
 
-#endif /* __EXAMPLES_UDPBLASTER_UDPBLASTER_H */
+#endif /* __APPS_EXAMPLES_UDPBLASTER_UDPBLASTER_H */

@@ -28,6 +28,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "industry/foc/fixed16/foc_handler.h"
 
@@ -344,9 +345,9 @@ static void foc_control_current_run_b16(FAR foc_handler_b16_t *h,
   /* Saturate voltage DQ vector */
 
 #ifndef CONFIG_INDUSTRY_FOC_CORDIC_DQSAT
-  dq_saturate_b16(dq_ref, mag_max);
+  dq_saturate_b16(&v_dq_ref, mag_max);
 #else
-  foc_cordic_dqsat_b16(h->fd, dq_ref, mag_max);
+  foc_cordic_dqsat_b16(h->fd, &v_dq_ref, mag_max);
 #endif
 
   /* Call FOC voltage control */
@@ -414,4 +415,8 @@ static void foc_control_state_get_b16(FAR foc_handler_b16_t *h,
   state->volt[0] = foc->data.v_abc.a;
   state->volt[1] = foc->data.v_abc.b;
   state->volt[2] = foc->data.v_abc.c;
+
+  /* Copy modulation scale */
+
+  state->mod_scale = foc->data.vab_mod_scale;
 }

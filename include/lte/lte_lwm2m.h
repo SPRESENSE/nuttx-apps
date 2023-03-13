@@ -408,6 +408,7 @@ struct lwm2mstub_serverinfo_s
   bool bootstrap;     /**< Set true, when it uses bootstrap server */
   bool nonip;         /**< Set true, when Non IP like NIDD is used */
   int security_mode;  /**< Security type: Refer to @ref ltelwm2m_macro_seqmode for more details */
+  uint32_t lifetime;  /**< Lifetime which is stored into /1/x/1 resource as a default value. */
   char server_uri[LWM2MSTUB_MAX_SERVER_NAME]; /**< Server URI */
   char device_id[LWM2MSTUB_MAX_DEVID];        /**< Device ID */
   char security_key[LWM2MSTUB_MAX_SEQKEY];    /**< Security key */
@@ -644,6 +645,8 @@ int lte_getm2m_objresourceinfo(uint16_t objids, int res_num,
  */
 int lte_setm2m_objectdefinition(uint16_t objids, int res_num,
                                 struct lwm2mstub_resource_s *reses);
+bool lte_getm2m_qmode(void);
+int lte_setm2m_qmode(bool en);
 
 /**
  * @brief Activate all configurations

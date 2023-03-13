@@ -45,18 +45,6 @@
 #  define CONFIG_NSH_PROC_MOUNTPOINT "/proc"
 #endif
 
-/* See include/nuttx/sched.h: */
-
-#undef HAVE_GROUPID
-
-#if defined(CONFIG_SCHED_HAVE_PARENT) && defined(CONFIG_SCHED_CHILD_STATUS)
-#  define HAVE_GROUPID  1
-#endif
-
-#ifdef CONFIG_DISABLE_PTHREAD
-#  undef HAVE_GROUPID
-#endif
-
 /****************************************************************************
  * Private Types
  ****************************************************************************/
@@ -72,13 +60,7 @@ typedef int (*exec_t)(void);
 struct nsh_taskstatus_s
 {
   FAR const char *td_type;       /* Thread type */
-#ifdef CONFIG_SCHED_HAVE_PARENT
-#ifdef HAVE_GROUPID
   FAR const char *td_groupid;    /* Group ID */
-#else
-  FAR const char *td_ppid;       /* Parent thread ID */
-#endif
-#endif
 #ifdef CONFIG_SMP
   FAR const char *td_cpu;        /* CPU */
 #endif
@@ -98,14 +80,7 @@ static const char g_name[]      = "Name:";
 #endif
 
 static const char g_type[]      = "Type:";
-
-#ifdef CONFIG_SCHED_HAVE_PARENT
-#ifdef HAVE_GROUPID
 static const char g_groupid[]   = "Group:";
-#else
-static const char g_ppid[]      = "PPID:";
-#endif
-#endif /* CONFIG_SCHED_HAVE_PARENT */
 
 #ifdef CONFIG_SMP
 static const char g_cpu[]       = "CPU:";
@@ -116,6 +91,10 @@ static const char g_flags[]     = "Flags:";
 static const char g_priority[]  = "Priority:";
 static const char g_scheduler[] = "Scheduler:";
 static const char g_sigmask[]   = "SigMask:";
+
+#if CONFIG_MM_BACKTRACE >= 0 && !defined(CONFIG_NSH_DISABLE_PSHEAPUSAGE)
+static const char g_heapsize[]  = "AllocSize:";
+#endif /* CONFIG_DEBUG _MM && !CONFIG_NSH_DISABLE_PSHEAPUSAGE */
 
 #if !defined(CONFIG_NSH_DISABLE_PSSTACKUSAGE)
 static const char g_stacksize[] = "StackSize:";
@@ -175,24 +154,12 @@ static void nsh_parse_statusline(FAR char *line,
 
       status->td_type = nsh_trimspaces(&line[12]);
     }
-
-#ifdef CONFIG_SCHED_HAVE_PARENT
-#ifdef HAVE_GROUPID
   else if (strncmp(line, g_groupid, strlen(g_groupid)) == 0)
     {
       /* Save the Group ID */
 
       status->td_groupid = nsh_trimspaces(&line[12]);
     }
-#else
-  else if (strncmp(line, g_ppid, strlen(g_ppid)) == 0)
-    {
-      /* Save the parent thread id */
-
-      status->td_ppid = nsh_trimspaces(&line[12]);
-    }
-#endif
-#endif
 
 #ifdef CONFIG_SMP
   else if (strncmp(line, g_cpu, strlen(g_cpu)) == 0)
@@ -265,11 +232,14 @@ static int ps_callback(FAR struct nsh_vtbl_s *vtbl, FAR const char *dirpath,
   FAR char *nextline;
   int ret;
   int i;
+#if CONFIG_MM_BACKTRACE >= 0 && !defined(CONFIG_NSH_DISABLE_PSHEAPUSAGE)
+  unsigned long heap_size = 0;
+#endif
 #if !defined(CONFIG_NSH_DISABLE_PSSTACKUSAGE)
-  uint32_t stack_size;
+  unsigned long stack_size = 0;
 #ifdef CONFIG_STACK_COLORATION
-  uint32_t stack_used;
-  uint32_t stack_filled;
+  unsigned long stack_used = 0;
+  unsigned long stack_filled = 0;
 #endif
 #endif
 
@@ -299,13 +269,7 @@ static int ps_callback(FAR struct nsh_vtbl_s *vtbl, FAR const char *dirpath,
   /* Set all pointers to the empty string. */
 
   status.td_type     = "";
-#ifdef CONFIG_SCHED_HAVE_PARENT
-#ifdef HAVE_GROUPID
   status.td_groupid  = "";
-#else
-  status.td_ppid     = "";
-#endif
-#endif
 #ifdef CONFIG_SMP
   status.td_cpu      = "";
 #endif
@@ -365,14 +329,7 @@ static int ps_callback(FAR struct nsh_vtbl_s *vtbl, FAR const char *dirpath,
   /* Finally, print the status information */
 
   nsh_output(vtbl, "%5s ", entryp->d_name);
-
-#ifdef CONFIG_SCHED_HAVE_PARENT
-#ifdef HAVE_GROUPID
   nsh_output(vtbl, "%5s ", status.td_groupid);
-#else
-  nsh_output(vtbl, "%5s ", status.td_ppid);
-#endif
-#endif
 
 #ifdef CONFIG_SMP
   nsh_output(vtbl, "%3s ", status.td_cpu);
@@ -383,15 +340,72 @@ static int ps_callback(FAR struct nsh_vtbl_s *vtbl, FAR const char *dirpath,
              status.td_flags, status.td_state, status.td_event);
   nsh_output(vtbl, "%-8s ", status.td_sigmask);
 
+#if CONFIG_MM_BACKTRACE >= 0 && !defined(CONFIG_NSH_DISABLE_PSHEAPUSAGE)
+  /* Get the Heap AllocSize */
+
+  filepath  = NULL;
+  ret = asprintf(&filepath, "%s/%s/heap", dirpath, entryp->d_name);
+  if (ret < 0 || filepath == NULL)
+    {
+      nsh_error(vtbl, g_fmtcmdfailed, "ps", "asprintf", NSH_ERRNO);
+      vtbl->iobuffer[0] = '\0';
+    }
+  else
+    {
+      ret = nsh_readfile(vtbl, "ps", filepath, vtbl->iobuffer,
+                         IOBUFFERSIZE);
+      free(filepath);
+
+      if (ret >= 0)
+        {
+          nextline = vtbl->iobuffer;
+          do
+            {
+              /* Find the beginning of the next line and NUL-terminate the
+               * current line.
+               */
+
+              line = nextline;
+              for (nextline++;
+                  *nextline != '\n' && *nextline != '\0';
+                  nextline++);
+
+              if (*nextline == '\n')
+                {
+                  *nextline++ = '\0';
+                }
+              else
+                {
+                  nextline = NULL;
+                }
+
+              /* Parse the current line
+               *
+               *   Format:
+               *
+               *            111111111122222222223
+               *   123456789012345678901234567890
+               *   AllocSize:  xxxx
+               *   AllocBlks:  xxxx
+               */
+
+              if (strncmp(line, g_heapsize, strlen(g_heapsize)) == 0)
+                {
+                  heap_size = strtoul(&line[12], NULL, 0);
+                  break;
+                }
+            }
+          while (nextline != NULL);
+        }
+    }
+
+  nsh_output(vtbl, "%08lu ", heap_size);
+#endif
+
 #if !defined(CONFIG_NSH_DISABLE_PSSTACKUSAGE)
   /* Get the StackSize and StackUsed */
 
-  stack_size = 0;
-#ifdef CONFIG_STACK_COLORATION
-  stack_used = 0;
-#endif
   filepath   = NULL;
-
   ret = asprintf(&filepath, "%s/%s/stack", dirpath, entryp->d_name);
   if (ret < 0 || filepath == NULL)
     {
@@ -440,12 +454,12 @@ static int ps_callback(FAR struct nsh_vtbl_s *vtbl, FAR const char *dirpath,
 
               if (strncmp(line, g_stacksize, strlen(g_stacksize)) == 0)
                 {
-                  stack_size = (uint32_t)atoi(&line[12]);
+                  stack_size = strtoul(&line[12], NULL, 0);
                 }
 #ifdef CONFIG_STACK_COLORATION
               else if (strncmp(line, g_stackused, strlen(g_stackused)) == 0)
                 {
-                  stack_used = (uint32_t)atoi(&line[12]);
+                  stack_used = strtoul(&line[12], NULL, 0);
                 }
 #endif
             }
@@ -453,12 +467,11 @@ static int ps_callback(FAR struct nsh_vtbl_s *vtbl, FAR const char *dirpath,
         }
     }
 
-  nsh_output(vtbl, "%06u ", (unsigned int)stack_size);
+  nsh_output(vtbl, "%06lu ", stack_size);
 
 #ifdef CONFIG_STACK_COLORATION
-  nsh_output(vtbl, "%06u ", (unsigned int)stack_used);
+  nsh_output(vtbl, "%06lu ", stack_used);
 
-  stack_filled = 0;
   if (stack_size > 0 && stack_used > 0)
     {
       /* Use fixed-point math with one decimal place */
@@ -468,7 +481,7 @@ static int ps_callback(FAR struct nsh_vtbl_s *vtbl, FAR const char *dirpath,
 
   /* Additionally print a '!' if the stack is filled more than 80% */
 
-  nsh_output(vtbl, "%3d.%1d%%%c ",
+  nsh_output(vtbl, "%3lu.%lu%%%c ",
              stack_filled / 10, stack_filled % 10,
              (stack_filled >= 10 * 80 ? '!' : ' '));
 #endif
@@ -556,14 +569,7 @@ int cmd_exec(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv)
 int cmd_ps(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
 {
   nsh_output(vtbl, "%5s ", "PID");
-
-#ifdef CONFIG_SCHED_HAVE_PARENT
-#ifdef HAVE_GROUPID
   nsh_output(vtbl, "%5s ", "GROUP");
-#else
-  nsh_output(vtbl, "%5s ", "PPID");
-#endif
-#endif
 
 #ifdef CONFIG_SMP
   nsh_output(vtbl, "%3s ", "CPU");
@@ -572,6 +578,10 @@ int cmd_ps(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
   nsh_output(vtbl, "%3s %-8s %-7s %3s %-8s %-9s ",
              "PRI", "POLICY", "TYPE", "NPX", "STATE", "EVENT");
   nsh_output(vtbl, "%-8s ", "SIGMASK");
+
+#if CONFIG_MM_BACKTRACE >= 0 && !defined(CONFIG_NSH_DISABLE_PSHEAPUSAGE)
+  nsh_output(vtbl, "%8s ", "HEAP");
+#endif
 
 #if !defined(CONFIG_NSH_DISABLE_PSSTACKUSAGE)
   nsh_output(vtbl, "%6s ", "STACK");

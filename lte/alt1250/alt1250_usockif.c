@@ -67,7 +67,7 @@ static int write_to_usock(int fd, FAR void *buf, size_t sz)
  * name: send_dataack
  ****************************************************************************/
 
-static int send_dataack(int fd, uint8_t ackxid, int32_t ackresult,
+static int send_dataack(int fd, uint64_t ackxid, int32_t ackresult,
                         uint16_t valuelen, uint16_t valuelen_nontrunc,
                         FAR uint8_t *value_ptr, FAR uint8_t *buf_ptr)
 {
@@ -257,6 +257,9 @@ int usockif_readreqioctl(int fd, FAR struct usrsock_request_buff_s *buf)
 
   switch (req->cmd)
     {
+      case FIONBIO:
+        rsize = sizeof(int);
+        break;
       case SIOCLTECMD:
         rsize = sizeof(struct lte_ioctl_data_s);
         break;
@@ -345,7 +348,7 @@ void usockif_discard(int fd, size_t sz)
  * name: usockif_sendack
  ****************************************************************************/
 
-int usockif_sendack(int fd, int32_t usock_result, uint8_t usock_xid,
+int usockif_sendack(int fd, int32_t usock_result, uint64_t usock_xid,
                     bool inprogress)
 {
   struct usrsock_message_req_ack_s ack;
@@ -363,7 +366,7 @@ int usockif_sendack(int fd, int32_t usock_result, uint8_t usock_xid,
  * name: usockif_senddataack
  ****************************************************************************/
 
-int usockif_senddataack(int fd, int32_t usock_result, uint8_t usock_xid,
+int usockif_senddataack(int fd, int32_t usock_result, uint64_t usock_xid,
                         FAR struct usock_ackinfo_s *ackinfo)
 {
   return send_dataack(fd, usock_xid, usock_result, ackinfo->valuelen,
@@ -382,7 +385,7 @@ int usockif_sendevent(int fd, int usockid, int event)
   msg.head.msgid = USRSOCK_MESSAGE_SOCKET_EVENT;
   msg.head.flags = USRSOCK_MESSAGE_FLAG_EVENT;
   msg.usockid = usockid;
-  msg.events = event;
+  msg.head.events = event;
 
   return write_to_usock(fd, &msg, sizeof(msg));
 }

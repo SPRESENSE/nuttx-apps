@@ -1,5 +1,6 @@
+
 ############################################################################
-# apps/examples/noteprintf/Makefile
+# apps/system/ymodem/Makefile
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -20,11 +21,12 @@
 
 include $(APPDIR)/Make.defs
 
-PROGNAME  = $(CONFIG_EXAMPLES_NOTEPRINTF_PROGNAME)
-PRIORITY  = $(CONFIG_EXAMPLES_NOTEPRINTF_PRIORITY)
-STACKSIZE = $(CONFIG_EXAMPLES_NOTEPRINTF_STACKSIZE)
-MODULE    = $(CONFIG_EXAMPLES_NOTEPRINTF)
+PROGNAME = sb rb
+PRIORITY = $(CONFIG_SYSTEM_YMODEM_PRIORITY)
+STACKSIZE = $(CONFIG_SYSTEM_YMODEM_STACKSIZE)
+MODULE = $(CONFIG_SYSTEM_YMODEM)
 
-MAINSRC = noteprintf_main.c
+CSRCS  = ymodem.c
+MAINSRC = sb_main.c rb_main.c
 
 include $(APPDIR)/Application.mk

@@ -1,5 +1,5 @@
 ############################################################################
-# apps/examples/noteprintf/Makefile
+# apps/testing/arch_libc/Make.defs
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -18,13 +18,6 @@
 #
 ############################################################################
 
-include $(APPDIR)/Make.defs
-
-PROGNAME  = $(CONFIG_EXAMPLES_NOTEPRINTF_PROGNAME)
-PRIORITY  = $(CONFIG_EXAMPLES_NOTEPRINTF_PRIORITY)
-STACKSIZE = $(CONFIG_EXAMPLES_NOTEPRINTF_STACKSIZE)
-MODULE    = $(CONFIG_EXAMPLES_NOTEPRINTF)
-
-MAINSRC = noteprintf_main.c
-
-include $(APPDIR)/Application.mk
+ifneq ($(CONFIG_TESTING_ARCH_LIBC),)
+CONFIGURED_APPS += $(APPDIR)/testing/arch_libc
+endif

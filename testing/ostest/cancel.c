@@ -37,12 +37,6 @@
 #include "ostest.h"
 
 /****************************************************************************
- * Preprocessor definitions
- ****************************************************************************/
-
-#define SIG_WAITCANCEL 27
-
-/****************************************************************************
  * Private Data
  ****************************************************************************/
 
@@ -234,8 +228,9 @@ static FAR void *sig_waiter(FAR void *parameter)
 
   /* Wait for a signal that will never be delivered */
 
-  printf("sig_waiter: Waiting to receive signal %d ...\n", SIG_WAITCANCEL);
+  printf("sig_waiter: Waiting to receive signal...\n");
 
+  sigemptyset(&set);
   ret = sigwaitinfo(&set, &info);
 
   pthread_testcancel();

@@ -694,7 +694,7 @@ int lwm2mstub_send_bscreateobj1(FAR struct alt1250_s *dev,
       FAR struct lwm2mstub_serverinfo_s *info)
 {
   snprintf((char *)dev->tx_buff, _TX_BUFF_SIZE,
-    "AT%%LWM2MBSCMD=\"CREATE\",1,0,0,0,1,%lu,%s\r", info->lifetime,
+    "AT%%LWM2MBSCMD=\"CREATE\",1,0,0,0,1,%lu%s\r", info->lifetime,
       info->nonip ? ",7,\"N\",22,\"N\"" : "");
 
   return send_internal_at_command(dev, container, usockid, proc, arg, ures);

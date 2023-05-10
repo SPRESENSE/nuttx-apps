@@ -92,8 +92,6 @@
 #  define STDERR_FILENO 2
 #endif
 
-#define NAMLEN(dirent) strlen((dirent)->d_name)
-
 extern CODE char *crypt(const char *key, const char *setting);
 
 /* Conditional macro to allow two alternate forms for use in the built-in
@@ -924,10 +922,10 @@ static int httpd_tilde_map1(httpd_conn *hc)
 
   if (prefix[0] != '\0')
     {
-      strcat(hc->expnfilename, "/");
+      strlcat(hc->expnfilename, "/", hc->maxexpnfilename + 1);
     }
 
-  strcat(hc->expnfilename, temp);
+  strlcat(hc->expnfilename, temp, hc->maxexpnfilename + 1);
   return 1;
 }
 #endif /* CONFIG_THTTPD_TILDE_MAP1 */
@@ -975,8 +973,8 @@ static int httpd_tilde_map2(httpd_conn *hc)
   strlcpy(hc->altdir, pw->pw_dir, hc->maxaltdir + 1);
   if (postfix[0] != '\0')
     {
-      strcat(hc->altdir, "/");
-      strcat(hc->altdir, postfix);
+      strlcat(hc->altdir, "/", hc->maxaltdir + 1);
+      strlcat(hc->altdir, postfix, hc->maxaltdir + 1);
     }
 
   alt = expand_filename(hc->altdir, &rest, true);
@@ -1116,8 +1114,8 @@ static int vhost_map(httpd_conn *hc)
   httpd_realloc_str(&hc->expnfilename, &hc->maxexpnfilename,
                     strlen(hc->hostdir) + 1 + len);
   strlcpy(hc->expnfilename, hc->hostdir, hc->maxexpnfilename + 1);
-  strcat(hc->expnfilename, "/");
-  strcat(hc->expnfilename, tempfilename);
+  strlcat(hc->expnfilename, "/", hc->maxexpnfilename + 1);
+  strlcat(hc->expnfilename, tempfilename, hc->maxexpnfilename + 1);
   return 1;
 }
 #endif
@@ -1240,7 +1238,7 @@ static char *expand_filename(char *path, char **restp, bool tildemapped)
               /* Special case for absolute paths. */
 
               httpd_realloc_str(&checked, &maxchecked, checkedlen + 1);
-              strncpy(&checked[checkedlen], r, 1);
+              checked[checkedlen] = '/';
               checkedlen += 1;
             }
           else if (strncmp(r, "..", MAX(i, 2)) == 0)
@@ -1660,15 +1658,15 @@ static void ls_child(int argc, char **argv)
           if (maxnames == 0)
             {
               maxnames = 100;
-              names    = NEW(char, maxnames * (PATH_MAX + 1));
+              names    = NEW(char, maxnames * PATH_MAX);
               nameptrs = NEW(char *, maxnames);
             }
           else
             {
               oldmax    = maxnames;
               maxnames *= 2;
-              names     = RENEW(names, char, oldmax * (PATH_MAX + 1),
-                                maxnames * (PATH_MAX + 1));
+              names     = RENEW(names, char, oldmax * PATH_MAX,
+                                maxnames * PATH_MAX);
               nameptrs  = RENEW(nameptrs, char *, oldmax, maxnames);
             }
 
@@ -1680,13 +1678,11 @@ static void ls_child(int argc, char **argv)
 
           for (i = 0; i < maxnames; ++i)
             {
-              nameptrs[i] = &names[i * (PATH_MAX + 1)];
+              nameptrs[i] = &names[i * PATH_MAX];
             }
         }
 
-      namlen = NAMLEN(de);
-      strncpy(nameptrs[nnames], de->d_name, namlen);
-      nameptrs[nnames][namlen] = '\0';
+      strlcpy(nameptrs[nnames], de->d_name, PATH_MAX);
       ++nnames;
     }
 
@@ -2875,14 +2871,14 @@ int httpd_parse_request(httpd_conn *hc)
 
                   httpd_realloc_str(&hc->accept, &hc->maxaccept,
                                     strlen(hc->accept) + 2 + strlen(cp));
-                  strcat(hc->accept, ", ");
+                  strlcat(hc->accept, ", ", hc->maxaccepte + 1);
                 }
               else
                 {
                   httpd_realloc_str(&hc->accept, &hc->maxaccept, strlen(cp));
                 }
 
-              strcat(hc->accept, cp);
+              strlcat(hc->accept, cp, hc->maxaccepte + 1);
             }
           else if (strncasecmp(buf, "Accept-Encoding:", 16) == 0)
             {
@@ -2899,7 +2895,7 @@ int httpd_parse_request(httpd_conn *hc)
 
                   httpd_realloc_str(&hc->accepte, &hc->maxaccepte,
                                     strlen(hc->accepte) + 2 + strlen(cp));
-                  strcat(hc->accepte, ", ");
+                  strlcat(hc->accepte, ", ", hc->maxaccepte + 1);
                 }
               else
                 {
@@ -3296,7 +3292,7 @@ int httpd_start_request(httpd_conn *hc, struct timeval *nowp)
           indxlen = strlen(indexname);
           if (indxlen == 0 || indexname[indxlen - 1] != '/')
             {
-              strcat(indexname, "/");
+              strlcat(indexname, "/", maxindexname + 1);
             }
 
           if (strcmp(indexname, "./") == 0)
@@ -3304,7 +3300,7 @@ int httpd_start_request(httpd_conn *hc, struct timeval *nowp)
               indexname[0] = '\0';
             }
 
-          strcat(indexname, index_names[i]);
+          strlcat(indexname, index_names[i], maxindexname + 1);
           if (stat(indexname, &hc->sb) >= 0)
             {
               goto got_one;

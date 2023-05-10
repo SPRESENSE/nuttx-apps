@@ -917,9 +917,9 @@ static int tcurses_vt100_setcolors(FAR struct termcurses_s *dev,
 
   if ((colors->color_mask & TCURS_COLOR_FG) != 0)
     {
-      sprintf(str, g_setfgcolor,
-              tcurses_vt100_getcolorindex(colors->fg_red, colors->fg_green,
-                                          colors->fg_blue));
+      snprintf(str, sizeof(str), g_setfgcolor,
+               tcurses_vt100_getcolorindex(colors->fg_red, colors->fg_green,
+                                           colors->fg_blue));
       ret = write(fd, str, strlen(str));
     }
 
@@ -932,9 +932,9 @@ static int tcurses_vt100_setcolors(FAR struct termcurses_s *dev,
           colors->bg_red = 0;
         }
 
-      sprintf(str, g_setbgcolor,
-              tcurses_vt100_getcolorindex(colors->bg_red, colors->bg_green,
-                                          colors->bg_blue));
+      snprintf(str, sizeof(str), g_setbgcolor,
+               tcurses_vt100_getcolorindex(colors->bg_red, colors->bg_green,
+                                           colors->bg_blue));
       ret = write(fd, str, strlen(str));
     }
 
@@ -1091,23 +1091,23 @@ static int tcurses_vt100_setattributes(FAR struct termcurses_s *dev,
 
   if (attrib & TCURS_ATTRIB_BLINK)
     {
-      strcat(str, g_setblink);
+      strlcat(str, g_setblink, sizeof(str));
     }
   else
     {
-      strcat(str, g_setnoblink);
+      strlcat(str, g_setnoblink, sizeof(str));
     }
 
   if (attrib & TCURS_ATTRIB_UNDERLINE)
     {
-      strcat(str, g_setunderline);
+      strlcat(str, g_setunderline, sizeof(str));
     }
   else
     {
-      strcat(str, g_setnounderline);
+      strlcat(str, g_setnounderline, sizeof(str));
     }
 
-  strcat(str, "m");
+  strlcat(str, "m", sizeof(str));
 
   ret = write(fd, str, strlen(str));
 

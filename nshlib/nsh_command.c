@@ -255,7 +255,7 @@ static const struct cmdmap_s g_cmdmap[] =
 #ifdef CONFIG_NET
 # ifndef CONFIG_NSH_DISABLE_IFCONFIG
   { "ifconfig", cmd_ifconfig, 1, 12,
-    "[interface [address_family] [<ip-address>|dhcp]] "
+    "[interface [address_family] [<ip-address>|dhcp]] | [mtu <len>]"
     "[dr|gw|gateway <dr-address>] [netmask <net-mask>|prefixlen <len>] "
     "[dns <dns-address>] [hw <hw-mac>]" },
 # endif
@@ -530,7 +530,7 @@ static const struct cmdmap_s g_cmdmap[] =
 #endif
 
 #if defined(CONFIG_BOARDCTL_SWITCH_BOOT) && !defined(CONFIG_NSH_DISABLE_SWITCHBOOT)
-  { "swtichboot", cmd_swtichboot, 2, 2, "<image path>" },
+  { "swtichboot", cmd_switchboot, 2, 2, "<image path>" },
 #endif
 
 #if !defined(CONFIG_NSH_DISABLESCRIPT) && !defined(CONFIG_NSH_DISABLE_TEST)

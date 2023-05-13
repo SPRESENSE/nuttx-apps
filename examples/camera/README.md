@@ -4,11 +4,14 @@ This sample is implemented as `camera` command on NuttX Shell. The synopsis of
 the command is as below.
 
 ```
-nsh> camera ([-jpg]) ([capture num])
+nsh> camera ([-jpg]) ([-s]) ([capture num])
 
   -jpg        : this option is set for storing JPEG file into a strage.
               : If this option isn't set capturing raw RGB565 data in a file.
               : raw RGB565 is default.
+
+  -s          : Enable spot metering on position of (10,20).
+              : The position is defined as SOPT_METERING_POSX and SOPT_METERING_POSY.
 
   capture num : this option instructs number of taking pictures.
               : 10 is default.

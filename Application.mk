@@ -93,9 +93,10 @@ ifneq ($(BUILD_MODULE),y)
   OBJS += $(MAINCOBJ) $(MAINCXXOBJ) $(MAINRUSTOBJ) $(MAINZIGOBJ)
 endif
 
-# Compile flags
+# Compile flags, notice the default flags only suitable for flat build
 
 ZIGELFFLAGS ?= $(ZIGFLAGS)
+RUSTELFFLAGS ?= $(RUSTFLAGS)
 
 DEPPATH += --dep-path .
 DEPPATH += --obj-path .
@@ -263,8 +264,8 @@ distclean:: clean
 
 -include Make.dep
 
-ifeq ($(WASM_BUILD),y)
-  ifneq ($(CONFIG_INTERPRETERS_WAMR)$(CONFIG_INTERPRETERS_WAMR3),)
-    include $(APPDIR)$(DELIM)interpreters$(DELIM)Wasm.mk
-  endif # CONFIG_INTERPRETERS_WAMR || CONFIG_INTERPRETERS_WAMR3
-endif # WASM_BUILD
+# Default values for WASM_BUILD from Application.mk
+
+WASM_BUILD ?= n
+
+include $(APPDIR)/tools/Wasm.mk

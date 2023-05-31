@@ -61,6 +61,8 @@ int usockreq_ioctl(FAR struct alt1250_s *dev,
   usock = usocket_search(dev, request->usockid);
   if (usock)
     {
+      USOCKET_SET_REQUEST(usock, request->head.reqid, request->head.xid);
+
       switch (request->cmd)
         {
           case FIONBIO:

@@ -51,6 +51,10 @@
   { .cmdid = LTE_CMDID_##cid, .altcid = APICMDID_##acid, \
     .outparam = outp, .outparamlen = ARRAY_SZ(outp) }
 
+#define TABLE_CONTENT_NOARG(cid, acid) \
+  { .cmdid = LTE_CMDID_##cid, .altcid = APICMDID_##acid, \
+    .outparam = NULL, .outparamlen = 0 }
+
 #define NCBTABLES (8 + ALTCOM_NSOCKET) /* 8 is the maximum number of events */
 
 #define IS_REPORT_API(cmdid) \
@@ -68,12 +72,15 @@
 
 static uint64_t lte_set_report_restart_exec_cb(FAR void *cb,
   FAR void **cbarg, FAR bool *set_writable);
+#ifdef CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API
 static uint64_t lte_radio_on_exec_cb(FAR void *cb, FAR void **cbarg,
   FAR bool *set_writable);
 static uint64_t lte_radio_off_exec_cb(FAR void *cb, FAR void **cbarg,
   FAR bool *set_writable);
+#endif /* CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API */
 static uint64_t lte_activate_pdn_exec_cb(FAR void *cb, FAR void **cbarg,
   FAR bool *set_writable);
+#ifdef CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API
 static uint64_t lte_deactivate_pdn_exec_cb(FAR void *cb, FAR void **cbarg,
   FAR bool *set_writable);
 static uint64_t lte_get_netinfo_exec_cb(FAR void *cb, FAR void **cbarg,
@@ -120,14 +127,13 @@ static uint64_t lte_get_current_psm_exec_cb(FAR void *cb, FAR void **cbarg,
   FAR bool *set_writable);
 static uint64_t lte_get_quality_exec_cb(FAR void *cb, FAR void **cbarg,
   FAR bool *set_writable);
+#endif /* CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API */
 static uint64_t lte_set_report_netinfo_exec_cb(FAR void *cb,
 FAR void **cbarg, FAR bool *set_writable);
 static uint64_t lte_set_report_simstat_exec_cb(FAR void *cb,
   FAR void **cbarg, FAR bool *set_writable);
 static uint64_t lte_set_report_localtime_exec_cb(FAR void *cb,
   FAR void **cbarg, FAR bool *set_writable);
-static uint64_t lte_set_reportevt_exec_cb(FAR void *cb, FAR void **cbarg,
-  FAR bool *set_writable);
 static uint64_t lte_set_report_quality_exec_cb(FAR void *cb,
   FAR void **cbarg, FAR bool *set_writable);
 static uint64_t lte_set_report_cellinfo_exec_cb(FAR void *cb,
@@ -188,6 +194,8 @@ static void *g_getverargs[] =
   &g_getverret, &g_ver
 };
 
+#ifdef CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API
+
 /* event argument for LTE_CMDID_RADIOON */
 
 static int g_radioonret;
@@ -204,6 +212,8 @@ static void *g_radiooffargs[] =
   &g_radiooffret
 };
 
+#endif /* CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API */
+
 /* event argument for LTE_CMDID_ACTPDN */
 
 static int g_actpdnret;
@@ -212,6 +222,8 @@ static void *g_actpdnargs[] =
 {
   &g_actpdnret, &g_pdn
 };
+
+#ifdef CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API
 
 /* event argument for LTE_CMDID_DEACTPDN */
 
@@ -462,6 +474,8 @@ static void *g_getcellargs[] =
   &g_getcellret, &g_getcell
 };
 
+#endif /* CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API */
+
 /* event argument for LTE_CMDID_GETRAT */
 
 static int g_getratret;
@@ -502,14 +516,20 @@ static void *g_repnetinfoargs[] =
   &g_repnetinfo, &g_ndnsaddrs, g_dnsaddrs
 };
 
-/* event argument for LTE_CMDID_REPSIMSTAT and LTE_CMDID_REPLTIME */
+/* event argument for LTE_CMDID_REPSIMSTAT */
 
-static uint8_t g_repevtflag;
 static uint32_t g_repsimstat;
-static lte_localtime_t g_repltime;
-static void *g_repevtargs[] =
+static void *g_repsimstatargs[] =
 {
-  &g_repevtflag, &g_repsimstat, &g_repltime
+  &g_repsimstat
+};
+
+/* event argument for LTE_CMDID_REPLTIME */
+
+static lte_localtime_t g_repltime;
+static void *g_repltimeargs[] =
+{
+  &g_repltime
 };
 
 /* event argument for LTE_CMDID_REPQUAL */
@@ -628,9 +648,12 @@ static struct alt_evtbuf_inst_s g_evtbuffers[] =
 {
   TABLE_CONTENT(SETRESTART, POWER_ON, g_setrestartargs),
   TABLE_CONTENT(GETVER, GET_VERSION, g_getverargs),
+#ifdef CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API
   TABLE_CONTENT(RADIOON, RADIO_ON, g_radioonargs),
   TABLE_CONTENT(RADIOOFF, RADIO_OFF, g_radiooffargs),
+#endif /* CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API */
   TABLE_CONTENT(ACTPDN, ACTIVATE_PDN, g_actpdnargs),
+#ifdef CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API
   TABLE_CONTENT(DEACTPDN, DEACTIVATE_PDN, g_deactpdnargs),
   TABLE_CONTENT(GETNETINFO, GET_NETINFO, g_netinfoargs),
   TABLE_CONTENT(IMSCAP, GET_IMS_CAP, g_imscapargs),
@@ -654,12 +677,14 @@ static struct alt_evtbuf_inst_s g_evtbuffers[] =
   TABLE_CONTENT(GETCPSM, GET_DYNAMICPSM, g_getcpsmargs),
   TABLE_CONTENT(GETQUAL, GET_QUALITY, g_getqualargs),
   TABLE_CONTENT(GETCELL, GET_CELLINFO, g_getcellargs),
+#endif /* CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API */
   TABLE_CONTENT(GETRAT, GET_RAT, g_getratargs),
   TABLE_CONTENT(SETRAT, SET_RAT, g_setratargs),
   TABLE_CONTENT(GETRATINFO, GET_RAT, g_getratinfoargs),
   TABLE_CONTENT(REPNETINFO, REPORT_NETINFO, g_repnetinfoargs),
-  TABLE_CONTENT(REPSIMSTAT, REPORT_EVT, g_repevtargs),
-  TABLE_CONTENT(REPLTIME, REPORT_EVT, g_repevtargs),
+  TABLE_CONTENT_NOARG(REPEVT_DUMMY, REPORT_EVT),
+  TABLE_CONTENT(REPSIMSTAT, UNKNOWN, g_repsimstatargs),
+  TABLE_CONTENT(REPLTIME, UNKNOWN, g_repltimeargs),
   TABLE_CONTENT(REPQUAL, REPORT_QUALITY, g_repqualargs),
   TABLE_CONTENT(REPCELL, REPORT_CELLINFO, g_repcellargs),
   TABLE_CONTENT(GETERRINFO, ERRINFO, g_geterrinfoargs),
@@ -669,10 +694,7 @@ static struct alt_evtbuf_inst_s g_evtbuffers[] =
 
   /* For Unsolicited event */
 
-  {
-    .cmdid = LTE_CMDID_LWM2M_URC_DUMMY, .altcid = APICMDID_URC_EVENT,
-    .outparam = NULL, .outparamlen = 0
-  },
+  TABLE_CONTENT_NOARG(LWM2M_URC_DUMMY, URC_EVENT),
   TABLE_CONTENT(LWM2M_READ_EVT, UNKNOWN, g_lwm2mreadargs),
   TABLE_CONTENT(LWM2M_WRITE_EVT, UNKNOWN, g_lwm2mwriteargs),
   TABLE_CONTENT(LWM2M_EXEC_EVT, UNKNOWN, g_lwm2mexecargs),
@@ -686,19 +708,19 @@ static struct alt_evtbuf_inst_s g_evtbuffers[] =
    * The output parameter is NULL since a container for select is used.
    */
 
-  {
-    .cmdid = LTE_CMDID_SELECT, .altcid = APICMDID_SOCK_SELECT,
-    .outparam = NULL, .outparamlen = 0
-  }
+  TABLE_CONTENT_NOARG(SELECT, SOCK_SELECT)
 };
 
 static struct cbinfo_s g_execbtable[] =
 {
   {LTE_CMDID_SETRESTART, lte_set_report_restart_exec_cb},
+#ifdef CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API
   {LTE_CMDID_GETVER, lte_get_version_exec_cb},
   {LTE_CMDID_RADIOON, lte_radio_on_exec_cb},
   {LTE_CMDID_RADIOOFF, lte_radio_off_exec_cb},
+#endif /* CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API */
   {LTE_CMDID_ACTPDN, lte_activate_pdn_exec_cb},
+#ifdef CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API
   {LTE_CMDID_DEACTPDN, lte_deactivate_pdn_exec_cb},
   {LTE_CMDID_GETNETINFO, lte_get_netinfo_exec_cb},
   {LTE_CMDID_IMSCAP, lte_get_imscap_exec_cb},
@@ -721,9 +743,10 @@ static struct cbinfo_s g_execbtable[] =
   {LTE_CMDID_GETCEDRX, lte_get_current_edrx_exec_cb},
   {LTE_CMDID_GETCPSM, lte_get_current_psm_exec_cb},
   {LTE_CMDID_GETQUAL, lte_get_quality_exec_cb},
+#endif /* CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API */
   {LTE_CMDID_REPNETINFO, lte_set_report_netinfo_exec_cb},
-  {LTE_CMDID_REPSIMSTAT, lte_set_reportevt_exec_cb},
-  {LTE_CMDID_REPLTIME, lte_set_reportevt_exec_cb},
+  {LTE_CMDID_REPSIMSTAT, lte_set_report_simstat_exec_cb},
+  {LTE_CMDID_REPLTIME, lte_set_report_localtime_exec_cb},
   {LTE_CMDID_REPQUAL, lte_set_report_quality_exec_cb},
   {LTE_CMDID_REPCELL, lte_set_report_cellinfo_exec_cb},
   {LTE_CMDID_TLS_CONFIG_VERIFY, tls_config_verify_exec_cb},
@@ -757,6 +780,8 @@ static uint64_t lte_set_report_restart_exec_cb(FAR void *cb,
   return 0ULL;
 }
 
+#ifdef CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API
+
 static uint64_t lte_radio_on_exec_cb(FAR void *cb, FAR void **cbarg,
   FAR bool *set_writable)
 {
@@ -785,6 +810,8 @@ static uint64_t lte_radio_off_exec_cb(FAR void *cb, FAR void **cbarg,
   return 0ULL;
 }
 
+#endif /* CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API */
+
 static uint64_t lte_activate_pdn_exec_cb(FAR void *cb, FAR void **cbarg,
   FAR bool *set_writable)
 {
@@ -799,6 +826,8 @@ static uint64_t lte_activate_pdn_exec_cb(FAR void *cb, FAR void **cbarg,
 
   return 0ULL;
 }
+
+#ifdef CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API
 
 static uint64_t lte_deactivate_pdn_exec_cb(FAR void *cb, FAR void **cbarg,
   FAR bool *set_writable)
@@ -1172,6 +1201,8 @@ static uint64_t lte_get_quality_exec_cb(FAR void *cb, FAR void **cbarg,
   return 0ULL;
 }
 
+#endif /* CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API */
+
 static uint64_t lte_set_report_netinfo_exec_cb(FAR void *cb,
   FAR void **cbarg, FAR bool *set_writable)
 {
@@ -1231,29 +1262,6 @@ static uint64_t lte_set_report_localtime_exec_cb(FAR void *cb,
   if (callback)
     {
       callback(localtime);
-    }
-
-  return 0ULL;
-}
-
-static uint64_t lte_set_reportevt_exec_cb(FAR void *cb, FAR void **cbarg,
-  FAR bool *set_writable)
-{
-  FAR void *func = NULL;
-  uint8_t flag = *((FAR uint8_t *)cbarg[0]);
-
-  if (flag & ALTCOM_REPEVT_FLAG_SIMSTAT)
-    {
-      flag &= ~ALTCOM_REPEVT_FLAG_SIMSTAT;
-      func = get_cbfunc(LTE_CMDID_REPSIMSTAT);
-      lte_set_report_simstat_exec_cb(func, &cbarg[1], set_writable);
-    }
-
-  if (flag & ALTCOM_REPEVT_FLAG_LTIME)
-    {
-      flag &= ~ALTCOM_REPEVT_FLAG_LTIME;
-      func = get_cbfunc(LTE_CMDID_REPLTIME);
-      lte_set_report_localtime_exec_cb(func, &cbarg[2], set_writable);
     }
 
   return 0ULL;
@@ -1425,7 +1433,7 @@ static FAR struct alt_evtbuffer_s *evtbuffer_init(void)
 
   for (i = 0; i < ARRAY_SZ(g_evtbuffers); i++)
     {
-      sem_init(&g_evtbuffers[i].stat_lock, 0, 1);
+      nxmutex_init(&g_evtbuffers[i].stat_lock);
       g_evtbuffers[i].stat = ALTEVTBUF_ST_WRITABLE;
     }
 
@@ -1551,11 +1559,11 @@ static void update_evtarg_writable(int idx)
 {
   FAR alt_evtbuf_inst_t *inst = &g_evtbuffers[idx];
 
-  sem_wait(&inst->stat_lock);
+  nxmutex_lock(&inst->stat_lock);
 
   inst->stat = ALTEVTBUF_ST_WRITABLE;
 
-  sem_post(&inst->stat_lock);
+  nxmutex_unlock(&inst->stat_lock);
 }
 
 /****************************************************************************
@@ -1570,11 +1578,11 @@ static void update_evtarg_writableall(void)
     {
       FAR alt_evtbuf_inst_t *inst = &g_evtbuffers[idx];
 
-      sem_wait(&inst->stat_lock);
+      nxmutex_lock(&inst->stat_lock);
 
       inst->stat = ALTEVTBUF_ST_WRITABLE;
 
-      sem_post(&inst->stat_lock);
+      nxmutex_unlock(&inst->stat_lock);
     }
 }
 
@@ -1900,11 +1908,11 @@ void alt1250_setevtarg_writable(uint32_t cmdid)
         {
           inst = &g_evtbuffers[idx];
 
-          sem_wait(&inst->stat_lock);
+          nxmutex_lock(&inst->stat_lock);
 
           inst->stat = ALTEVTBUF_ST_WRITABLE;
 
-          sem_post(&inst->stat_lock);
+          nxmutex_unlock(&inst->stat_lock);
 
           break;
         }
@@ -2055,6 +2063,85 @@ int alt1250_evttask_msgconnect(FAR const char *qname,
     {
       ret = -errno;
       dbg_alt1250("failed to open mq(%s): %d\n", qname, errno);
+    }
+
+  return ret;
+}
+
+uint32_t alt1250_search_registered_callback(FAR int *index)
+{
+  uint32_t ret = 0x00;
+  int i;
+
+  for (i = *index; i < NCBTABLES; i++)
+    {
+      if (g_cbtable[i].cb != NULL && IS_LTE_REPORT_EVENT(g_cbtable[i].cmdid))
+        {
+          ret = g_cbtable[i].cmdid;
+          *index = i;
+          break;
+        }
+    }
+
+  return ret;
+}
+
+int alt1250_get_report_ltecmd(FAR struct alt1250_s *dev,
+                              uint32_t cmdid,
+                              FAR struct lte_ioctl_data_s *ltecmd)
+{
+  int ret = OK;
+  static int result;
+  static int32_t param;
+  static FAR void *inparam[2];
+  static FAR void *outparam[1];
+
+  /* Generate ltecmd:
+   *   cmdid      : LAPI command ID
+   *   inparam    : Array of input arguments
+   *                (First argument is callback pointer.)
+   *   inparamlen : Size of inparam array
+   *   outparam   : Array of output arguments
+   *                (The result parameter only.)
+   *   outparamlen: Size of outparam array
+   */
+
+  ltecmd->cmdid       = cmdid;
+  ltecmd->inparam     = inparam;
+  ltecmd->outparam    = outparam;
+  ltecmd->outparamlen = 1;
+
+  inparam[0]  = get_cbfunc(cmdid);
+  outparam[0] = (FAR void *)&result;
+
+  switch (cmdid)
+    {
+      case LTE_CMDID_REPNETINFO:
+        ltecmd->inparamlen = 1;
+        break;
+      case LTE_CMDID_REPSIMSTAT:
+        param = cmdid;
+        inparam[1] = (FAR void *)&param;
+        ltecmd->inparamlen = 2;
+        break;
+      case LTE_CMDID_REPLTIME:
+        param = cmdid;
+        inparam[1] = (FAR void *)&param;
+        ltecmd->inparamlen = 2;
+        break;
+      case LTE_CMDID_REPQUAL:
+        param = dev->quality_report_period;
+        inparam[1] = (FAR void *)&param;
+        ltecmd->inparamlen = 2;
+        break;
+      case LTE_CMDID_REPCELL:
+        param = dev->cellinfo_report_period;
+        inparam[1] = (FAR void *)&param;
+        ltecmd->inparamlen = 2;
+        break;
+      default:
+        ret = -EINVAL;
+        break;
     }
 
   return ret;

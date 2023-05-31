@@ -46,5 +46,8 @@ int altdevice_seteventbuff(int fd, FAR struct alt_evtbuffer_s *buffers);
 int altdevice_getevent(int fd, FAR uint64_t *evtbitmap,
     FAR struct alt_container_s **replys);
 void altdevice_reset(int fd);
+#ifdef CONFIG_LTE_ALT1250_ENABLE_HIBERNATION_MODE
+int altdevice_powerresponse(int fd, uint32_t cmd, int resp);
+#endif
 
 #endif  /* __LTE_ALT1250_ALT1250_DEVIF_H__ */

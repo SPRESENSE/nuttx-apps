@@ -141,6 +141,25 @@ static const char *get_m2mrespstr(int resp)
  ****************************************************************************/
 
 /****************************************************************************
+ * name: atcmdreply_true_false
+ ****************************************************************************/
+
+int atcmdreply_true_false(FAR struct alt1250_s *dev,
+                          FAR struct alt_container_s *reply,
+                          FAR char *rdata, int len, unsigned long arg,
+                          FAR int32_t *usock_result)
+{
+  *usock_result = 0;
+
+  if (strcasestr(rdata, "\nTRUE\r"))
+    {
+      *usock_result = 1;
+    }
+
+  return REP_SEND_ACK;
+}
+
+/****************************************************************************
  * name: atcmdreply_ok_error
  ****************************************************************************/
 
@@ -380,6 +399,61 @@ int lwm2mstub_send_setautoconnect(FAR struct alt1250_s *dev,
 }
 
 /****************************************************************************
+ * name: ltenwop_send_getnwop
+ ****************************************************************************/
+
+int ltenwop_send_getnwop(FAR struct alt1250_s *dev,
+      FAR struct alt_container_s *container)
+{
+  int32_t dummy;
+  snprintf((char *)dev->tx_buff, _TX_BUFF_SIZE,
+      "AT%%NWOPER?\r");
+  return send_internal_at_command(dev, container, -1, NULL, 0, &dummy);
+}
+
+/****************************************************************************
+ * name: ltenwop_send_setnwoptp
+ ****************************************************************************/
+
+int ltenwop_send_setnwoptp(FAR struct alt1250_s *dev,
+      FAR struct alt_container_s *container)
+{
+  int32_t dummy;
+  snprintf((char *)dev->tx_buff, _TX_BUFF_SIZE,
+      "AT%%NWOPER=\"TRUPHONE\"\r");
+  return send_internal_at_command(dev, container, -1, NULL, 0, &dummy);
+}
+
+/****************************************************************************
+ * name: lwm2mstub_send_getqueuemode
+ ****************************************************************************/
+
+int lwm2mstub_send_getqueuemode(FAR struct alt1250_s *dev,
+      FAR struct alt_container_s *container, int16_t usockid,
+      FAR int32_t *ures)
+{
+  snprintf((char *)dev->tx_buff, _TX_BUFF_SIZE,
+      "AT%%GETACFG=LWM2M.TransportBindings_1_1.Queue\r");
+  return send_internal_at_command(dev, container, usockid,
+                                  atcmdreply_true_false, 0, ures);
+}
+
+/****************************************************************************
+ * name: lwm2mstub_send_setqueuemode
+ ****************************************************************************/
+
+int lwm2mstub_send_setqueuemode(FAR struct alt1250_s *dev,
+      FAR struct alt_container_s *container, int16_t usockid,
+      FAR int32_t *ures, int en)
+{
+  snprintf((char *)dev->tx_buff, _TX_BUFF_SIZE,
+      "AT%%SETACFG=LWM2M.TransportBindings_1_1.Queue,%s\r",
+      (en == 1) ? "true" : "false");
+  return send_internal_at_command(dev, container, usockid,
+                                  atcmdreply_ok_error, 0, ures);
+}
+
+/****************************************************************************
  * name: lwm2mstub_send_m2mopev
  ****************************************************************************/
 
@@ -494,6 +568,36 @@ int lwm2mstub_send_getobjdef(FAR struct alt1250_s *dev,
 }
 
 /****************************************************************************
+ * name: lwm2mstub_send_changerat
+ ****************************************************************************/
+
+int lwm2mstub_send_changerat(FAR struct alt1250_s *dev,
+      FAR struct alt_container_s *container, int16_t usockid,
+      FAR int32_t *ures, int rat)
+{
+  snprintf((char *)dev->tx_buff, _TX_BUFF_SIZE,
+      "AT%%setacfg=radiom.config.preferred_rat_list,\"%s\"\r",
+      (rat == LTE_RAT_CATM) ? "CATM" : "NBIOT");
+
+  return send_internal_at_command(dev, container, usockid,
+                                  atcmdreply_ok_error, 0, ures);
+}
+
+/****************************************************************************
+ * name: lwm2mstub_send_getrat
+ ****************************************************************************/
+
+int lwm2mstub_send_getrat(FAR struct alt1250_s *dev,
+      FAR struct alt_container_s *container, int16_t usockid,
+      atcmd_postproc_t proc, unsigned long arg, FAR int32_t *ures)
+{
+  snprintf((char *)dev->tx_buff, _TX_BUFF_SIZE,
+      "AT%%getacfg=radiom.config.preferred_rat_list\r");
+  return send_internal_at_command(dev, container, usockid, proc,
+                                  arg, ures);
+}
+
+/****************************************************************************
  * name: lwm2mstub_send_setepname
  ****************************************************************************/
 
@@ -590,7 +694,7 @@ int lwm2mstub_send_bscreateobj1(FAR struct alt1250_s *dev,
       FAR struct lwm2mstub_serverinfo_s *info)
 {
   snprintf((char *)dev->tx_buff, _TX_BUFF_SIZE,
-    "AT%%LWM2MBSCMD=\"CREATE\",1,0,0,0%s\r",
+    "AT%%LWM2MBSCMD=\"CREATE\",1,0,0,0,1,%lu%s\r", info->lifetime,
       info->nonip ? ",7,\"N\",22,\"N\"" : "");
 
   return send_internal_at_command(dev, container, usockid, proc, arg, ures);

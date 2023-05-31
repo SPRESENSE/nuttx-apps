@@ -256,6 +256,8 @@ int lte_set_report_simstat(simstat_report_cb_t callback)
 
 /* Asynchronous APIs */
 
+#ifdef CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API
+
 int lte_get_siminfo(uint32_t option, get_siminfo_cb_t callback)
 {
   FAR void *inarg[] =
@@ -321,3 +323,5 @@ int lte_get_phoneno(get_phoneno_cb_t callback)
   return lapi_req(LTE_CMDID_GETPHONE | LTE_CMDOPT_ASYNC_BIT,
                   NULL, 0, NULL, 0, callback);
 }
+#endif /* CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API */
+

@@ -216,6 +216,8 @@ int lte_activate_pdn(lte_apn_setting_t *apn, activate_pdn_cb_t callback)
                   NULL, 0, callback);
 }
 
+#ifdef CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API
+
 int lte_deactivate_pdn(uint8_t session_id, deactivate_pdn_cb_t callback)
 {
   FAR void *inarg[] =
@@ -237,6 +239,8 @@ int lte_deactivate_pdn(uint8_t session_id, deactivate_pdn_cb_t callback)
                   (FAR void *)inarg, ARRAY_SZ(inarg),
                   NULL, 0, callback);
 }
+
+#endif /* CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API */
 
 int lte_activate_pdn_cancel(void)
 {

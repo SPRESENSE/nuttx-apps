@@ -63,6 +63,11 @@ int usockreq_ioctl(FAR struct alt1250_s *dev,
     {
       switch (request->cmd)
         {
+          case FIONBIO:
+            /* ALT1250 doesn't use this command. Only return OK. */
+
+            *usock_result = OK;
+            break;
           case SIOCLTECMD:
             ioctl_subhdlr = usockreq_ioctl_ltecmd;
             break;

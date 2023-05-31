@@ -338,6 +338,8 @@ int lte_get_ratinfo_sync(lte_ratinfo_t *info)
 
 /* Asynchronous APIs */
 
+#ifdef CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API
+
 int lte_get_netinfo(get_netinfo_cb_t callback)
 {
   if (callback == NULL)
@@ -381,6 +383,8 @@ int lte_get_quality(get_quality_cb_t callback)
   return lapi_req(LTE_CMDID_GETQUAL | LTE_CMDOPT_ASYNC_BIT,
                   NULL, 0, NULL, 0, callback);
 }
+
+#endif /* CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API */
 
 int lte_set_report_netinfo(netinfo_report_cb_t callback)
 {

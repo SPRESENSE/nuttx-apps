@@ -70,7 +70,10 @@ static int postproc_getsockopt(FAR struct alt1250_s *dev,
       ackinfo->value_ptr = resp[3];
       ackinfo->buf_ptr = NULL;
 
-      ret = REP_SEND_DACK;
+      if (ackinfo->valuelen != 0)
+        {
+          ret = REP_SEND_DACK;
+        }
     }
 
   return ret;

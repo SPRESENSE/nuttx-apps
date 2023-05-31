@@ -123,7 +123,7 @@ static int postproc_accept(FAR struct alt1250_s *dev,
     {
       USOCKET_SET_SELECTABLE(usock, SELECT_READABLE);
 
-      accept_sock = usocket_alloc(dev);
+      accept_sock = usocket_alloc(dev, USOCKET_TYPE(usock));
       if (!accept_sock)
         {
           ret = send_close_command(dev, reply, usock, altsock_res,

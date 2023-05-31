@@ -98,6 +98,20 @@ int lwm2mstub_send_getautoconnect(FAR struct alt1250_s *dev,
 int lwm2mstub_send_setautoconnect(FAR struct alt1250_s *dev,
       FAR struct alt_container_s *container, bool en);
 
+int ltenwop_send_getnwop(FAR struct alt1250_s *dev,
+      FAR struct alt_container_s *container);
+
+int ltenwop_send_setnwoptp(FAR struct alt1250_s *dev,
+      FAR struct alt_container_s *container);
+
+int lwm2mstub_send_getqueuemode(FAR struct alt1250_s *dev,
+      FAR struct alt_container_s *container, int16_t usockid,
+      FAR int32_t *ures);
+
+int lwm2mstub_send_setqueuemode(FAR struct alt1250_s *dev,
+      FAR struct alt_container_s *container, int16_t usockid,
+      FAR int32_t *ures, int en);
+
 int lwm2mstub_send_m2mopev(FAR struct alt1250_s *dev,
       FAR struct alt_container_s *container, int16_t usockid,
       FAR int32_t *ures, bool en);
@@ -189,5 +203,13 @@ int lwm2mstub_send_objevent(FAR struct alt1250_s *dev,
       FAR struct alt_container_s *container, int16_t usockid,
       FAR int32_t *ures, char *token, FAR struct lwm2mstub_instance_s *inst,
       char *retval);
+
+int lwm2mstub_send_changerat(FAR struct alt1250_s *dev,
+      FAR struct alt_container_s *container, int16_t usockid,
+      FAR int32_t *ures, int rat);
+
+int lwm2mstub_send_getrat(FAR struct alt1250_s *dev,
+      FAR struct alt_container_s *container, int16_t usockid,
+      atcmd_postproc_t proc, unsigned long arg, FAR int32_t *ures);
 
 #endif  /* __LTE_ALT1250_ALT1250_ATCMD_H__ */

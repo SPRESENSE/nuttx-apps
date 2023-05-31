@@ -34,6 +34,7 @@
 #include "alt1250_evt.h"
 #include "alt1250_ioctl_subhdlr.h"
 #include "alt1250_usrsock_hdlr.h"
+#include "alt1250_netdev.h"
 
 /****************************************************************************
  * Public Functions
@@ -63,6 +64,7 @@ int usockreq_ioctl_power(FAR struct alt1250_s *dev,
       case LTE_CMDID_POWERON:
       case LTE_CMDID_TAKEWLOCK:
       case LTE_CMDID_GIVEWLOCK:
+      case LTE_CMDID_COUNTWLOCK:
         *usock_result = altdevice_powercontrol(dev->altfd, ltecmd->cmdid);
         if (MODEM_STATE_IS_POFF(dev) && ltecmd->cmdid == LTE_CMDID_POWERON)
           {
@@ -76,6 +78,7 @@ int usockreq_ioctl_power(FAR struct alt1250_s *dev,
         alt1250_clrevtcb(ALT1250_CLRMODE_WO_RESTART);
         *usock_result = altdevice_powercontrol(dev->altfd, ltecmd->cmdid);
         MODEM_STATE_POFF(dev);
+        alt1250_netdev_ifdown(dev);
         break;
 
       case LTE_CMDID_FIN:
@@ -83,6 +86,13 @@ int usockreq_ioctl_power(FAR struct alt1250_s *dev,
         ret = REP_SEND_TERM;
         MODEM_STATE_POFF(dev);
         break;
+
+#ifdef CONFIG_LTE_ALT1250_ENABLE_HIBERNATION_MODE
+      case LTE_CMDID_RETRYDISABLE:
+      case LTE_CMDID_GET_POWER_STAT:
+        *usock_result = altdevice_powercontrol(dev->altfd, ltecmd->cmdid);
+        break;
+#endif
 
       default:
         *usock_result = -EINVAL;

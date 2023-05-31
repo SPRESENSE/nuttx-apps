@@ -383,8 +383,7 @@ int usockreq_socket(FAR struct alt1250_s *dev,
 
   *usock_xid = request->head.xid;
 
-  if (!IS_SUPPORTED_INET_DOMAIN(request->domain) &&
-      request->domain != PF_SMSSOCK)
+  if (!IS_SUPPORTED_INET_DOMAIN(request->domain))
     {
       dbg_alt1250("Not support this domain: %u\n", request->domain);
       *usock_result = -EAFNOSUPPORT;
@@ -402,7 +401,14 @@ int usockreq_socket(FAR struct alt1250_s *dev,
       return REP_SEND_ACK_WOFREE;
     }
 
-  usock = usocket_alloc(dev);
+  if (!dev->api_enable)
+    {
+      dbg_alt1250("Don't allow to call any API now.\n");
+      *usock_result = -EBUSY;
+      return REP_SEND_ACK_WOFREE;
+    }
+
+  usock = usocket_alloc(dev, request->type);
   if (usock == NULL)
     {
       dbg_alt1250("socket alloc faild\n");
@@ -420,50 +426,38 @@ int usockreq_socket(FAR struct alt1250_s *dev,
     {
       case SOCK_STREAM:
       case SOCK_CTRL:
-        if (IS_SMS_SOCKET(usock))
+        dbg_alt1250("allocated usockid: %d\n", *usock_result);
+        break;
+
+      case SOCK_SMS:
+        ret = alt1250_sms_init(dev, usock, usock_result, ackinfo);
+        if (*usock_result < 0)
           {
-            dbg_alt1250("SOCK_STREAM is not supported by PF_SMSSOCK\n");
-            *usock_result = -EAFNOSUPPORT;
             usocket_free(usock);
-          }
-        else
-          {
-            dbg_alt1250("allocated usockid: %d\n", *usock_result);
           }
         break;
 
       case SOCK_DGRAM:
       case SOCK_RAW:
-        if ((IS_SMS_SOCKET(usock)) && (request->type == SOCK_DGRAM))
+        dbg_alt1250("allocated usockid: %d\n", *usock_result);
+        container = container_alloc();
+        if (container == NULL)
           {
-            ret = alt1250_sms_init(dev, usock, usock_result, ackinfo);
-            if (*usock_result < 0)
-              {
-                usocket_free(usock);
-              }
-          }
-        else
-          {
-            container = container_alloc();
-            if (container == NULL)
-              {
-                dbg_alt1250("no container\n");
-                usocket_free(usock);
-                return REP_NO_CONTAINER;
-              }
-
-            ret = open_altsocket(dev, container, usock, usock_result);
-            if (IS_NEED_CONTAINER_FREE(ret))
-              {
-                container_free(container);
-              }
-
-            if (*usock_result < 0)
-              {
-                usocket_free(usock);
-              }
+            dbg_alt1250("no container\n");
+            usocket_free(usock);
+            return REP_NO_CONTAINER;
           }
 
+        ret = open_altsocket(dev, container, usock, usock_result);
+        if (IS_NEED_CONTAINER_FREE(ret))
+          {
+            container_free(container);
+          }
+
+        if (*usock_result < 0)
+          {
+            usocket_free(usock);
+          }
         break;
 
       default:

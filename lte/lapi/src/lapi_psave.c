@@ -448,6 +448,8 @@ int lte_get_current_psm_sync(lte_psm_setting_t *settings)
 
 /* Asynchronous APIs */
 
+#ifdef CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API
+
 int lte_get_edrx(get_edrx_cb_t callback)
 {
   if (callback == NULL)
@@ -575,3 +577,5 @@ int lte_get_dynamic_psm_param(get_dynamic_psm_param_cb_t callback)
 {
   return lte_get_current_psm(callback);
 }
+#endif /* CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API */
+

@@ -240,7 +240,6 @@ static void operate_dataavail(FAR struct alt1250_s *dev,
               if (nextstep_check_connectres(dev, usock) == REP_NO_ACK_WOFREE)
                 {
                   USOCKET_CLR_SELECTABLE(usock, SELECT_WRITABLE);
-                  usockif_sendtxready(dev->usockfd, USOCKET_USOCKID(usock));
                 }
             }
           else

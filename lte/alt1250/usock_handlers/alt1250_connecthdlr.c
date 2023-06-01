@@ -96,6 +96,7 @@ static int postproc_getsockopt(FAR struct alt1250_s *dev,
       USOCKET_SET_STATE(usock, SOCKET_STATE_OPENED);
     }
 
+  USOCKET_SET_SELECTABLE(usock, SELECT_WRITABLE);
   usocket_commitstate(dev);
 
   return ret;
@@ -124,6 +125,8 @@ static int postproc_connect(FAR struct alt1250_s *dev,
 
   *usock_xid = USOCKET_XID(usock);
   *usock_result = COMBINE_ERRCODE(*(int *)resp[0], *(int *)resp[1]);
+
+  dbg_alt1250("%s connect result:%d\n", __func__, *usock_result);
 
   if (*usock_result >= 0)
     {

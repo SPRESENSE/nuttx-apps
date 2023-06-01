@@ -124,6 +124,12 @@ int usockreq_ioctl(FAR struct alt1250_s *dev,
                    FAR uint32_t *usock_xid,
                    FAR struct usock_ackinfo_s *ackinfo);
 
+int usockreq_shutdown(FAR struct alt1250_s *dev,
+                      FAR struct usrsock_request_buff_s *req,
+                      FAR int32_t *usock_result,
+                      FAR uint32_t *usock_xid,
+                      FAR struct usock_ackinfo_s *ackinfo);
+
 int open_altsocket(FAR struct alt1250_s *dev,
                     FAR struct alt_container_s *container,
                     FAR struct usock_s *usock,

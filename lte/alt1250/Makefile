@@ -63,6 +63,7 @@ CSRCS += alt1250_bindhdlr.c
 CSRCS += alt1250_listenhdlr.c
 CSRCS += alt1250_accepthdlr.c
 CSRCS += alt1250_ioctlhdlr.c
+CSRCS += alt1250_shutdownhdlr.c
 CSRCS += alt1250_sms.c
 
 # Usersock ioctl LAPI command handling source files

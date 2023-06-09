@@ -49,7 +49,7 @@ FAR struct usock_s *usocket_search(FAR struct alt1250_s *dev, int usockid)
 
   dbg_alt1250("%s usockid: %d\n", __func__, usockid);
 
-  if (usockid >= 0 && usockid < ARRAY_SZ(dev->sockets))
+  if (usockid >= 0 && usockid < nitems(dev->sockets))
     {
       ret = &dev->sockets[usockid];
     }
@@ -118,7 +118,7 @@ void usocket_freeall(FAR struct alt1250_s *dev)
   int i;
   FAR struct usock_s *sock;
 
-  for (i = 0; i < ARRAY_SZ(dev->sockets); i++)
+  for (i = 0; i < nitems(dev->sockets); i++)
     {
       sock = &dev->sockets[i];
       usocket_free(sock);
@@ -144,7 +144,7 @@ int usocket_smssock_num(FAR struct alt1250_s *dev)
   int num = 0;
   FAR struct usock_s *sock;
 
-  for (i = 0; i < ARRAY_SZ(dev->sockets); i++)
+  for (i = 0; i < nitems(dev->sockets); i++)
     {
       sock = &dev->sockets[i];
       if (IS_SMS_SOCKET(sock) && sock->state == SOCKET_STATE_PREALLOC)
@@ -165,7 +165,7 @@ void usocket_smssock_readready(FAR struct alt1250_s *dev)
   int i;
   FAR struct usock_s *sock;
 
-  for (i = 0; i < ARRAY_SZ(dev->sockets); i++)
+  for (i = 0; i < nitems(dev->sockets); i++)
     {
       sock = &dev->sockets[i];
       if (IS_SMS_SOCKET(sock) && sock->state == SOCKET_STATE_PREALLOC)
@@ -184,7 +184,7 @@ void usocket_smssock_abort(FAR struct alt1250_s *dev)
   int i;
   FAR struct usock_s *sock;
 
-  for (i = 0; i < ARRAY_SZ(dev->sockets); i++)
+  for (i = 0; i < nitems(dev->sockets); i++)
     {
       sock = &dev->sockets[i];
       if (IS_SMS_SOCKET(sock) && sock->state == SOCKET_STATE_PREALLOC)

@@ -116,7 +116,7 @@ static int send_select_command(FAR struct alt1250_s *dev,
   in[6] = exceptset;
 
   set_container_ids(&container, 0, LTE_CMDID_SELECT);
-  set_container_argument(&container, in, ARRAY_SZ(in));
+  set_container_argument(&container, in, nitems(in));
 
   return altdevice_send_command(dev->altfd, &container, &usock_result);
 }
@@ -349,7 +349,7 @@ void init_selectcontainer(FAR struct alt1250_s *dev)
       g_selectargs[i][5] = &g_select_params[i].exceptset;
 
       select_container_obj[i].outparam = g_selectargs[i];
-      select_container_obj[i].outparamlen = ARRAY_SZ(g_selectargs[i]);
+      select_container_obj[i].outparamlen = nitems(g_selectargs[i]);
     }
 
   altdevice_exchange_selcontainer(dev->altfd, &select_container_obj[0]);

@@ -18,8 +18,8 @@
  *
  ****************************************************************************/
 
-#ifndef __LTE_ALT1250_USOCK_HANDLERS_ALT1250_SOCKETHDLR_H__
-#define __LTE_ALT1250_USOCK_HANDLERS_ALT1250_SOCKETHDLR_H__
+#ifndef __APPS_LTE_ALT1250_USOCK_HANDLERS_ALT1250_SOCKETHDLR_H
+#define __APPS_LTE_ALT1250_USOCK_HANDLERS_ALT1250_SOCKETHDLR_H
 
 /****************************************************************************
  * Included Files
@@ -231,4 +231,4 @@ int postproc_fwgetversion(FAR struct alt1250_s *dev,
 
 void alt1250_geterrinfo(FAR lte_errinfo_t *errinfo);
 
-#endif  /* __LTE_ALT1250_USOCK_HANDLERS_ALT1250_SOCKETHDLR_H__ */
+#endif  /* __APPS_LTE_ALT1250_USOCK_HANDLERS_ALT1250_SOCKETHDLR_H */

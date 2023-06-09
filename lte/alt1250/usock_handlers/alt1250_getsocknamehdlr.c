@@ -110,7 +110,7 @@ static int send_getsockname_command(FAR struct alt1250_s *dev,
 
   set_container_ids(container, USOCKET_USOCKID(usock),
                     LTE_CMDID_GETSOCKNAME);
-  set_container_argument(container, inparam, ARRAY_SZ(inparam));
+  set_container_argument(container, inparam, nitems(inparam));
   set_container_response(container, USOCKET_REP_RESPONSE(usock), idx);
   set_container_postproc(container, postproc_getsockname, 0);
 

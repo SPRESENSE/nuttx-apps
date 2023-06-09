@@ -34,6 +34,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <sys/stat.h>
+#include <sys/param.h>
 
 #include <nuttx/wireless/lte/lte_ioctl.h>
 
@@ -41,7 +42,6 @@
 #include "lte/lapi.h"
 
 #include "lapi_dbg.h"
-#include "lapi_util.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -94,8 +94,8 @@ int lapi_evtinit(FAR const char *mqname)
     }
 
   in.mqname = mqname;
-  ret = lapi_req(LTE_CMDID_SETEVTCTX, (FAR void *)inarg, ARRAY_SZ(inarg),
-    (FAR void *)outarg, ARRAY_SZ(outarg), NULL);
+  ret = lapi_req(LTE_CMDID_SETEVTCTX, (FAR void *)inarg, nitems(inarg),
+    (FAR void *)outarg, nitems(outarg), NULL);
   if (ret < 0)
     {
       lapi_printf("failed to lapi request: %d\n", ret);

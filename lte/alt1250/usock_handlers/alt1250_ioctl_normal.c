@@ -335,7 +335,8 @@ static int lte_context_resume(FAR struct alt1250_s *dev,
     }
 
   ret = alt1250_apply_daemon_context(dev,
-                                     (FAR struct alt1250_save_ctx *)ctx_data);
+                                     (FAR struct alt1250_save_ctx *)
+                                     ctx_data);
   if (ret < 0)
     {
       dbg_alt1250("Failed to apply saved alt1250 context(%d).\n", ret);
@@ -506,7 +507,8 @@ int usockreq_ioctl_normal(FAR struct alt1250_s *dev,
 
 #ifdef CONFIG_LTE_ALT1250_ENABLE_HIBERNATION_MODE
       case LTE_CMDID_RESUME:
-        return lte_context_resume(dev, ltecmd, container, usock, usock_result);
+        return lte_context_resume(dev, ltecmd, container, usock,
+                                  usock_result);
 #endif
 
       case LTE_CMDID_SAVE_LOG:

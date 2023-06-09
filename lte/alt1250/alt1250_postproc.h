@@ -18,8 +18,8 @@
  *
  ****************************************************************************/
 
-#ifndef __LTE_ALT1250_ALT1250_POSTPROC_H__
-#define __LTE_ALT1250_ALT1250_POSTPROC_H__
+#ifndef __APPS_LTE_ALT1250_ALT1250_POSTPROC_H
+#define __APPS_LTE_ALT1250_ALT1250_POSTPROC_H
 
 /****************************************************************************
  * Included Files
@@ -46,4 +46,4 @@ struct postproc_s
   unsigned long priv;
 };
 
-#endif	/* __LTE_ALT1250_ALT1250_POSTPROC_H__ */
+#endif	/* __APPS_LTE_ALT1250_ALT1250_POSTPROC_H */

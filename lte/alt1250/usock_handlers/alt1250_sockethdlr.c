@@ -89,7 +89,7 @@ static int send_fctl_command(FAR struct alt1250_s *dev,
   USOCKET_SET_RESPONSE(usock, idx++, USOCKET_REP_ERRCODE(usock));
 
   set_container_ids(container, USOCKET_USOCKID(usock), LTE_CMDID_FCNTL);
-  set_container_argument(container, inparam, ARRAY_SZ(inparam));
+  set_container_argument(container, inparam, nitems(inparam));
   set_container_response(container, USOCKET_REP_RESPONSE(usock), idx);
   set_container_postproc(container, cmd == ALTCOM_SETFL ? postproc_setfl :
                           cmd == ALTCOM_GETFL ? postproc_getfl : NULL, 0);
@@ -327,7 +327,7 @@ static int send_socket_command(FAR struct alt1250_s *dev,
   USOCKET_SET_RESPONSE(usock, idx++, USOCKET_REP_ERRCODE(usock));
 
   set_container_ids(container, USOCKET_USOCKID(usock), LTE_CMDID_SOCKET);
-  set_container_argument(container, inparam, ARRAY_SZ(inparam));
+  set_container_argument(container, inparam, nitems(inparam));
   set_container_response(container, USOCKET_REP_RESPONSE(usock), idx);
   set_container_postproc(container, postproc_socket, 0);
 

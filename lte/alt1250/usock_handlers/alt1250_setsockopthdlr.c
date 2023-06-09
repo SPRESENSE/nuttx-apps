@@ -63,7 +63,7 @@ static int send_setsockopt_command(FAR struct alt1250_s *dev,
   USOCKET_SET_RESPONSE(usock, idx++, USOCKET_REP_ERRCODE(usock));
 
   set_container_ids(container, USOCKET_USOCKID(usock), LTE_CMDID_SETSOCKOPT);
-  set_container_argument(container, inparam, ARRAY_SZ(inparam));
+  set_container_argument(container, inparam, nitems(inparam));
   set_container_response(container, USOCKET_REP_RESPONSE(usock), idx);
   set_container_postproc(container, postproc_sockcommon, 0);
 

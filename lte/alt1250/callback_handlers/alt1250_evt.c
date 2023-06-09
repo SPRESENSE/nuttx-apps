@@ -49,7 +49,7 @@
 
 #define TABLE_CONTENT(cid, acid, outp) \
   { .cmdid = LTE_CMDID_##cid, .altcid = APICMDID_##acid, \
-    .outparam = outp, .outparamlen = ARRAY_SZ(outp) }
+    .outparam = outp, .outparamlen = nitems(outp) }
 
 #define TABLE_CONTENT_NOARG(cid, acid) \
   { .cmdid = LTE_CMDID_##cid, .altcid = APICMDID_##acid, \
@@ -1431,13 +1431,13 @@ static FAR struct alt_evtbuffer_s *evtbuffer_init(void)
 {
   int i;
 
-  for (i = 0; i < ARRAY_SZ(g_evtbuffers); i++)
+  for (i = 0; i < nitems(g_evtbuffers); i++)
     {
       nxmutex_init(&g_evtbuffers[i].stat_lock);
       g_evtbuffers[i].stat = ALTEVTBUF_ST_WRITABLE;
     }
 
-  g_evtbuff.ninst = ARRAY_SZ(g_evtbuffers);
+  g_evtbuff.ninst = nitems(g_evtbuffers);
   g_evtbuff.inst = g_evtbuffers;
 
   return &g_evtbuff;
@@ -1453,7 +1453,7 @@ static void clear_callback(uint32_t cmdid)
 
   sem_wait(&g_cbtablelock);
 
-  for (i = 0; i < ARRAY_SZ(g_cbtable); i++)
+  for (i = 0; i < nitems(g_cbtable); i++)
     {
       if (g_cbtable[i].cmdid == cmdid)
         {
@@ -1574,7 +1574,7 @@ static void update_evtarg_writableall(void)
 {
   int idx;
 
-  for (idx = 0; idx < ARRAY_SZ(g_evtbuffers); idx++)
+  for (idx = 0; idx < nitems(g_evtbuffers); idx++)
     {
       FAR alt_evtbuf_inst_t *inst = &g_evtbuffers[idx];
 
@@ -1597,7 +1597,7 @@ static void *get_execfunc(int idx)
 
   cmdid = get_cmdid_byidx(idx);
 
-  for (i = 0; i < ARRAY_SZ(g_execbtable); i++)
+  for (i = 0; i < nitems(g_execbtable); i++)
     {
       if (g_execbtable[i].cmdid == cmdid)
         {
@@ -1619,7 +1619,7 @@ static void *get_cbfunc(uint32_t cmdid)
 
   sem_wait(&g_cbtablelock);
 
-  for (i = 0; i < ARRAY_SZ(g_cbtable); i++)
+  for (i = 0; i < nitems(g_cbtable); i++)
     {
       if (g_cbtable[i].cmdid == cmdid)
         {
@@ -1645,7 +1645,7 @@ static uint64_t alt1250_search_execcb(uint64_t evtbitmap)
   uint64_t (*func)(FAR void *cb, FAR void **arg, FAR bool *set_writable);
   bool set_writable;
 
-  for (idx = 0; idx < ARRAY_SZ(g_evtbuffers); idx++)
+  for (idx = 0; idx < nitems(g_evtbuffers); idx++)
     {
       if (evtbitmap & (1ULL << idx))
         {
@@ -1692,7 +1692,7 @@ static uint64_t alt1250_evt_search(uint32_t cmdid)
 
   uint64_t evtbitmap = 0ULL;
 
-  for (idx = 0; idx < ARRAY_SZ(g_evtbuffers); idx++)
+  for (idx = 0; idx < nitems(g_evtbuffers); idx++)
     {
       if (g_evtbuffers[idx].cmdid == cmdid)
         {
@@ -1728,7 +1728,7 @@ static struct cbinfo_s *search_evtcb(uint32_t cmdid)
 {
   int i;
 
-  for (i = 0; i < ARRAY_SZ(g_cbtable); i++)
+  for (i = 0; i < nitems(g_cbtable); i++)
     {
       if (g_cbtable[i].cmdid == cmdid)
         {
@@ -1854,7 +1854,7 @@ FAR void **alt1250_getevtarg(uint32_t cmdid)
 {
   int i;
 
-  for (i = 0; i < ARRAY_SZ(g_evtbuffers); i++)
+  for (i = 0; i < nitems(g_evtbuffers); i++)
     {
       if (g_evtbuffers[i].cmdid == cmdid)
         {
@@ -1875,7 +1875,7 @@ bool alt1250_checkcmdid(uint32_t cmdid, uint64_t evtbitmap,
   int idx;
   bool ret = false;
 
-  for (idx = 0; idx < ARRAY_SZ(g_evtbuffers); idx++)
+  for (idx = 0; idx < nitems(g_evtbuffers); idx++)
     {
       if (evtbitmap & (1ULL << idx))
         {
@@ -1902,7 +1902,7 @@ void alt1250_setevtarg_writable(uint32_t cmdid)
   int idx;
   FAR alt_evtbuf_inst_t *inst = NULL;
 
-  for (idx = 0; idx < ARRAY_SZ(g_evtbuffers); idx++)
+  for (idx = 0; idx < nitems(g_evtbuffers); idx++)
     {
       if (g_evtbuffers[idx].cmdid == cmdid)
         {
@@ -1932,7 +1932,7 @@ int alt1250_clrevtcb(uint8_t mode)
 
   if (mode == ALT1250_CLRMODE_WO_RESTART)
     {
-      for (i = 0; i < ARRAY_SZ(g_cbtable); i++)
+      for (i = 0; i < nitems(g_cbtable); i++)
         {
           if (g_cbtable[i].cmdid != LTE_CMDID_SETRESTART)
             {

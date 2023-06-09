@@ -27,13 +27,13 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <errno.h>
+#include <sys/param.h>
 #include <nuttx/wireless/lte/lte_ioctl.h>
 
 #include "lte/lte_api.h"
 #include "lte/lapi.h"
 
 #include "lapi_dbg.h"
-#include "lapi_util.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -55,8 +55,8 @@
  * Private Functions
  ****************************************************************************/
 
-static int lte_change_pin_inparam_check(int8_t target_pin, char *pincode,
-  char *new_pincode)
+static int lte_change_pin_inparam_check(int8_t target_pin, FAR char *pincode,
+  FAR char *new_pincode)
 {
   uint8_t pinlen = 0;
 
@@ -87,7 +87,8 @@ static int lte_change_pin_inparam_check(int8_t target_pin, char *pincode,
   return OK;
 }
 
-static int lte_enter_pin_inparam_check(char *pincode, char *new_pincode)
+static int lte_enter_pin_inparam_check(FAR char *pincode,
+                                       FAR char *new_pincode)
 {
   uint8_t pinlen = 0;
 
@@ -107,14 +108,15 @@ static int lte_enter_pin_inparam_check(char *pincode, char *new_pincode)
   if (new_pincode)
     {
       lapi_printf("lte_enter_pin() doesn't support entering PUK code.\n");
-      lapi_printf("lte_enter_pin_sync() doesn't support entering PUK code.\n");
+      lapi_printf("lte_enter_pin_sync() doesn't support entering"
+                  " PUK code.\n");
       return -EINVAL;
     }
 
   return OK;
 }
 
-static int lte_set_pinenable_inparam_check(bool enable, char *pincode)
+static int lte_set_pinenable_inparam_check(bool enable, FAR char *pincode)
 {
   uint8_t pinlen = 0;
 
@@ -139,7 +141,7 @@ static int lte_set_pinenable_inparam_check(bool enable, char *pincode)
 
 /* Synchronous APIs */
 
-int lte_get_pinset_sync(lte_getpin_t *pinset)
+int lte_get_pinset_sync(FAR lte_getpin_t *pinset)
 {
   int ret;
   int result;
@@ -155,7 +157,7 @@ int lte_get_pinset_sync(lte_getpin_t *pinset)
 
   ret = lapi_req(LTE_CMDID_GETPINSET,
                  NULL, 0,
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)outarg, nitems(outarg),
                  NULL);
   if (ret == 0)
     {
@@ -165,8 +167,8 @@ int lte_get_pinset_sync(lte_getpin_t *pinset)
   return ret;
 }
 
-int lte_set_pinenable_sync(bool enable, char *pincode,
-  uint8_t *attemptsleft)
+int lte_set_pinenable_sync(bool enable, FAR char *pincode,
+  FAR uint8_t *attemptsleft)
 {
   int ret;
   int result;
@@ -187,8 +189,8 @@ int lte_set_pinenable_sync(bool enable, char *pincode,
     }
 
   ret = lapi_req(LTE_CMDID_PINENABLE,
-                 (FAR void *)inarg, ARRAY_SZ(inarg),
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)inarg, nitems(inarg),
+                 (FAR void *)outarg, nitems(outarg),
                  NULL);
   if (ret == 0)
     {
@@ -198,8 +200,8 @@ int lte_set_pinenable_sync(bool enable, char *pincode,
   return ret;
 }
 
-int lte_change_pin_sync(int8_t target_pin, char *pincode,
-  char *new_pincode, uint8_t *attemptsleft)
+int lte_change_pin_sync(int8_t target_pin, FAR char *pincode,
+  FAR char *new_pincode, FAR uint8_t *attemptsleft)
 {
   int ret;
   int result;
@@ -220,8 +222,8 @@ int lte_change_pin_sync(int8_t target_pin, char *pincode,
     }
 
   ret = lapi_req(LTE_CMDID_CHANGEPIN,
-                 (FAR void *)inarg, ARRAY_SZ(inarg),
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)inarg, nitems(inarg),
+                 (FAR void *)outarg, nitems(outarg),
                  NULL);
   if (ret == 0)
     {
@@ -231,8 +233,8 @@ int lte_change_pin_sync(int8_t target_pin, char *pincode,
   return ret;
 }
 
-int lte_enter_pin_sync(char *pincode, char *new_pincode,
-  uint8_t *simstat, uint8_t *attemptsleft)
+int lte_enter_pin_sync(FAR char *pincode, FAR char *new_pincode,
+  FAR uint8_t *simstat, FAR uint8_t *attemptsleft)
 {
   int ret;
   int result;
@@ -305,8 +307,8 @@ int lte_enter_pin_sync(char *pincode, char *new_pincode,
     }
 
   ret = lapi_req(LTE_CMDID_ENTERPIN,
-                 (FAR void *)inarg, ARRAY_SZ(inarg),
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)inarg, nitems(inarg),
+                 (FAR void *)outarg, nitems(outarg),
                  NULL);
   if (ret == 0)
     {
@@ -331,7 +333,7 @@ int lte_get_pinset(get_pinset_cb_t callback)
                   NULL, 0, NULL, 0, callback);
 }
 
-int lte_set_pinenable(bool enable, char *pincode,
+int lte_set_pinenable(bool enable, FAR char *pincode,
   set_pinenable_cb_t callback)
 {
   FAR void *inarg[] =
@@ -350,12 +352,12 @@ int lte_set_pinenable(bool enable, char *pincode,
     }
 
   return lapi_req(LTE_CMDID_PINENABLE | LTE_CMDOPT_ASYNC_BIT,
-                  (FAR void *)inarg, ARRAY_SZ(inarg),
+                  (FAR void *)inarg, nitems(inarg),
                   NULL, 0, callback);
 }
 
-int lte_change_pin(int8_t target_pin, char *pincode,
-  char *new_pincode, change_pin_cb_t callback)
+int lte_change_pin(int8_t target_pin, FAR char *pincode,
+  FAR char *new_pincode, change_pin_cb_t callback)
 {
   FAR void *inarg[] =
     {
@@ -373,11 +375,11 @@ int lte_change_pin(int8_t target_pin, char *pincode,
     }
 
   return lapi_req(LTE_CMDID_CHANGEPIN | LTE_CMDOPT_ASYNC_BIT,
-                  (FAR void *)inarg, ARRAY_SZ(inarg),
+                  (FAR void *)inarg, nitems(inarg),
                   NULL, 0, callback);
 }
 
-int lte_enter_pin(char *pincode, char *new_pincode,
+int lte_enter_pin(FAR char *pincode, FAR char *new_pincode,
   enter_pin_cb_t callback)
 {
   FAR void *inarg[] =
@@ -396,7 +398,7 @@ int lte_enter_pin(char *pincode, char *new_pincode,
     }
 
   return lapi_req(LTE_CMDID_ENTERPIN | LTE_CMDOPT_ASYNC_BIT,
-                  (FAR void *)inarg, ARRAY_SZ(inarg),
+                  (FAR void *)inarg, nitems(inarg),
                   NULL, 0, callback);
 }
 #endif /* CONFIG_LTE_LAPI_ENABLE_DEPRECATED_API */

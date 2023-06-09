@@ -18,8 +18,8 @@
  *
  ****************************************************************************/
 
-#ifndef __LTE_ALT1250_ALT1250_DEVIF_H__
-#define __LTE_ALT1250_ALT1250_DEVIF_H__
+#ifndef __APSS_LTE_ALT1250_ALT1250_DEVIF_H
+#define __APPS_LTE_ALT1250_ALT1250_DEVIF_H
 
 /****************************************************************************
  * Included Files
@@ -50,4 +50,4 @@ void altdevice_reset(int fd);
 int altdevice_powerresponse(int fd, uint32_t cmd, int resp);
 #endif
 
-#endif  /* __LTE_ALT1250_ALT1250_DEVIF_H__ */
+#endif  /* __APPS_LTE_ALT1250_ALT1250_DEVIF_H */

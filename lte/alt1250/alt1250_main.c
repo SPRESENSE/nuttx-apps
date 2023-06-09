@@ -339,7 +339,7 @@ int alt1250_count_opened_sockets(FAR struct alt1250_s *dev)
       return ERROR;
     }
 
-  for (i = 0; i < ARRAY_SZ(dev->sockets); i++)
+  for (i = 0; i < nitems(dev->sockets); i++)
     {
       sock = &dev->sockets[i];
       if (sock->state != SOCKET_STATE_CLOSED)

@@ -18,8 +18,8 @@
  *
  ****************************************************************************/
 
-#ifndef __LTE_ALT1250_ALT1250_USOCKEVENT_H__
-#define __LTE_ALT1250_ALT1250_USOCKEVENT_H__
+#ifndef __APPS_LTE_ALT1250_ALT1250_USOCKEVENT_H
+#define __APPS_LTE_ALT1250_ALT1250_USOCKEVENT_H
 
 /****************************************************************************
  * Included Files
@@ -34,8 +34,8 @@
  * Pre-processor Definitions
  ****************************************************************************/
 
-#define NEED_CONTAINER_FREE (1<<16)
-#define W_CONTAINER_FREE(a) ((a) | NEED_CONTAINER_FREE)
+#define NEED_CONTAINER_FREE  (1<<16)
+#define W_CONTAINER_FREE(a)  ((a) | NEED_CONTAINER_FREE)
 #define WO_CONTAINER_FREE(a) (a)
 
 #define IS_NEED_CONTAINER_FREE(r) ((r) & NEED_CONTAINER_FREE)
@@ -67,8 +67,8 @@ typedef int (*usrsock_reqhandler_t)(FAR struct alt1250_s *dev,
  ****************************************************************************/
 
 int usock_reply(int ufd, int action_code, int32_t result,
-    uint32_t xid, FAR struct usock_ackinfo_s *ackinfo);
+                uint32_t xid, FAR struct usock_ackinfo_s *ackinfo);
 
 int perform_usockrequest(FAR struct alt1250_s *dev);
 
-#endif  /* __LTE_ALT1250_ALT1250_USOCKEVENT_H__ */
+#endif  /* __APPS_LTE_ALT1250_ALT1250_USOCKEVENT_H */

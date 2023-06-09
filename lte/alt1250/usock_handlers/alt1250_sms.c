@@ -235,7 +235,7 @@ static int send_smssend_command(FAR struct alt1250_s *dev,
   USOCKET_SET_RESPONSE(usock, idx++, &USOCKET_REQBUFLEN(usock));
 
   set_container_ids(container, USOCKET_USOCKID(usock), LTE_CMDID_SMS_SEND);
-  set_container_argument(container, inparam, ARRAY_SZ(inparam));
+  set_container_argument(container, inparam, nitems(inparam));
   set_container_response(container, USOCKET_REP_RESPONSE(usock), idx);
   set_container_postproc(container, postproc_smssend, 0);
 
@@ -266,7 +266,7 @@ static int send_smsdelete_command(FAR struct alt1250_s *dev,
   inparam[0] = &msg_index;
 
   set_container_ids(container, USOCKET_USOCKID(usock), LTE_CMDID_SMS_DELETE);
-  set_container_argument(container, inparam, ARRAY_SZ(inparam));
+  set_container_argument(container, inparam, nitems(inparam));
   set_container_response(container, &dummy_output, 1);
   set_container_postproc(container, postproc_smsdelete, 0);
 

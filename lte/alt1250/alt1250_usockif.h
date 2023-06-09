@@ -18,8 +18,8 @@
  *
  ****************************************************************************/
 
-#ifndef __LTE_ALT1250_ALT1250_USOCKIF_H__
-#define __LTE_ALT1250_ALT1250_USOCKIF_H__
+#ifndef __APPS_LTE_ALT1250_ALT1250_USOCKIF_H
+#define __APPS_LTE_ALT1250_ALT1250_USOCKIF_H
 
 /****************************************************************************
  * Included Files
@@ -126,4 +126,4 @@ int usockif_senddataack(int fd, int32_t usock_result, uint32_t usock_xid,
                         FAR struct usock_ackinfo_s *ackinfo);
 int usockif_sendevent(int fd, int usockid, int event);
 
-#endif  /* __LTE_ALT1250_ALT1250_USOCKIF_H__ */
+#endif  /* __APPS_LTE_ALT1250_ALT1250_USOCKIF_H */

@@ -18,8 +18,8 @@
  *
  ****************************************************************************/
 
-#ifndef __LTE_ALT1250_USOCK_HANDLERS_ALT1250_SMS_H__
-#define __LTE_ALT1250_USOCK_HANDLERS_ALT1250_SMS_H__
+#ifndef __APPS_LTE_ALT1250_USOCK_HANDLERS_ALT1250_SMS_H
+#define __APPS_LTE_ALT1250_USOCK_HANDLERS_ALT1250_SMS_H
 
 /****************************************************************************
  * Included Files
@@ -111,4 +111,4 @@ uint64_t perform_sms_report_event(FAR struct alt1250_s *dev,
 void alt1250_sms_initcontainer(FAR struct alt1250_s *dev);
 void alt1250_reset_sms_info(FAR struct alt1250_s *dev);
 
-#endif  /* __LTE_ALT1250_USOCK_HANDLERS_ALT1250_SMS_H__ */
+#endif  /* __APPS_LTE_ALT1250_USOCK_HANDLERS_ALT1250_SMS_H */

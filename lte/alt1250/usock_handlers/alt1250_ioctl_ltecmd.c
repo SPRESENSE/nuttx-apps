@@ -74,7 +74,8 @@ int usockreq_ioctl_ltecmd(FAR struct alt1250_s *dev,
       ltecmd->cmdid != LTE_CMDID_SETEVTCTX &&
       ltecmd->cmdid != LTE_CMDID_RESUME)
     {
-      dbg_alt1250("Don't allow to call any API in resuming phase.(cmdid=%lx)\n",
+      dbg_alt1250("Don't allow to call any API in resuming "
+                  "phase.(cmdid=%lx)\n",
                   ltecmd->cmdid);
       return ret;
     }

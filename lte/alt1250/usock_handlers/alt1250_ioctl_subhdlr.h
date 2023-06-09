@@ -18,8 +18,8 @@
  *
  ****************************************************************************/
 
-#ifndef __LTE_ALT1250_USOCK_HANDLERS_ALT1250_IOCTL_SUBHDLR_H__
-#define __LTE_ALT1250_USOCK_HANDLERS_ALT1250_IOCTL_SUBHDLR_H__
+#ifndef __APPS_LTE_ALT1250_USOCK_HANDLERS_ALT1250_IOCTL_SUBHDLR_H
+#define __APPS_LTE_ALT1250_USOCK_HANDLERS_ALT1250_IOCTL_SUBHDLR_H
 
 /****************************************************************************
  * Included Files
@@ -96,4 +96,4 @@ int usockreq_ioctl_lwm2m(FAR struct alt1250_s *dev,
                          FAR uint32_t *usock_xid,
                          FAR struct usock_ackinfo_s *ackinfo);
 
-#endif  /* __LTE_ALT1250_USOCK_HANDLERS_ALT1250_IOCTL_SUBHDLR_H__ */
+#endif  /* __APPS_LTE_ALT1250_USOCK_HANDLERS_ALT1250_IOCTL_SUBHDLR_H */

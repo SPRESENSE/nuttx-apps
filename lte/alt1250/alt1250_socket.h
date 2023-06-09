@@ -18,8 +18,8 @@
  *
  ****************************************************************************/
 
-#ifndef __LTE_ALT1250_ALT1250_SOCKET_H__
-#define __LTE_ALT1250_ALT1250_SOCKET_H__
+#ifndef __APPS_LTE_ALT1250_ALT1250_SOCKET_H
+#define __APPS_LTE_ALT1250_ALT1250_SOCKET_H
 
 /****************************************************************************
  * Included Files
@@ -36,33 +36,33 @@
  ****************************************************************************/
 
 #define SELECT_WRITABLE (1 << 1)
-#define SELECT_READABLE  (1 << 2)
-#define SELECTABLE_MASK  (SELECT_WRITABLE | SELECT_READABLE)
+#define SELECT_READABLE (1 << 2)
+#define SELECTABLE_MASK (SELECT_WRITABLE | SELECT_READABLE)
 
 #define USOCKET_SET_REQUEST(sock, _reqid, _xid) { \
-  (sock)->request.reqid = _reqid; \
-  (sock)->request.xid = _xid; \
+  (sock)->request.reqid = (_reqid); \
+  (sock)->request.xid = (_xid); \
 }
 
 #define USOCKET_SET_SOCKTYPE(sock, _domain, _type, _protocol) { \
-  (sock)->domain = _domain;  \
-  (sock)->type = _type;  \
-  (sock)->protocol = _protocol;  \
+  (sock)->domain = (_domain);  \
+  (sock)->type = (_type);  \
+  (sock)->protocol = (_protocol);  \
 }
 
 #define USOCKET_SET_REQADDRLEN(sock, _addrlen) \
-  { (sock)->sock_req.addrbuflen.addr.addrlen = _addrlen; }
+  { (sock)->sock_req.addrbuflen.addr.addrlen = (_addrlen); }
 
 #define USOCKET_SET_REQBACKLOG(sock, _backlog) \
-  { (sock)->sock_req.backlog = _backlog; }
+  { (sock)->sock_req.backlog = (_backlog); }
 
 #define USOCKET_SET_REQBUFLEN(sock, _buflen) \
-  { (sock)->sock_req.addrbuflen.buflen = _buflen; }
+  { (sock)->sock_req.addrbuflen.buflen = (_buflen); }
 
 #define USOCKET_SET_REQSOCKOPT(sock, _level, _opt, _optlen) { \
-  (sock)->sock_req.opt.level = _level; \
-  (sock)->sock_req.opt.option = _opt; \
-  (sock)->sock_req.opt.optlen = _optlen; \
+  (sock)->sock_req.opt.level = (_level); \
+  (sock)->sock_req.opt.option = (_opt); \
+  (sock)->sock_req.opt.optlen = (_optlen); \
 }
 
 #define USOCKET_REQID(sock)       ((sock)->request.reqid)
@@ -108,10 +108,10 @@
           ASSERT(0); \
         } \
     } \
-  while(0);
+  while(0)
 
 #define USOCKET_SET_ALTSOCKID(sock, id) { (sock)->altsockid = id; }
-#define USOCKET_SET_STATE(sock, st) { (sock)->state = st; }
+#define USOCKET_SET_STATE(sock, st) { (sock)->state = (st); }
 #define USOCKET_SET_SELECTABLE(sock, rw) { \
   (sock)->select_condition |= (rw); \
 }
@@ -134,7 +134,7 @@
 #define _OPTVAL_LEN_MAX 16
 
 #define usocket_smssock_writeready(d, s) \
-  (usockif_sendtxready((d)->usockfd, USOCKET_USOCKID((s))))
+  (usockif_sendtxready((d)->usockfd, USOCKET_USOCKID(s)))
 
 /****************************************************************************
  * Public Data Type
@@ -246,4 +246,4 @@ int usocket_smssock_num(FAR struct alt1250_s *dev);
 void usocket_smssock_readready(FAR struct alt1250_s *dev);
 void usocket_smssock_abort(FAR struct alt1250_s *dev);
 
-#endif  /* __LTE_ALT1250_ALT1250_SOCKET_H__ */
+#endif  /* __APPS_LTE_ALT1250_ALT1250_SOCKET_H */

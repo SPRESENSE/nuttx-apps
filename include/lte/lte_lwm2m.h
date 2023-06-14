@@ -249,7 +249,8 @@ typedef void (*lwm2mstub_ovstart_cb_t)(int seq_no, int srv_id,
 typedef void (*lwm2mstub_ovstop_cb_t)(int seq_no, int srv_id,
               struct lwm2mstub_instance_s *inst, char *token);
 
-typedef void (*lwm2mstub_operation_cb_t)(int event);
+typedef void (*lwm2mstub_operation_cb_t)(int event, int srv_id,
+              struct lwm2mstub_instance_s *inst);
 
 typedef void (*lwm2mstub_fwupstate_cb_t)(int event);
 

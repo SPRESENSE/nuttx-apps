@@ -109,6 +109,7 @@ union usrsock_request_u
   struct usrsock_request_listen_s       listen;
   struct usrsock_request_accept_s       accept;
   struct usrsock_request_ioctl_s        ioctl;
+  struct usrsock_request_available_s    available;
 };
 
 /****************************************************************************
@@ -135,6 +136,8 @@ static int getpeername_request(int fd, FAR struct gs2200m_s *priv,
                                FAR void *hdrbuf);
 static int ioctl_request(int fd, FAR struct gs2200m_s *priv,
                          FAR void *hdrbuf);
+static int available_request(int fd, FAR struct gs2200m_s *priv,
+                             FAR void *hdrbuf);
 static int bind_request(int fd, FAR struct gs2200m_s *priv,
                         FAR void *hdrbuf);
 static int listen_request(int fd, FAR struct gs2200m_s *priv,
@@ -204,6 +207,14 @@ handlers[USRSOCK_REQUEST__MAX] =
 {
   sizeof(struct usrsock_request_ioctl_s),
   ioctl_request,
+},
+{
+  0,
+  NULL,
+},
+{
+  sizeof(struct usrsock_request_available_s),
+  available_request,
 },
 };
 
@@ -491,16 +502,6 @@ static int socket_request(int fd, FAR struct gs2200m_s *priv,
   if (req->domain != AF_INET)
     {
       usockid = -EAFNOSUPPORT;
-    }
-  else if (!priv->usock_enable && req->domain == AF_INET &&
-           req->type != SOCK_CTRL)
-    {
-      /* If domain is AF_INET while usock_enable is false,
-       * set usockid to -EPROTONOSUPPORT to fallback kernel
-       * network stack.
-       */
-
-      usockid = -EPROTONOSUPPORT;
     }
   else
     {
@@ -1642,6 +1643,33 @@ static int ioctl_request(int fd, FAR struct gs2200m_s *priv,
     }
 
   return ret;
+}
+
+/****************************************************************************
+ * Name: available_request
+ ****************************************************************************/
+
+static int available_request(int fd, FAR struct gs2200m_s *priv,
+                             FAR void *hdrbuf)
+{
+  FAR struct usrsock_request_available_s *req = hdrbuf;
+  struct usrsock_message_req_ack_s resp;
+
+  /* Send ACK response */
+
+  memset(&resp, 0, sizeof(resp));
+
+  if (!priv->usock_enable && req->domain == AF_INET &&
+           req->type != SOCK_CTRL)
+    {
+      resp.result = (int)false;
+    }
+  else
+    {
+      resp.result = (int)true;
+    }
+
+  return _send_ack_common(fd, 0, req->head.xid, &resp);
 }
 
 /****************************************************************************

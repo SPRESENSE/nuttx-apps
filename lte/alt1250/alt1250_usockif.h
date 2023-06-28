@@ -78,6 +78,7 @@ union usrsock_requests_u
   struct usrsock_request_getpeername_s pname_req;
   struct usrsock_request_ioctl_s       ioctl_req;
   struct usrsock_request_shutdown_s    shutdown_req;
+  struct usrsock_request_available_s   available_req;
 };
 #define USOCK_HDR_SIZE sizeof(struct usrsock_request_common_s)
 

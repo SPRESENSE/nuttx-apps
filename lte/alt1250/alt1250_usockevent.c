@@ -49,7 +49,8 @@ static const usrsock_reqhandler_t handlers[USRSOCK_REQUEST__MAX] =
   [USRSOCK_REQUEST_LISTEN]      = usockreq_listen,
   [USRSOCK_REQUEST_ACCEPT]      = usockreq_accept,
   [USRSOCK_REQUEST_IOCTL]       = usockreq_ioctl,
-  [USRSOCK_REQUEST_SHUTDOWN]    = usockreq_shutdown
+  [USRSOCK_REQUEST_SHUTDOWN]    = usockreq_shutdown,
+  [USRSOCK_REQUEST_AVAILABLE]   = usockreq_available
 };
 
 /****************************************************************************

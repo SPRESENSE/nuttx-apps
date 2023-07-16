@@ -571,9 +571,9 @@
 #  undef NSH_HAVE_READFILE
 #endif
 
-/* nsh_foreach_direntry used by the ls and ps commands */
+/* nsh_foreach_direntry used by the ls and ps and fdinfo commands */
 
-#if defined(CONFIG_NSH_DISABLE_LS) && defined(CONFIG_NSH_DISABLE_PS)
+#if defined(CONFIG_NSH_DISABLE_LS) && defined(CONFIG_NSH_DISABLE_PS) && defined(CONFIG_NSH_DISABLE_FDINFO)
 #  undef NSH_HAVE_FOREACH_DIRENTRY
 #endif
 
@@ -950,6 +950,9 @@ void nsh_usbtrace(void);
 #endif
 #ifndef CONFIG_NSH_DISABLE_PS
   int cmd_ps(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv);
+#endif
+#if defined(CONFIG_FS_PROCFS) && !defined(CONFIG_NSH_DISABLE_FDINFO)
+  int cmd_fdinfo(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv);
 #endif
 #ifndef CONFIG_NSH_DISABLE_XD
   int cmd_xd(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv);

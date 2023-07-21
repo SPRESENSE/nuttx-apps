@@ -63,6 +63,9 @@
 #define APP_STATE_UNDER_CAPTURE   (1)
 #define APP_STATE_AFTER_CAPTURE   (2)
 
+#define SOPT_METERING_POSX  (10)
+#define SOPT_METERING_POSY  (20)
+
 /****************************************************************************
  * Private Types
  ****************************************************************************/
@@ -84,12 +87,13 @@ static int camera_prepare(int fd, enum v4l2_buf_type type,
                           uint16_t hsize, uint16_t vsize,
                           struct v_buffer **vbuf,
                           uint8_t buffernum, int buffersize);
-static void free_buffer(struct v_buffer  *buffers, uint8_t bufnum);
-static int parse_arguments(int argc, char *argv[],
-                           int *capture_num, enum v4l2_buf_type *type);
-static int get_camimage(int fd, struct v4l2_buffer *v4l2_buf,
-    enum v4l2_buf_type buf_type);
-static int release_camimage(int fd, struct v4l2_buffer *v4l2_buf);
+static void free_buffer(FAR struct v_buffer *buffers, uint8_t bufnum);
+static int parse_arguments(int argc, FAR char **argv,
+                           FAR int *capture_num,
+                           FAR enum v4l2_buf_type *type, FAR int *spot_en);
+static int get_camimage(int fd, FAR struct v4l2_buffer *v4l2_buf,
+                        enum v4l2_buf_type buf_type);
+static int release_camimage(int fd, FAR struct v4l2_buffer *v4l2_buf);
 static int start_stillcapture(int v_fd, enum v4l2_buf_type capture_type);
 static int stop_stillcapture(int v_fd, enum v4l2_buf_type capture_type);
 
@@ -270,58 +274,58 @@ static void free_buffer(struct v_buffer  *buffers, uint8_t bufnum)
  *   Parse and decode commandline arguments.
  ****************************************************************************/
 
-static int parse_arguments(int argc, char *argv[],
-                           int *capture_num, enum v4l2_buf_type *type)
+static int parse_arguments(int argc, FAR char **argv,
+                           FAR int *capture_num,
+                           FAR enum v4l2_buf_type *type,
+                           FAR int *spot_en)
 {
-  if (argc == 1)
-    {
-      *capture_num = DEFAULT_CAPTURE_NUM;
-      *type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    }
-  else if (argc == 2)
-    {
-      if (strncmp(argv[1], "-jpg", 5) == 0)
-        {
-          *capture_num = DEFAULT_CAPTURE_NUM;
-          *type = V4L2_BUF_TYPE_STILL_CAPTURE;
-        }
-      else
-        {
-          *capture_num = atoi(argv[1]);
-          if ((*capture_num < 0) || (*capture_num > MAX_CAPTURE_NUM))
-            {
-              printf("Invalid capture num(%d). must be >=0 and <=%d\n",
-                    *capture_num, MAX_CAPTURE_NUM);
-              return ERROR;
-            }
+  int is_num_set = 0;
+  *capture_num = DEFAULT_CAPTURE_NUM;
+  *type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+  *spot_en = 0;
 
-          *type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-        }
-    }
-  else if (argc == 3)
-    {
-      if (strncmp(argv[1], "-jpg", 5) == 0)
-        {
-          *capture_num = atoi(argv[2]);
-          if ((*capture_num < 0) || (*capture_num > MAX_CAPTURE_NUM))
-            {
-              printf("Invalid capture num(%d). must be >=0 and <=%d\n",
-                    *capture_num, MAX_CAPTURE_NUM);
-              return ERROR;
-            }
+  argc--;
+  argv++;
 
-          *type = V4L2_BUF_TYPE_STILL_CAPTURE;
-        }
-      else
-        {
-          printf("Invalid argument 1 : %s\n", argv[1]);
-          return ERROR;
-        }
-    }
-  else
+  if (argc > 3)
     {
       printf("Too many arguments\n");
       return ERROR;
+    }
+
+  while (argc)
+    {
+      if (strncmp(argv[0], "-jpg", 5) == 0)
+        {
+          *type = V4L2_BUF_TYPE_STILL_CAPTURE;
+        }
+      else if (strncmp(argv[0], "-s", 3) == 0)
+        {
+          *spot_en = 1;
+        }
+      else if (argv[0][0] == '-')
+        {
+          printf("Invalid argument : %s\n", argv[0]);
+        }
+      else if (is_num_set == 0)
+        {
+          *capture_num = atoi(argv[0]);
+          if ((*capture_num < 0) || (*capture_num > MAX_CAPTURE_NUM))
+            {
+              printf("Invalid capture num(%d). must be >=0 and <=%d\n",
+                    *capture_num, MAX_CAPTURE_NUM);
+              return ERROR;
+            }
+          is_num_set = 1;
+        }
+      else
+        {
+          printf("Invalid argument order : %s\n", argv[0]);
+          return ERROR;
+        }
+
+      argc--;
+      argv++;
     }
 
   return OK;
@@ -428,6 +432,57 @@ static int stop_stillcapture(int v_fd, enum v4l2_buf_type capture_type)
 }
 
 /****************************************************************************
+ * Name: set_ext_ctrls()
+ *
+ * Description:
+ *   Utility function to call VIDIOC_S_EXT_CTRLS.
+ ****************************************************************************/
+
+static int set_ext_ctrls(int fd, uint16_t ctl_cls, uint16_t cid, int value)
+{
+  struct v4l2_ext_controls ctrls;
+  struct v4l2_ext_control control;
+
+  control.id = cid;
+  control.value = value;
+
+  ctrls.count = 1;
+  ctrls.ctrl_class = ctl_cls;
+  ctrls.controls = &control;
+
+  return ioctl(fd, VIDIOC_S_EXT_CTRLS, (unsigned long)&ctrls);
+}
+
+/****************************************************************************
+ * Name: set_spot_metering()
+ *
+ * Description:
+ *   Enable / Disable Sopt Metering
+ ****************************************************************************/
+
+static int set_spot_metering(int fd, bool on_xoff)
+{
+  return set_ext_ctrls(fd, V4L2_CTRL_CLASS_CAMERA,
+                           V4L2_CID_EXPOSURE_METERING,
+                           on_xoff ? V4L2_EXPOSURE_METERING_SPOT :
+                                     V4L2_EXPOSURE_METERING_AVERAGE);
+}
+
+/****************************************************************************
+ * Name: set_spot_metering_pos()
+ *
+ * Description:
+ *   Set position to measure as spot metering.
+ ****************************************************************************/
+
+static int set_spot_metering_pos(int fd, int x, int y)
+{
+  int value = ((x & 0xffff) << 16) | (y & 0xffff);
+  return set_ext_ctrls(fd, V4L2_CTRL_CLASS_CAMERA,
+                           V4L2_CID_EXPOSURE_METERING_SPOT_POSITION, value);
+}
+
+/****************************************************************************
  * Name: get_imgsensor_name()
  *
  * Description:
@@ -454,15 +509,16 @@ static const char *get_imgsensor_name(int fd)
  *   main routine of this example.
  ****************************************************************************/
 
-int main(int argc, FAR char *argv[])
+int main(int argc, FAR char **argv)
 {
   int ret;
   int v_fd;
   int capture_num = DEFAULT_CAPTURE_NUM;
   enum v4l2_buf_type capture_type = V4L2_BUF_TYPE_STILL_CAPTURE;
+  int spot_en = 0;
   struct v4l2_buffer v4l2_buf;
-  const char *save_dir;
-  const char *sensor;
+  FAR const char *save_dir;
+  FAR const char *sensor;
   uint16_t w;
   uint16_t h;
   int is_eternal;
@@ -478,10 +534,10 @@ int main(int argc, FAR char *argv[])
 
   /* =====  Parse and Check arguments  ===== */
 
-  ret = parse_arguments(argc, argv, &capture_num, &capture_type);
+  ret = parse_arguments(argc, argv, &capture_num, &capture_type, &spot_en);
   if (ret != OK)
     {
-      printf("usage: %s ([-jpg]) ([capture num])\n", argv[0]);
+      printf("usage: %s ([-jpg]) ([-s]) ([capture num])\n", argv[0]);
       return ERROR;
     }
 
@@ -641,6 +697,12 @@ int main(int argc, FAR char *argv[])
       printf(" After finishing taking pictures,"
              " this app will be finished after %d seconds.\n",
               KEEP_VIDEO_TIME);
+    }
+
+  if (spot_en)
+    {
+      set_spot_metering(v_fd, true);
+      set_spot_metering_pos(v_fd, SOPT_METERING_POSX, SOPT_METERING_POSY);
     }
 
   gettimeofday(&start, NULL);

@@ -493,8 +493,11 @@ typedef void (*lwm2mstub_ovstop_cb_t)(int seq_no, int srv_id,
  * This type of function pointer is registered by @ref lte_set_report_m2moperation to get brief request code from the server
  *
  * @param [in] event: Operation code from Server. Refer to @ref ltelwm2m_macro_serverop for more details
+ * @param [in] srv_id: Server ID which is received the request.
+ * @param [in] inst: Requested resource url.
  */
-typedef void (*lwm2mstub_operation_cb_t)(int event);
+typedef void (*lwm2mstub_operation_cb_t)(int event, int srv_id,
+              struct lwm2mstub_instance_s *inst);
 
 /**
  * @brief Firmware update call back function type.

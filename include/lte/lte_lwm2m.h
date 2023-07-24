@@ -648,7 +648,24 @@ int lte_getm2m_objresourceinfo(uint16_t objids, int res_num,
  */
 int lte_setm2m_objectdefinition(uint16_t objids, int res_num,
                                 struct lwm2mstub_resource_s *reses);
+
+/**
+ * @brief Get current Queue mode of LwM2M
+ *
+ * Get current Quene mode setting.
+ * @retval "true" Queue mode is enabled
+ * @retval "false" Queue mode is disabled
+ */
 bool lte_getm2m_qmode(void);
+
+/**
+ * @brief Set Queue mode of LwM2M
+ *
+ * Set Quene mode setting.
+ * @param [in] en: Queue mode enable.
+ * @retval OK Operation is done successfully
+ * @retval non-OK  Any error is occurred
+ */
 int lte_setm2m_qmode(bool en);
 
 /**

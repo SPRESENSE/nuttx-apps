@@ -1,5 +1,5 @@
 /****************************************************************************
- * apps/examples/nrf24l01_btle/nrf24l01_btle.h
+ * apps/system/ofloader/ofloader.h
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,82 +18,51 @@
  *
  ****************************************************************************/
 
-#ifndef __APPS_EXAMPLES_NRF24L01_BTLE_NRF24L01_BTLE_H
-#define __APPS_EXAMPLES_NRF24L01_BTLE_NRF24L01_BTLE_H
+#ifndef __APPS_SYSTEM_OFLOADER_OFLOADER_H
+#define __APPS_SYSTEM_OFLOADER_OFLOADER_H
 
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
-#include <nuttx/config.h>
-
-#include <stdint.h>
-#include <stdbool.h>
-#include <debug.h>
+#include <syslog.h>
+#include <stdlib.h>
 
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
 
-/* Service UUIDs used on the nRF8001 and nRF51822 platforms */
+#define OFLOADER_QNAME "ofloader"
 
-#define NRF_TEMPERATURE_SERVICE_UUID        0x1809
-#define NRF_ENVIRONMENTAL_SERVICE_UUID      0x181A
+#define OFLOADER_WRITE  1
+#define OFLOADER_READ   2
+#define OFLOADER_VERIFY 3
+#define OFLOADER_SYNC   4
+#define OFLOADER_ERROR  5
+#define OFLOADER_FINSH  6
+
+#ifdef CONFIG_SYSTEM_OFLOADER_DEBUG
+#define OFLOADER_DEBUG(...) syslog(LOG_INFO, ##__VA_ARGS__)
+#else
+#define OFLOADER_DEBUG(...)
+#endif
 
 /****************************************************************************
  * Public Type Definitions
  ****************************************************************************/
 
-/* helper struct for sending temperature as BT service data */
-
-struct nrf_service_data
-  {
-    int16_t   service_uuid;
-    uint8_t   value;
-  };
-
-/* advertisement PDU */
-
-struct btle_adv_pdu
-  {
-    /* PDU type, most of it 0x42 */
-
-    uint8_t pdu_type;
-
-    /* payload size */
-
-    uint8_t pl_size;
-
-    /* MAC address */
-
-    uint8_t mac[6];
-
-    /* payload (including 3 bytes for CRC) */
-
-    uint8_t payload[24];
-  };
-
-/* payload chunk in advertisement PDU payload */
-
-struct btle_pdu_chunk
-  {
-    uint8_t size;
-    uint8_t type;
-    uint8_t data[];
-  };
+struct ofloader_msg
+{
+  int atcion;
+  off_t addr;
+  size_t size;
+  FAR void *buff;
+};
 
 /****************************************************************************
- * Public Data
+ * Public data
  ****************************************************************************/
 
-/* helper macro to access chunk at specific offset */
+extern FAR void *g_create_idle;
 
-#define chunk(x, y) ((struct btle_pdu_chunk *)(x.payload+y))
-
-int nrf24_cfg(int fd);
-
-int nrf24_open(void);
-
-int nrf24_send(int wl_fd, uint8_t * buf, uint8_t len);
-
-#endif /* __APPS_EXAMPLES_NRF24L01_BTLE_NRF24L01_BTLE_H */
+#endif /* __APPS_SYSTEM_OFLOADER_OFLOADER_H */

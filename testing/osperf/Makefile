@@ -1,5 +1,5 @@
 ############################################################################
-# apps/graphics/libyuv/Makefile
+# apps/testing/osperf/Makefile
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -20,27 +20,11 @@
 
 include $(APPDIR)/Make.defs
 
-SRCDIR = libyuv
+PROGNAME  = osperf
+PRIORITY  = $(CONFIG_TESTING_OSPERF_PRIORITY)
+STACKSIZE = $(CONFIG_TESTING_OSPERF_STACKSIZE)
+MODULE    = $(CONFIG_TESTING_OSPERF)
 
-CXXEXT := .cc
-CXXFLAGS += -Wno-shadow -Wno-undef
-CXXSRCS = $(wildcard $(SRCDIR)/source/*.cc)
-
-libyuv.tar.gz:
-	$(Q) curl -L https://chromium.googlesource.com/libyuv/libyuv/+archive/refs/heads/$(CONFIG_LIBYUV_BRANCH).tar.gz -o libyuv.tar.gz
-	$(Q) mkdir -p $(SRCDIR)
-	$(Q) tar zxf libyuv.tar.gz --directory $(SRCDIR)
-ifeq ($(CONFIG_LIBYUV_BRANCH),"stable")
-	$(Q) patch -p0 < 0001-include-libyuv-fix-strict-prototype-warning.patch
-endif
-
-# Download and unpack tarball if no git repo found
-ifeq ($(wildcard libyuv/.git),)
-context:: libyuv.tar.gz
-
-distclean::
-	$(call DELDIR, libyuv)
-	$(call DELFILE, libyuv.tar.gz)
-endif
+MAINSRC = osperf.c
 
 include $(APPDIR)/Application.mk

@@ -1,5 +1,5 @@
 /****************************************************************************
- * apps/examples/watcher/task_mn.h
+ * apps/system/uorb/sensor/force.c
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,61 +18,32 @@
  *
  ****************************************************************************/
 
-#ifndef __APPS_EXAMPLES_WATCHER_TASK_MN_H
-#define __APPS_EXAMPLES_WATCHER_TASK_MN_H
-
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
-#include <nuttx/config.h>
-#include <nuttx/note/noteram_driver.h>
+#include <sensor/force.h>
 
 /****************************************************************************
- * Pre-processor Definitions
+ * Private Functions
  ****************************************************************************/
 
-/****************************************************************************
- * Public Types
- ****************************************************************************/
-
-struct request_s
+#ifdef CONFIG_DEBUG_UORB
+static void print_sensor_force_message(FAR const struct orb_metadata *meta,
+                                       FAR const void *buffer)
 {
-    pid_t task_id;
-    int code;
-};
+  FAR const struct sensor_force *message = buffer;
+  const orb_abstime now = orb_absolute_time();
 
-struct task_node_s
-{
-    pid_t task_id;
-    bool reset;
-    struct task_node_s *next;
-};
-
-struct task_list_s
-{
-    struct task_node_s *head;
-    struct task_node_s *tail;
-};
+  uorbinfo_raw("%s:\ttimestamp: %" PRIu64 " (%" PRIu64 " us ago) "
+               "value: %.2f event: %" PRIi32 "",
+               meta->o_name, message->timestamp, now - message->timestamp,
+               message->force, message->event);
+}
+#endif
 
 /****************************************************************************
  * Public Data
  ****************************************************************************/
 
-extern volatile struct request_s request;
-extern struct task_list_s watched_tasks;
-
-/****************************************************************************
- * Public Function Prototypes
- ****************************************************************************/
-
-void task_mn_print_tasks_status(void);
-void task_mn_reset_all(void);
-struct task_node_s *task_mn_is_task_subscribed(pid_t id);
-void task_mn_add_to_list(pid_t id);
-void task_mn_remove_from_list(pid_t id);
-void task_mn_subscribe(pid_t id);
-void task_mn_unsubscribe(pid_t id);
-bool task_mn_all_tasks_fed(void);
-
-#endif /* __APPS_EXAMPLES_WATCHER_TASK_MN_H */
+ORB_DEFINE(sensor_force, struct sensor_force, print_sensor_force_message);

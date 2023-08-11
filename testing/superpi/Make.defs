@@ -1,5 +1,5 @@
 ############################################################################
-# apps/testing/crypto/Makefile
+# apps/testing/superpi/Make.defs
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -18,43 +18,6 @@
 #
 ############################################################################
 
-include $(APPDIR)/Make.defs
-
-# Generic file system stress test application info
-ifeq ($(CONFIG_TESTING_CRYPTO_3DES_CBC),y)
-PROGNAME += des3cbc
-MAINSRC  += 3descbc.c
+ifneq ($(CONFIG_SUPERPI),)
+CONFIGURED_APPS += $(APPDIR)/testing/superpi
 endif
-
-ifeq ($(CONFIG_TESTING_CRYPTO_AES_XTS),y)
-PROGNAME += aesxts
-MAINSRC  += aesxts.c
-endif
-
-ifeq ($(CONFIG_TESTING_CRYPTO_AES_CTR),y)
-PROGNAME += aesctr
-MAINSRC  += aesctr.c
-endif
-
-ifeq ($(CONFIG_TESTING_CRYPTO_AES_CBC),y)
-PROGNAME += aescbc
-MAINSRC  += aescbc.c
-endif
-
-ifeq ($(CONFIG_TESTING_CRYPTO_HMAC),y)
-PROGNAME += hmac
-MAINSRC  += hmac.c
-endif
-
-ifeq ($(CONFIG_TESTING_CRYPTO_HASH),y)
-PROGNAME += hash
-MAINSRC +=  hash.c
-endif
-
-PRIORITY = $(CONFIG_TESTING_CRYPTO_PRIORITY)
-STACKSIZE = $(CONFIG_TESTING_CRYPTO_STACKSIZE)
-MODULE = $(CONFIG_TESTING_CRYPTO)
-
-# Generic file system stress test
-
-include $(APPDIR)/Application.mk

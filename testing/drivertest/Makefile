@@ -57,6 +57,7 @@ ifneq ($(CONFIG_SIG_EVTHREAD),)
 MAINSRC  += drivertest_posix_timer.c
 PROGNAME += cmocka_posix_timer
 endif
+endif
 
 ifneq ($(CONFIG_WATCHDOG),)
 ifneq ($(CONFIG_BOARDCTL_RESET_CAUSE),)
@@ -73,6 +74,11 @@ endif
 ifneq ($(CONFIG_WATCHDOG),)
 MAINSRC  += drivertest_watchdog.c
 PROGNAME += cmocka_driver_watchdog
+endif
+
+ifneq ($(CONFIG_ADC),)
+MAINSRC  += drivertest_adc.c
+PROGNAME += cmocka_driver_adc
 endif
 
 ifneq ($(CONFIG_I2C)$(CONFIG_SPI),)
@@ -115,6 +121,11 @@ endif
 ifneq ($(CONFIG_LCD_DEV),)
 MAINSRC  += drivertest_lcd.c
 PROGNAME += cmocka_driver_lcd
+endif
+
+ifneq ($(CONFIG_REGULATOR),)
+MAINSRC  += drivertest_regulator.c
+PROGNAME += cmocka_driver_regulator
 endif
 
 include $(APPDIR)/Application.mk

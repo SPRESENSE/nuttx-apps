@@ -1,5 +1,5 @@
 ############################################################################
-# apps/testing/crypto/Makefile
+# apps/testing/superpi/Makefile
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -20,41 +20,35 @@
 
 include $(APPDIR)/Make.defs
 
-# Generic file system stress test application info
-ifeq ($(CONFIG_TESTING_CRYPTO_3DES_CBC),y)
-PROGNAME += des3cbc
-MAINSRC  += 3descbc.c
+SUPERPI_UNPACK   = superpi
+SUPERPI_URL      = https://github.com/Fibonacci43/SuperPI/archive
+SUPERPI_VERSION  = main
+SUPERPI_ZIP      = $(SUPERPI_VERSION).zip
+UNPACK          ?= unzip -q -o
+
+CSRCS    += superpi/fftsg_h.c
+PROGNAME  = $(CONFIG_SUPERPI_PROGNAME)
+PRIORITY  = $(CONFIG_SUPERPI_PRIORITY)
+STACKSIZE = $(CONFIG_SUPERPI_STACKSIZE)
+MODULE    = $(CONFIG_SUPERPI)
+MAINSRC   = superpi/pi_fftcs.c
+
+$(SUPERPI_ZIP):
+	@echo "Downloading: $(SUPERPI_URL)/$(SUPERPI_ZIP)"
+	$(Q) curl -O -L $(SUPERPI_URL)/$(SUPERPI_ZIP)
+
+$(SUPERPI_UNPACK): $(SUPERPI_ZIP)
+	@echo "Unpacking: $(SUPERPI_ZIP) -> $(SUPERPI_UNPACK)"
+	$(Q) $(UNPACK) $(SUPERPI_ZIP)
+	$(Q) mv	SuperPI-$(SUPERPI_VERSION) $(SUPERPI_UNPACK)
+	$(Q) touch $(SUPERPI_UNPACK)
+
+ifeq ($(wildcard $(SUPERPI_UNPACK)/.git),)
+context:: $(SUPERPI_UNPACK)
+
+distclean::
+	$(call DELDIR, $(SUPERPI_UNPACK))
+	$(call DELFILE, $(SUPERPI_ZIP))
 endif
-
-ifeq ($(CONFIG_TESTING_CRYPTO_AES_XTS),y)
-PROGNAME += aesxts
-MAINSRC  += aesxts.c
-endif
-
-ifeq ($(CONFIG_TESTING_CRYPTO_AES_CTR),y)
-PROGNAME += aesctr
-MAINSRC  += aesctr.c
-endif
-
-ifeq ($(CONFIG_TESTING_CRYPTO_AES_CBC),y)
-PROGNAME += aescbc
-MAINSRC  += aescbc.c
-endif
-
-ifeq ($(CONFIG_TESTING_CRYPTO_HMAC),y)
-PROGNAME += hmac
-MAINSRC  += hmac.c
-endif
-
-ifeq ($(CONFIG_TESTING_CRYPTO_HASH),y)
-PROGNAME += hash
-MAINSRC +=  hash.c
-endif
-
-PRIORITY = $(CONFIG_TESTING_CRYPTO_PRIORITY)
-STACKSIZE = $(CONFIG_TESTING_CRYPTO_STACKSIZE)
-MODULE = $(CONFIG_TESTING_CRYPTO)
-
-# Generic file system stress test
 
 include $(APPDIR)/Application.mk

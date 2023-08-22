@@ -1,5 +1,5 @@
 ############################################################################
-# apps/gpsutils/Make.defs
+# apps/testing/setest/Makefile
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -18,4 +18,16 @@
 #
 ############################################################################
 
-include $(wildcard $(APPDIR)/gpsutils/*/Make.defs)
+include $(APPDIR)/Make.defs
+
+# setest built-in application info
+
+PROGNAME  = $(CONFIG_TESTING_SETEST_PROGNAME)
+PRIORITY  = $(CONFIG_TESTING_SETEST_PRIORITY)
+STACKSIZE = $(CONFIG_TESTING_SETEST_STACKSIZE)
+
+# setest main source
+
+MAINSRC = setest.c
+
+include $(APPDIR)/Application.mk

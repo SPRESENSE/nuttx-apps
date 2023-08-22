@@ -1,5 +1,5 @@
 ############################################################################
-# apps/gpsutils/minmea/Make.defs
+# apps/crypto/controlse/Makefile
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -18,7 +18,17 @@
 #
 ############################################################################
 
-ifneq ($(CONFIG_GPSUTILS_MINMEA_LIB),)
-CONFIGURED_APPS += $(APPDIR)/gpsutils/minmea
-CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/gpsutils/minmea
-endif
+include $(APPDIR)/Make.defs
+
+# controlse built-in application info
+
+PROGNAME  = $(CONFIG_CRYPTO_CONTROLSE_PROGNAME)
+PRIORITY  = $(CONFIG_CRYPTO_CONTROLSE_PRIORITY)
+STACKSIZE = $(CONFIG_CRYPTO_CONTROLSE_STACKSIZE)
+
+# controlse main source
+
+MAINSRC = controlse_main.c
+CSRCS = x509_utils.c mbedtls_extension.c
+
+include $(APPDIR)/Application.mk

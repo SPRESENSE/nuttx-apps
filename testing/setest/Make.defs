@@ -1,5 +1,5 @@
 ############################################################################
-# apps/gpsutils/Makefile
+# apps/testing/setest/Make.defs
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -18,6 +18,6 @@
 #
 ############################################################################
 
-MENUDESC = "GPS Utilities"
-
-include $(APPDIR)/Directory.mk
+ifneq ($(CONFIG_TESTING_SETEST),)
+CONFIGURED_APPS += $(APPDIR)/testing/setest
+endif

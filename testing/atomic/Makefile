@@ -1,5 +1,5 @@
 ############################################################################
-# apps/examples/ws2812/Makefile
+# apps/testing/atomic/Make.defs
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -20,13 +20,15 @@
 
 include $(APPDIR)/Make.defs
 
-# MTD R/W buffer test Example
+# Atomic ! built-in application info
 
-PROGNAME = $(CONFIG_EXAMPLES_WS2812_ESP32_RMT_PROGNAME)
-PRIORITY = $(CONFIG_EXAMPLES_WS2812_ESP32_RMT_PRIORITY)
-STACKSIZE = $(CONFIG_EXAMPLES_WS2812_ESP32_RMT_STACKSIZE)
-MODULE = $(CONFIG_EXAMPLES_WS2812_ESP32_RMT)
+PROGNAME  = $(CONFIG_TESTING_ATOMIC_PROGNAME)
+PRIORITY  = $(CONFIG_TESTING_ATOMIC_PRIORITY)
+STACKSIZE = $(CONFIG_TESTING_ATOMIC_STACKSIZE)
+MODULE    = $(CONFIG_TESTING_ATOMIC)
 
-MAINSRC = ws2812esp32rmt_main.c
+# Atomic! Example
+
+MAINSRC = atomic_main.c
 
 include $(APPDIR)/Application.mk

@@ -19,9 +19,11 @@
 *.sym
 *.su
 *~
+.built
 .context
 .depend
 .kconfig
+/*.lock
 /bin
 /boot_romfsimg.h
 /external
@@ -37,4 +39,3 @@ Make.dep
 .dirlinks
 .vscode
 .DS_Store
-testing/nist-sts/*

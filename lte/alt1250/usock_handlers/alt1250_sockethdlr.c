@@ -118,6 +118,12 @@ static int postproc_setfl(FAR struct alt1250_s *dev,
   if (*usock_result >= 0)
     {
       USOCKET_SET_STATE(usock, SOCKET_STATE_OPENED);
+      if (USOCKET_TYPE(usock) == SOCK_DGRAM)
+        {
+          ret = REP_SEND_ACK_TXREADY;
+          USOCKET_CLR_SELECTABLE(usock, SELECT_WRITABLE);
+        }
+
       usocket_commitstate(dev);
 
       switch (USOCKET_REQID(usock))

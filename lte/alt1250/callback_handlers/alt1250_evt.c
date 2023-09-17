@@ -1249,20 +1249,20 @@ static uint64_t lte_set_report_netinfo_exec_cb(FAR void *cb,
 
       if ((pdn->ipaddr_num == 1) && (ipaddr->ip_type == LTE_IPTYPE_V4))
         {
-          dns_set_queryaddrtype(AF_INET);
+          dns_set_queryfamily(AF_INET);
         }
       else if ((pdn->ipaddr_num == 1) && (ipaddr->ip_type == LTE_IPTYPE_V6))
         {
-          dns_set_queryaddrtype(AF_INET6);
+          dns_set_queryfamily(AF_INET6);
         }
       else
         {
-          dns_set_queryaddrtype(AF_UNSPEC);
+          dns_set_queryfamily(AF_UNSPEC);
         }
     }
   else
     {
-      dns_set_queryaddrtype(AF_UNSPEC);
+      dns_set_queryfamily(AF_UNSPEC);
     }
 #endif
 

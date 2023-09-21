@@ -496,11 +496,11 @@ static int socket_request(int fd, FAR struct gs2200m_s *priv,
            req->type != SOCK_CTRL)
     {
       /* If domain is AF_INET while usock_enable is false,
-       * set usockid to -EPROTONOSUPPORT to fallback kernel
+       * set usockid to -ENOTSUP to fallback kernel
        * network stack.
        */
 
-      usockid = -EPROTONOSUPPORT;
+      usockid = -ENOTSUP;
     }
   else
     {

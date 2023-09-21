@@ -232,9 +232,6 @@ int usockif_readrequest(int fd, FAR struct usrsock_request_buff_s *buf)
       case USRSOCK_REQUEST_SHUTDOWN:
         rsize = sizeof(struct usrsock_request_shutdown_s);
         break;
-      case USRSOCK_REQUEST_AVAILABLE:
-        rsize = sizeof(struct usrsock_request_available_s);
-        break;
       default:
         dbg_alt1250("unexpected request id: %d\n", buf->request.head.reqid);
         return -EINVAL;

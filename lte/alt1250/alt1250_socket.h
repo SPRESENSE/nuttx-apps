@@ -173,8 +173,6 @@
 #define usocket_smssock_writeready(d, s) \
   (usockif_sendtxready((d)->usockfd, USOCKET_USOCKID(s)))
 
-#define IS_SUPPORTED_INET_DOMAIN(d) (((d) == AF_INET) || ((d) == AF_INET6))
-
 /****************************************************************************
  * Public Data Type
  ****************************************************************************/

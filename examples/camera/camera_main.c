@@ -316,6 +316,7 @@ static int parse_arguments(int argc, FAR char **argv,
                     *capture_num, MAX_CAPTURE_NUM);
               return ERROR;
             }
+
           is_num_set = 1;
         }
       else

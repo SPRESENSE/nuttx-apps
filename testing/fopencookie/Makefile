@@ -1,5 +1,5 @@
 ############################################################################
-# apps/system/usbmsc/Makefile
+# apps/testing/fopencookie/Makefile
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -20,11 +20,13 @@
 
 include $(APPDIR)/Make.defs
 
-PROGNAME = msconn msdis
-PRIORITY = $(CONFIG_SYSTEM_USBMSC_CMD_PRIORITY)
-STACKSIZE = $(CONFIG_SYSTEM_USBMSC_CMD_STACKSIZE)
-MODULE = $(CONFIG_SYSTEM_USBMSC)
+# SMART filesystem test tool
 
-MAINSRC = usbmsc_main.c
+PROGNAME = fopencookie_test
+PRIORITY = SCHED_PRIORITY_DEFAULT
+STACKSIZE = 4096
+MODULE = $(CONFIG_TESTING_FOPENCOOKIE_TEST)
+
+MAINSRC = fopencookie.c
 
 include $(APPDIR)/Application.mk

@@ -1,5 +1,5 @@
 ############################################################################
-# apps/system/usbmsc/Makefile
+# apps/testing/fopencookie/Make.defs
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -18,13 +18,6 @@
 #
 ############################################################################
 
-include $(APPDIR)/Make.defs
-
-PROGNAME = msconn msdis
-PRIORITY = $(CONFIG_SYSTEM_USBMSC_CMD_PRIORITY)
-STACKSIZE = $(CONFIG_SYSTEM_USBMSC_CMD_STACKSIZE)
-MODULE = $(CONFIG_SYSTEM_USBMSC)
-
-MAINSRC = usbmsc_main.c
-
-include $(APPDIR)/Application.mk
+ifneq ($(CONFIG_TESTING_FOPENCOOKIE_TEST),)
+CONFIGURED_APPS += $(APPDIR)/testing/fopencookie
+endif

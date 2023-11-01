@@ -47,24 +47,24 @@
  * Pre-processor Definitions
  ****************************************************************************/
 
-#define IMAGE_JPG_SIZE     (512*1024)  /* 512kB for FullHD Jpeg file. */
-#define IMAGE_RGB_SIZE     (320*240*2) /* QVGA RGB565 */
+#define IMAGE_JPG_SIZE     (CONFIG_EXAMPLES_CAMERA_IMAGE_JPG_SIZE)
+#define IMAGE_RGB_SIZE     (CONFIG_EXAMPLES_CAMERA_IMAGE_RGB_SIZE)
 
-#define VIDEO_BUFNUM       (3)
-#define STILL_BUFNUM       (1)
+#define VIDEO_BUFNUM       (CONFIG_EXAMPLES_CAMERA_VIDEO_BUFNUM)
+#define STILL_BUFNUM       (CONFIG_EXAMPLES_CAMERA_STILL_BUFNUM)
 
-#define MAX_CAPTURE_NUM     (100)
-#define DEFAULT_CAPTURE_NUM (10)
+#define MAX_CAPTURE_NUM     (CONFIG_EXAMPLES_CAMERA_MAX_CAPTURE_NUM)
+#define DEFAULT_CAPTURE_NUM (CONFIG_EXAMPLES_CAMERA_DEFAULT_CAPTURE_NUM)
 
-#define START_CAPTURE_TIME  (5)   /* seconds */
-#define KEEP_VIDEO_TIME     (10)  /* seconds */
+#define START_CAPTURE_TIME  (CONFIG_EXAMPLES_CAMERA_START_CAPTURE_TIME)   /* seconds */
+#define KEEP_VIDEO_TIME     (CONFIG_EXAMPLES_CAMERA_KEEP_VIDEO_TIME)      /* seconds */
+
+#define SPOT_METERING_POSX  (CONFIG_EXAMPLES_CAMERA_SPOT_METERING_POSX)
+#define SPOT_METERING_POSY  (CONFIG_EXAMPLES_CAMERA_SPOT_METERING_POSX)
 
 #define APP_STATE_BEFORE_CAPTURE  (0)
 #define APP_STATE_UNDER_CAPTURE   (1)
 #define APP_STATE_AFTER_CAPTURE   (2)
-
-#define SOPT_METERING_POSX  (10)
-#define SOPT_METERING_POSY  (20)
 
 /****************************************************************************
  * Private Types
@@ -316,6 +316,7 @@ static int parse_arguments(int argc, FAR char **argv,
                     *capture_num, MAX_CAPTURE_NUM);
               return ERROR;
             }
+
           is_num_set = 1;
         }
       else
@@ -702,7 +703,7 @@ int main(int argc, FAR char **argv)
   if (spot_en)
     {
       set_spot_metering(v_fd, true);
-      set_spot_metering_pos(v_fd, SOPT_METERING_POSX, SOPT_METERING_POSY);
+      set_spot_metering_pos(v_fd, SPOT_METERING_POSX, SPOT_METERING_POSY);
     }
 
   gettimeofday(&start, NULL);

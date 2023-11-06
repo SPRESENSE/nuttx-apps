@@ -76,7 +76,7 @@ typedef uint64_t orb_abstime;
  * Pre-processor Definitions
  ****************************************************************************/
 
-#define ORB_SENSOR_PATH        "/dev/sensor/"
+#define ORB_SENSOR_PATH        "/dev/uorb/"
 #define ORB_USENSOR_PATH       "/dev/usensor"
 #define ORB_PATH_MAX           (NAME_MAX + 16)
 
@@ -129,9 +129,9 @@ typedef uint64_t orb_abstime;
  * @param name      The name of the topic.
  */
 #if defined(__cplusplus)
-# define ORB_DECLARE(name) extern "C" const struct orb_metadata g_orb_##name
+#  define ORB_DECLARE(name) extern "C" const struct orb_metadata g_orb_##name
 #else
-# define ORB_DECLARE(name) extern const struct orb_metadata g_orb_##name
+#  define ORB_DECLARE(name) extern const struct orb_metadata g_orb_##name
 #endif
 
 /**
@@ -210,7 +210,7 @@ int orb_close(int fd);
  *
  * Description:
  *   This performs the initial advertisement of a topic; it creates the topic
- *   node in /dev/sensor and publishes the initial data.
+ *   node in /dev/uorb and publishes the initial data.
  *
  * Input Parameters:
  *   meta         The uORB metadata (usually from the ORB_ID() macro)

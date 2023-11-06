@@ -40,7 +40,6 @@
 #include "lte/lapi.h"
 
 #include "lapi_dbg.h"
-#include "lapi_util.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -114,7 +113,7 @@ int lte_data_allow(uint8_t session_id, uint8_t allow,
   return -EOPNOTSUPP;
 }
 
-int lte_get_errinfo(lte_errinfo_t *info)
+int lte_get_errinfo(FAR lte_errinfo_t *info)
 {
   int ret;
 
@@ -130,24 +129,24 @@ int lte_get_errinfo(lte_errinfo_t *info)
 
   ret = lapi_req(LTE_CMDID_GETERRINFO,
                  NULL, 0,
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)outarg, nitems(outarg),
                  NULL);
 
   return ret;
 }
 
-int lte_send_atcmd_sync(const char *cmd, int cmdlen,
-  char *respbuff, int respbufflen, int *resplen)
+int lte_send_atcmd_sync(FAR const char *cmd, int cmdlen,
+  FAR char *respbuff, int respbufflen, FAR int *resplen)
 {
   int32_t ret;
   FAR void *inarg[] =
     {
-      (void *)cmd, (void *)cmdlen
+      (FAR void *)cmd, (FAR void *)cmdlen
     };
 
   FAR void *outarg[] =
     {
-      respbuff, (void *)respbufflen, resplen
+      respbuff, (FAR void *)respbufflen, resplen
     };
 
   if (!cmd
@@ -169,8 +168,8 @@ int lte_send_atcmd_sync(const char *cmd, int cmdlen,
     }
 
   ret = lapi_req(LTE_CMDID_SENDATCMD,
-                 (FAR void *)inarg, ARRAY_SZ(inarg),
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)inarg, nitems(inarg),
+                 (FAR void *)outarg, nitems(outarg),
                  NULL);
 
   return ret;

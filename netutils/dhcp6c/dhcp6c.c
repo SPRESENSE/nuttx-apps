@@ -24,6 +24,7 @@
 
 #include <nuttx/config.h>
 #include <nuttx/compiler.h>
+#include <nuttx/clock.h>
 
 #include <time.h>
 #include <fcntl.h>
@@ -38,8 +39,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <malloc.h>
+#include <pthread.h>
 #include <sys/time.h>
-#include <nuttx/clock.h>
+#include <sys/param.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -48,6 +50,7 @@
 #include <net/ethernet.h>
 #include <arpa/inet.h>
 
+#include "netutils/netlib.h"
 #include "netutils/dhcp6c.h"
 
 /****************************************************************************
@@ -60,8 +63,6 @@
 #define DHCPV6_SERVER_PORT 547
 #define DHCPV6_DUID_LLADDR 3
 #define DHCPV6_REQ_DELAY 1
-
-#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 #define dhcpv6_for_each_option(_o, start, end, otype, olen, odata)\
     for ((_o) = (FAR uint8_t *)(start); (_o) + 4 <= (FAR uint8_t *)(end) &&\
@@ -612,7 +613,7 @@ static void dhcp6c_send(FAR void *handle, enum dhcpv6_msg_e type,
   dhcp6c_set_iov(&iov[9], &hdr_ia_pd, sizeof(hdr_ia_pd));
   dhcp6c_set_iov(&iov[10], ia_pd, ia_pd_len);
 
-  cnt = ARRAY_SIZE(iov);
+  cnt = nitems(iov);
   if (type == DHCPV6_MSG_INFO_REQ)
     {
       cnt = 5;
@@ -1043,7 +1044,6 @@ static int dhcp6c_commit_advert(FAR void *handle, uint32_t elapsed)
 
 static time_t dhcp6c_parse_ia(FAR void *handle, FAR void *opt, FAR void *end)
 {
-  FAR struct dhcp6c_state_s *pdhcp6c = (FAR struct dhcp6c_state_s *)handle;
   uint32_t timeout = UINT32_MAX;
   uint16_t otype;
   uint16_t olen;
@@ -1686,6 +1686,7 @@ static FAR void *dhcp6c_precise_open(FAR const char *ifname,
                                      uint16_t opt[], int cnt)
 {
   FAR struct dhcp6c_state_s *pdhcp6c;
+  struct sockaddr_in6 client_addr;
   struct ifreq ifr;
   size_t client_id_len;
   int val = 1;
@@ -1696,15 +1697,6 @@ static FAR void *dhcp6c_precise_open(FAR const char *ifname,
     htons(DHCPV6_OPT_NTP_SERVER),
     htons(DHCPV6_OPT_SIP_SERVER_A),
     htons(DHCPV6_OPT_SIP_SERVER_D)
-  };
-
-  struct sockaddr_in6 client_addr =
-  {
-    AF_INET6,
-    htons(DHCPV6_CLIENT_PORT),
-    0,
-    {0},
-    0
   };
 
   pdhcp6c = malloc(sizeof(struct dhcp6c_state_s));
@@ -1731,7 +1723,7 @@ static FAR void *dhcp6c_precise_open(FAR const char *ifname,
 
   /* Detect interface */
 
-  strncpy(ifr.ifr_name, ifname, sizeof(ifr.ifr_name));
+  strlcpy(ifr.ifr_name, ifname, sizeof(ifr.ifr_name));
   if (ioctl(pdhcp6c->sockfd, SIOCGIFINDEX, &ifr))
     {
       close(pdhcp6c->urandom_fd);
@@ -1793,8 +1785,13 @@ static FAR void *dhcp6c_precise_open(FAR const char *ifname,
 
   setsockopt(pdhcp6c->sockfd, IPPROTO_IPV6, IPV6_V6ONLY, &val, sizeof(val));
   setsockopt(pdhcp6c->sockfd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val));
-  setsockopt(pdhcp6c->sockfd, SOL_SOCKET, UDP_BINDTODEVICE, ifname,
+  setsockopt(pdhcp6c->sockfd, SOL_SOCKET, SO_BINDTODEVICE, ifname,
              strlen(ifname));
+
+  memset(&client_addr, 0, sizeof(client_addr));
+  client_addr.sin6_family = AF_INET6;
+  client_addr.sin6_port = htons(DHCPV6_CLIENT_PORT);
+
   if (bind(pdhcp6c->sockfd, (struct sockaddr *)&client_addr,
            sizeof(client_addr)) != 0)
     {

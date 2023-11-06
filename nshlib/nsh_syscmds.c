@@ -25,6 +25,7 @@
 #include <nuttx/config.h>
 
 #include <nuttx/rptun/rptun.h>
+#include <nuttx/streams.h>
 #include <sys/boardctl.h>
 #include <sys/ioctl.h>
 #include <sys/utsname.h>
@@ -33,6 +34,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <unistd.h>
 
 #include "nsh.h"
 #include "nsh_console.h"
@@ -83,6 +85,43 @@
 static const char g_unknown[] = "unknown";
 #endif
 
+#if defined(CONFIG_BOARDCTL_RESET_CAUSE) && !defined(CONFIG_NSH_DISABLE_RESET_CAUSE)
+
+/* Keep update with nuttx kernel definition */
+
+static FAR const char *const g_resetcause[] =
+{
+  "none",
+  "power_on",
+  "rtc_watchdog",
+  "brown_out",
+  "core_soft_reset",
+  "core_deep_sleep",
+  "core_main_watchdog",
+  "core_rtc_watchdog",
+  "cpu_main_watchdog",
+  "cpu_soft_reset",
+  "cpu_rtc_watchdog",
+  "pin",
+  "lowpower",
+  "unkown"
+};
+#endif
+
+#if (defined(CONFIG_BOARDCTL_RESET) && !defined(CONFIG_NSH_DISABLE_REBOOT)) || \
+    (defined(CONFIG_BOARDCTL_RESET_CAUSE) && !defined(CONFIG_NSH_DISABLE_RESET_CAUSE))
+static FAR const char * const g_resetflag[] =
+{
+  "reboot",
+  "assert",
+  "panic",
+  "bootloader",
+  "recovery",
+  "factory",
+  NULL
+};
+#endif
+
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
@@ -94,7 +133,7 @@ static const char g_unknown[] = "unknown";
 #if (defined(CONFIG_BOARDCTL_POWEROFF) || defined(CONFIG_BOARDCTL_RESET)) && \
     !defined(CONFIG_NSH_DISABLE_SHUTDOWN)
 
-int cmd_shutdown(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
+int cmd_shutdown(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv)
 {
 #if defined(CONFIG_BOARDCTL_POWEROFF) && defined(CONFIG_BOARDCTL_RESET)
   /* If both shutdown and reset are supported, then a single option may
@@ -163,7 +202,7 @@ int cmd_shutdown(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
 #endif
 
   /* boardctl() will not return in any case.  It if does, it means that
-   * there was a problem with the shutdown/resaet operation.
+   * there was a problem with the shutdown/reset operation.
    */
 
   nsh_error(vtbl, g_fmtcmdfailed, argv[0], "boardctl", NSH_ERRNO);
@@ -181,7 +220,7 @@ static int cmd_pmconfig_recursive(FAR struct nsh_vtbl_s *vtbl,
                                   FAR struct dirent *entryp,
                                   FAR void *pvarg)
 {
-  char *path;
+  FAR char *path;
   int ret = ERROR;
 
   if (DIRENT_ISDIRECTORY(entryp->d_type))
@@ -200,7 +239,7 @@ static int cmd_pmconfig_recursive(FAR struct nsh_vtbl_s *vtbl,
   return ret;
 }
 
-int cmd_pmconfig(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
+int cmd_pmconfig(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv)
 {
   struct boardioc_pm_ctrl_s ctrl =
   {
@@ -214,6 +253,11 @@ int cmd_pmconfig(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
       if (argc == 2)
         {
           ctrl.domain = atoi(argv[1]);
+          if (ctrl.domain < 0 || ctrl.domain >= CONFIG_PM_NDOMAINS)
+            {
+              nsh_error(vtbl, g_fmtargrange, argv[1]);
+              return ERROR;
+            }
         }
 
       ctrl.action = BOARDIOC_PM_QUERYSTATE;
@@ -236,6 +280,11 @@ int cmd_pmconfig(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
       if (argc == 4)
         {
           ctrl.domain = atoi(argv[3]);
+          if (ctrl.domain < 0 || ctrl.domain >= CONFIG_PM_NDOMAINS)
+            {
+              nsh_error(vtbl, g_fmtargrange, argv[3]);
+              return ERROR;
+            }
         }
 
       if (strcmp(argv[1], "stay") == 0)
@@ -291,7 +340,7 @@ int cmd_pmconfig(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
  ****************************************************************************/
 
 #if defined(CONFIG_BOARDCTL_POWEROFF) && !defined(CONFIG_NSH_DISABLE_POWEROFF)
-int cmd_poweroff(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
+int cmd_poweroff(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv)
 {
   /* Invoke the BOARDIOC_POWEROFF board control to shutdown the board.  If
    * the board_power_off function returns, then it was not possible to power-
@@ -317,11 +366,75 @@ int cmd_poweroff(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
 #endif
 
 /****************************************************************************
+ * Name: cmd_switchboot
+ ****************************************************************************/
+
+#if defined(CONFIG_BOARDCTL_SWITCH_BOOT) && !defined(CONFIG_NSH_DISABLE_SWITCHBOOT)
+int cmd_switchboot(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv)
+{
+  if (argc != 2)
+    {
+      nsh_output(vtbl, g_fmtarginvalid, argv[0]);
+      return ERROR;
+    }
+
+  boardctl(BOARDIOC_SWITCH_BOOT, (uintptr_t)argv[1]);
+  return 0;
+}
+#endif
+
+/****************************************************************************
+ * Name: cmd_boot
+ ****************************************************************************/
+
+#if defined(CONFIG_BOARDCTL_BOOT_IMAGE) && !defined(CONFIG_NSH_DISABLE_BOOT)
+int cmd_boot(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv)
+{
+  struct boardioc_boot_info_s info;
+
+  memset(&info, 0, sizeof(info));
+
+  /* Invoke the BOARDIOC_BOOT_IMAGE board control to reset the board.  If
+   * the board_boot_image() function returns, then it was not possible to
+   * boot the image due to some constraints.
+   */
+
+  switch (argc)
+    {
+      default:
+        info.header_size = strtoul(argv[2], NULL, 0);
+
+        /* Go through */
+
+      case 1:
+        info.path = argv[1];
+
+        /* Go through */
+
+      case 0:
+
+        /* Nothing to do */
+
+        break;
+    }
+
+  boardctl(BOARDIOC_BOOT_IMAGE, (uintptr_t)&info);
+
+  /* boardctl() will not return in this case.  It if does, it means that
+   * there was a problem with the boot operation.
+   */
+
+  nsh_error(vtbl, g_fmtcmdfailed, argv[0], "boardctl", NSH_ERRNO);
+  return ERROR;
+}
+#endif
+
+/****************************************************************************
  * Name: cmd_reboot
  ****************************************************************************/
 
 #if defined(CONFIG_BOARDCTL_RESET) && !defined(CONFIG_NSH_DISABLE_REBOOT)
-int cmd_reboot(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
+int cmd_reboot(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv)
 {
   /* Invoke the BOARDIOC_RESET board control to reset the board.  If
    * the board_reset() function returns, then it was not possible to
@@ -330,7 +443,26 @@ int cmd_reboot(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
 
   if (argc > 1)
     {
-      boardctl(BOARDIOC_RESET, atoi(argv[1]));
+      int i = 0;
+
+      while (g_resetflag[i] != NULL)
+        {
+          if (strcmp(g_resetflag[i], argv[1]) == 0)
+            {
+              break;
+            }
+
+          i++;
+        }
+
+      if (g_resetflag[i])
+        {
+          boardctl(BOARDIOC_RESET, i);
+        }
+      else
+        {
+          boardctl(BOARDIOC_RESET, atoi(argv[1]));
+        }
     }
   else
     {
@@ -347,8 +479,10 @@ int cmd_reboot(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
 #endif
 
 #if defined(CONFIG_BOARDCTL_RESET_CAUSE) && !defined(CONFIG_NSH_DISABLE_RESET_CAUSE)
-int cmd_reset_cause(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
+int cmd_reset_cause(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv)
 {
+  UNUSED(argc);
+
   int ret;
   struct boardioc_reset_cause_s cause;
 
@@ -360,8 +494,17 @@ int cmd_reset_cause(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
       return ERROR;
     }
 
-  nsh_output(vtbl, "cause:0x%x,flag:0x%" PRIx32 "\n",
-             cause.cause, cause.flag);
+  if (cause.cause != BOARDIOC_RESETCAUSE_CPU_SOFT)
+    {
+      nsh_output(vtbl, "%s(%lu)\n",
+             g_resetcause[cause.cause], cause.flag);
+    }
+  else
+    {
+      nsh_output(vtbl, "%s(%s)\n",
+             g_resetcause[cause.cause], g_resetflag[cause.flag]);
+    }
+
   return OK;
 }
 #endif
@@ -372,7 +515,7 @@ int cmd_reset_cause(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
 
 #if defined(CONFIG_RPTUN) && !defined(CONFIG_NSH_DISABLE_RPTUN)
 static int cmd_rptun_once(FAR struct nsh_vtbl_s *vtbl,
-                          FAR const char *path, char **argv)
+                          FAR const char *path, FAR char **argv)
 {
   struct rptun_ping_s ping;
   unsigned long val = 0;
@@ -405,6 +548,7 @@ static int cmd_rptun_once(FAR struct nsh_vtbl_s *vtbl,
       if (argv[3] == 0 || argv[4] == 0 ||
           argv[5] == 0 || argv[6] == 0)
         {
+          nsh_error(vtbl, g_fmtargrequired, argv[0]);
           return ERROR;
         }
 
@@ -437,10 +581,11 @@ static int cmd_rptun_once(FAR struct nsh_vtbl_s *vtbl,
 }
 
 static int cmd_rptun_recursive(FAR struct nsh_vtbl_s *vtbl,
-                               const char *dirpath,
-                               struct dirent *entryp, void *pvarg)
+                               FAR const char *dirpath,
+                               FAR struct dirent *entryp,
+                               FAR void *pvarg)
 {
-  char *path;
+  FAR char *path;
   int ret = ERROR;
 
   if (DIRENT_ISDIRECTORY(entryp->d_type))
@@ -458,7 +603,7 @@ static int cmd_rptun_recursive(FAR struct nsh_vtbl_s *vtbl,
   return ret;
 }
 
-int cmd_rptun(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
+int cmd_rptun(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv)
 {
   if (argc < 3)
     {
@@ -481,9 +626,10 @@ int cmd_rptun(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
  ****************************************************************************/
 
 #ifndef CONFIG_NSH_DISABLE_UNAME
-int cmd_uname(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
+int cmd_uname(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv)
 {
   FAR const char *str;
+  struct lib_memoutstream_s stream;
   struct utsname info;
   unsigned int set;
   int option;
@@ -575,6 +721,8 @@ int cmd_uname(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
   /* Process each option */
 
   first = true;
+  lib_memoutstream(&stream, alloca(sizeof(struct utsname)),
+                   sizeof(struct utsname));
   for (i = 0; set != 0; i++)
     {
       unsigned int mask = (1 << i);
@@ -619,15 +767,16 @@ int cmd_uname(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
 
           if (!first)
             {
-              nsh_output(vtbl, " ");
+              lib_stream_putc(&stream, ' ');
             }
 
-          nsh_output(vtbl, "%s", str);
+          lib_stream_puts(&stream, str, strlen(str));
           first = false;
         }
     }
 
-  nsh_output(vtbl, "\n");
+  lib_stream_putc(&stream, '\n');
+  nsh_write(vtbl, stream.buffer, stream.common.nput);
   return OK;
 }
 #endif

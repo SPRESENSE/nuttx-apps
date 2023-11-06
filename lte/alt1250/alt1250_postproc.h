@@ -18,8 +18,8 @@
  *
  ****************************************************************************/
 
-#ifndef __LTE_ALT1250_ALT1250_POSTPROC_H__
-#define __LTE_ALT1250_ALT1250_POSTPROC_H__
+#ifndef __APPS_LTE_ALT1250_ALT1250_POSTPROC_H
+#define __APPS_LTE_ALT1250_ALT1250_POSTPROC_H
 
 /****************************************************************************
  * Included Files
@@ -35,15 +35,15 @@
  * Public Data Type
  ****************************************************************************/
 
-typedef int (*postproc_hdlr_t)(FAR struct alt1250_s *dev,
+typedef CODE int (*postproc_hdlr_t)(FAR struct alt1250_s *dev,
   FAR struct alt_container_s *reply, FAR struct usock_s *usock,
-  FAR int32_t *usock_result, uint64_t *usock_xid,
+  FAR int32_t *usock_result, uint32_t *usock_xid,
   FAR struct usock_ackinfo_s *ackinfo, unsigned long arg);
 
 struct postproc_s
 {
-  FAR postproc_hdlr_t hdlr;
+  postproc_hdlr_t hdlr;
   unsigned long priv;
 };
 
-#endif	/* __LTE_ALT1250_ALT1250_POSTPROC_H__ */
+#endif /* __APPS_LTE_ALT1250_ALT1250_POSTPROC_H */

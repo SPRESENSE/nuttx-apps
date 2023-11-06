@@ -63,6 +63,7 @@ CSRCS += alt1250_bindhdlr.c
 CSRCS += alt1250_listenhdlr.c
 CSRCS += alt1250_accepthdlr.c
 CSRCS += alt1250_ioctlhdlr.c
+CSRCS += alt1250_shutdownhdlr.c
 CSRCS += alt1250_sms.c
 
 # Usersock ioctl LAPI command handling source files
@@ -79,6 +80,8 @@ CSRCS += alt1250_ioctl_lwm2m.c
 
 MAINSRC = alt1250_main.c
 
-CFLAGS += -I callback_handlers -I usock_handlers
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/lte/alt1250
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/lte/alt1250/callback_handlers
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/lte/alt1250/usock_handlers
 
 include $(APPDIR)/Application.mk

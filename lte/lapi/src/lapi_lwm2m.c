@@ -34,7 +34,6 @@
 #include "lte/lapi.h"
 #include "lte/lte_api.h"
 #include "lte/lte_lwm2m.h"
-#include "lapi_util.h"
 
 /****************************************************************************
  * Private Functions
@@ -60,7 +59,7 @@ static int check_instance(FAR struct lwm2mstub_instance_s *inst)
  * Name: insert_sort
  ****************************************************************************/
 
-static void insert_sort(uint16_t *array, int sz)
+static void insert_sort(FAR uint16_t *array, int sz)
 {
   int i;
   int j;
@@ -94,7 +93,8 @@ int lte_m2m_connection(int cmd)
       return -EINVAL;
     }
 
-  return lapi_req(LTE_CMDID_LWM2M_CONNECT, (void **)cmd, 1, NULL, 0, NULL);
+  return lapi_req(LTE_CMDID_LWM2M_CONNECT, (FAR void **)cmd,
+                  1, NULL, 0, NULL);
 }
 
 /****************************************************************************
@@ -102,10 +102,10 @@ int lte_m2m_connection(int cmd)
  ****************************************************************************/
 
 int lte_m2m_readresponse(int seq_no, FAR struct lwm2mstub_instance_s *inst,
-                         int resp, char *readvalue, int len)
+                         int resp, FAR char *readvalue, int len)
 {
   FAR void *inarg[5] = {
-    (void *)seq_no, (void *)resp, inst, readvalue, (void *)len
+    (FAR void *)seq_no, (FAR void *)resp, inst, readvalue, (FAR void *)len
   };
 
   if (!inst || !readvalue || len <= 0 || check_instance(inst) != OK)
@@ -114,7 +114,7 @@ int lte_m2m_readresponse(int seq_no, FAR struct lwm2mstub_instance_s *inst,
     }
 
   return lapi_req(LTE_CMDID_LWM2M_READRESP,
-                  (void *)&inarg, 5, NULL, 0, NULL);
+                  (FAR void *)&inarg, 5, NULL, 0, NULL);
 }
 
 /****************************************************************************
@@ -125,7 +125,7 @@ int lte_m2m_writeresponse(int seq_no, FAR struct lwm2mstub_instance_s *inst,
                           int resp)
 {
   FAR void *inarg[3] = {
-    (void *)seq_no, (void *)resp, inst
+    (FAR void *)seq_no, (FAR void *)resp, inst
   };
 
   if (!inst || check_instance(inst) != OK)
@@ -134,7 +134,7 @@ int lte_m2m_writeresponse(int seq_no, FAR struct lwm2mstub_instance_s *inst,
     }
 
   return lapi_req(LTE_CMDID_LWM2M_WRITERESP,
-                  (void *)&inarg, 3, NULL, 0, NULL);
+                  (FAR void *)&inarg, 3, NULL, 0, NULL);
 }
 
 /****************************************************************************
@@ -142,10 +142,10 @@ int lte_m2m_writeresponse(int seq_no, FAR struct lwm2mstub_instance_s *inst,
  ****************************************************************************/
 
 int lte_m2m_executeresp(int seq_no, FAR struct lwm2mstub_instance_s *inst,
-                          int resp)
+                        int resp)
 {
   FAR void *inarg[3] = {
-    (void *)seq_no, (void *)resp, inst
+    (FAR void *)seq_no, (FAR void *)resp, inst
   };
 
   if (!inst || check_instance(inst) != OK)
@@ -154,7 +154,7 @@ int lte_m2m_executeresp(int seq_no, FAR struct lwm2mstub_instance_s *inst,
     }
 
   return lapi_req(LTE_CMDID_LWM2M_EXECRESP,
-                  (void *)&inarg, 3, NULL, 0, NULL);
+                  (FAR void *)&inarg, 3, NULL, 0, NULL);
 }
 
 /****************************************************************************
@@ -164,23 +164,23 @@ int lte_m2m_executeresp(int seq_no, FAR struct lwm2mstub_instance_s *inst,
 int lte_m2m_observeresp(int seq_no, int resp)
 {
   FAR void *inarg[2] = {
-    (void *)seq_no, (void *)resp
+    (FAR void *)seq_no, (FAR void *)resp
   };
 
   return lapi_req(LTE_CMDID_LWM2M_OBSERVERESP,
-                  (void *)&inarg, 2, NULL, 0, NULL);
+                  (FAR void *)&inarg, 2, NULL, 0, NULL);
 }
 
 /****************************************************************************
  * Name: lte_m2m_observeupdate
  ****************************************************************************/
 
-int lte_m2m_observeupdate(char *token,
+int lte_m2m_observeupdate(FAR char *token,
                           FAR struct lwm2mstub_instance_s *inst,
-                          char *value, int len)
+                          FAR char *value, int len)
 {
   FAR void *inarg[4] = {
-    token, inst, value, (void *)len
+    token, inst, value, (FAR void *)len
   };
 
   if (!token || !inst || !value || len <= 0)
@@ -189,7 +189,7 @@ int lte_m2m_observeupdate(char *token,
     }
 
   return lapi_req(LTE_CMDID_LWM2M_OBSERVEUPDATE,
-                  (void *)&inarg, 4, NULL, 0, NULL);
+                  (FAR void *)&inarg, 4, NULL, 0, NULL);
 }
 
 /****************************************************************************
@@ -198,7 +198,8 @@ int lte_m2m_observeupdate(char *token,
 
 int lte_setm2m_endpointname(FAR char *name)
 {
-  return lapi_req(LTE_CMDID_LWM2M_SETEP, (void **)name, 1, NULL, 0, NULL);
+  return lapi_req(LTE_CMDID_LWM2M_SETEP, (FAR void **)name,
+                  1, NULL, 0, NULL);
 }
 
 /****************************************************************************
@@ -208,7 +209,7 @@ int lte_setm2m_endpointname(FAR char *name)
 int lte_getm2m_endpointname(FAR char *name, int len)
 {
   FAR void *outarg[2] = {
-    name, (void *)len
+    name, (FAR void *)len
   };
 
   if (!name || len <= 0)
@@ -216,7 +217,8 @@ int lte_getm2m_endpointname(FAR char *name, int len)
       return -EINVAL;
     }
 
-  return lapi_req(LTE_CMDID_LWM2M_GETEP, NULL, 0, (void *)&outarg, 2, NULL);
+  return lapi_req(LTE_CMDID_LWM2M_GETEP, NULL,
+                  0, (FAR void *)&outarg, 2, NULL);
 }
 
 /****************************************************************************
@@ -237,7 +239,7 @@ int lte_getm2m_servernum(void)
 int lte_setm2m_serverinfo(FAR struct lwm2mstub_serverinfo_s *info, int id)
 {
   FAR void *inarg[2] = {
-    info, (void *)id
+    info, (FAR void *)id
   };
 
   if (!info)
@@ -255,7 +257,7 @@ int lte_setm2m_serverinfo(FAR struct lwm2mstub_serverinfo_s *info, int id)
 int lte_getm2m_serverinfo(FAR struct lwm2mstub_serverinfo_s *info, int id)
 {
   FAR void *outarg[2] = {
-    info, (void *)id
+    info, (FAR void *)id
   };
 
   if (!info)
@@ -281,10 +283,10 @@ int lte_getm2m_enabled_objectnum(void)
  * Name: lte_getm2m_enabled_objects
  ****************************************************************************/
 
-int lte_getm2m_enabled_objects(uint16_t *objids, int objnum)
+int lte_getm2m_enabled_objects(FAR uint16_t *objids, int objnum)
 {
   FAR void *outarg[2] = {
-    objids, (void *)objnum
+    objids, (FAR void *)objnum
   };
 
   if (!objids || objnum <= 0)
@@ -299,10 +301,10 @@ int lte_getm2m_enabled_objects(uint16_t *objids, int objnum)
  * Name: lte_enablem2m_objects
  ****************************************************************************/
 
-int lte_enablem2m_objects(uint16_t *objids, int objnum)
+int lte_enablem2m_objects(FAR uint16_t *objids, int objnum)
 {
   FAR void *inarg[2] = {
-    objids, (void *)objnum
+    objids, (FAR void *)objnum
   };
 
   if (!objids || objnum <= 0)
@@ -323,7 +325,7 @@ int lte_getm2m_objresourcenum(uint16_t objid)
 {
   int dummy_arg; /* Dummy for blocking API call */
   return lapi_req(LTE_CMDID_LWM2M_GETOBJRESNUM, &objid, 1,
-                           (FAR void *)&dummy_arg, 0, NULL);
+                  (FAR void *)&dummy_arg, 0, NULL);
 }
 
 /****************************************************************************
@@ -331,10 +333,10 @@ int lte_getm2m_objresourcenum(uint16_t objid)
  ****************************************************************************/
 
 int lte_getm2m_objresourceinfo(uint16_t objid, int res_num,
-                                struct lwm2mstub_resource_s *reses)
+                               FAR struct lwm2mstub_resource_s *reses)
 {
   FAR void *outarg[2] = {
-    reses, (void *)res_num
+    reses, (FAR void *)res_num
   };
 
   if (!reses || res_num <= 0)
@@ -365,7 +367,7 @@ int lte_setm2m_rat(int rat)
     }
 
   return lapi_req(LTE_CMDID_LWM2M_CHANGERAT, &rat, 1,
-                           (FAR void *)&dummy_arg, 0, NULL);
+                  (FAR void *)&dummy_arg, 0, NULL);
 }
 
 /****************************************************************************
@@ -376,7 +378,7 @@ int lte_getm2m_rat(void)
 {
   int dummy_arg; /* Dummy for blocking API call */
   return lapi_req(LTE_CMDID_LWM2M_GETRAT, NULL, 0,
-                           (FAR void *)&dummy_arg, 0, NULL);
+                  (FAR void *)&dummy_arg, 0, NULL);
 }
 
 /****************************************************************************
@@ -384,10 +386,10 @@ int lte_getm2m_rat(void)
  ****************************************************************************/
 
 int lte_setm2m_objectdefinition(uint16_t objids, int res_num,
-                                struct lwm2mstub_resource_s *resucs)
+                                FAR struct lwm2mstub_resource_s *resucs)
 {
   FAR void *inarg[3] = {
-    (void *)(uint32_t)objids, (void *)res_num, resucs
+    (FAR void *)(uint32_t)objids, (FAR void *)res_num, resucs
   };
 
   return lapi_req(LTE_CMDID_LWM2M_SETOBJRESOURCE, inarg, 3, NULL, 0, NULL);
@@ -473,7 +475,7 @@ bool lte_getm2m_qmode(void)
 {
   int dummy_arg; /* Dummy for blocking API call */
   return lapi_req(LTE_CMDID_LWM2M_GETQMODE, NULL, 0,
-                           (FAR void **)&dummy_arg, 0, NULL);
+                  (FAR void **)&dummy_arg, 0, NULL);
 }
 
 /****************************************************************************
@@ -483,5 +485,5 @@ bool lte_getm2m_qmode(void)
 int lte_setm2m_qmode(bool en)
 {
   return lapi_req(LTE_CMDID_LWM2M_SETQMODE,
-                  (void **)(en ? 1 : 0), 1, NULL, 0, NULL);
+                  (FAR void **)(en ? 1 : 0), 1, NULL, 0, NULL);
 }

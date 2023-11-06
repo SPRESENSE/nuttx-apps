@@ -18,8 +18,8 @@
  *
  ****************************************************************************/
 
-#ifndef __LTE_LAPI_LAPI_DBG_H__
-#define __LTE_LAPI_LAPI_DBG_H__
+#ifndef __APPS_LTE_LAPI_LAPI_DBG_H
+#define __APPS_LTE_LAPI_LAPI_DBG_H
 
 /****************************************************************************
  * Included Files
@@ -37,4 +37,4 @@
 # define lapi_printf(v, ...)
 #endif
 
-#endif  /* __LTE_LAPI_LAPI_DBG_H__ */
+#endif  /* __APPS_LTE_LAPI_LAPI_DBG_H */

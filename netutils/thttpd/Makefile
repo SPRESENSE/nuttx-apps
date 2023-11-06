@@ -37,8 +37,8 @@ ifeq ($(CONFIG_THTTPD_NXFLAT),y)
 endif
 
 ifeq ($(CONFIG_THTTPD_BINFS),y)
-  CSRCS +=  phf.c redirect.c ssi.c
-  CFLAGS += ${shell $(INCDIR) "$(CC)" "$(APPDIR)$(DELIM)netutils$(DELIM)thttpd"}
+  MAINSRC +=  phf.c redirect.c ssi.c
+  CFLAGS += ${INCDIR_PREFIX}"$(APPDIR)$(DELIM)netutils$(DELIM)thttpd"
   DEPPATHS += --dep-path cgi-src
   VPATH += :cgi-src
 

@@ -27,13 +27,13 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <errno.h>
+#include <sys/param.h>
 #include <nuttx/wireless/lte/lte_ioctl.h>
 
 #include "lte/lte_api.h"
 #include "lte/lapi.h"
 
 #include "lapi_dbg.h"
-#include "lapi_util.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -64,7 +64,7 @@
  * Private Functions
  ****************************************************************************/
 
-static int lte_set_edrx_inparam_check(lte_edrx_setting_t *settings)
+static int lte_set_edrx_inparam_check(FAR lte_edrx_setting_t *settings)
 {
   int32_t ret = 0;
 
@@ -88,8 +88,9 @@ static int lte_set_edrx_inparam_check(lte_edrx_setting_t *settings)
   ret = lte_get_rat_sync();
   if (ret < 0 && ret != -ENOTSUP)
     {
-      lapi_printf("Unable to read RAT setting from the device. ret: [%ld].\n",
-        ret);
+      lapi_printf("Unable to read RAT setting from the device."
+                  " ret: [%ld].\n",
+                  ret);
       return ret;
     }
   else if (ret == -ENOTSUP)
@@ -114,8 +115,9 @@ static int lte_set_edrx_inparam_check(lte_edrx_setting_t *settings)
              && settings->act_type == LTE_EDRX_ACTTYPE_NBS1) ||
             (settings->act_type == LTE_EDRX_ACTTYPE_NOTUSE)))
         {
-          lapi_printf("Operation is not allowed[act_type : %d, RAT : %ld].\n",
-            settings->act_type, ret);
+          lapi_printf("Operation is not allowed[act_type : %d,"
+                      " RAT : %ld].\n",
+                      settings->act_type, ret);
           return -EPERM;
         }
     }
@@ -160,7 +162,7 @@ static int lte_set_edrx_inparam_check(lte_edrx_setting_t *settings)
   return OK;
 }
 
-static int lte_set_psm_inparam_check(lte_psm_setting_t *settings)
+static int lte_set_psm_inparam_check(FAR lte_psm_setting_t *settings)
 {
   if (!settings)
     {
@@ -212,7 +214,7 @@ static int lte_set_psm_inparam_check(lte_psm_setting_t *settings)
 
 /* Synchronous APIs */
 
-int lte_get_edrx_sync(lte_edrx_setting_t *settings)
+int lte_get_edrx_sync(FAR lte_edrx_setting_t *settings)
 {
   int ret;
   int result;
@@ -229,7 +231,7 @@ int lte_get_edrx_sync(lte_edrx_setting_t *settings)
 
   ret = lapi_req(LTE_CMDID_GETEDRX,
                  NULL, 0,
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)outarg, nitems(outarg),
                  NULL);
   if (ret == 0)
     {
@@ -239,7 +241,7 @@ int lte_get_edrx_sync(lte_edrx_setting_t *settings)
   return ret;
 }
 
-int lte_set_edrx_sync(lte_edrx_setting_t *settings)
+int lte_set_edrx_sync(FAR lte_edrx_setting_t *settings)
 {
   int ret;
   int result;
@@ -260,8 +262,8 @@ int lte_set_edrx_sync(lte_edrx_setting_t *settings)
     }
 
   ret = lapi_req(LTE_CMDID_SETEDRX,
-                 (FAR void *)inarg, ARRAY_SZ(inarg),
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)inarg, nitems(inarg),
+                 (FAR void *)outarg, nitems(outarg),
                  NULL);
   if (ret == 0)
     {
@@ -271,7 +273,7 @@ int lte_set_edrx_sync(lte_edrx_setting_t *settings)
   return ret;
 }
 
-int lte_get_psm_sync(lte_psm_setting_t *settings)
+int lte_get_psm_sync(FAR lte_psm_setting_t *settings)
 {
   int ret;
   int result;
@@ -293,8 +295,8 @@ int lte_get_psm_sync(lte_psm_setting_t *settings)
     }
 
   ret = lapi_req(LTE_CMDID_GETPSM,
-                 (FAR void *)inarg, ARRAY_SZ(inarg),
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)inarg, nitems(inarg),
+                 (FAR void *)outarg, nitems(outarg),
                  NULL);
   if (ret == 0)
     {
@@ -304,7 +306,7 @@ int lte_get_psm_sync(lte_psm_setting_t *settings)
   return ret;
 }
 
-int lte_set_psm_sync(lte_psm_setting_t *settings)
+int lte_set_psm_sync(FAR lte_psm_setting_t *settings)
 {
   int ret;
   int result;
@@ -324,8 +326,8 @@ int lte_set_psm_sync(lte_psm_setting_t *settings)
     }
 
   ret = lapi_req(LTE_CMDID_SETPSM,
-                 (FAR void *)inarg, ARRAY_SZ(inarg),
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)inarg, nitems(inarg),
+                 (FAR void *)outarg, nitems(outarg),
                  NULL);
   if (ret == 0)
     {
@@ -335,7 +337,7 @@ int lte_set_psm_sync(lte_psm_setting_t *settings)
   return ret;
 }
 
-int lte_get_ce_sync(lte_ce_setting_t *settings)
+int lte_get_ce_sync(FAR lte_ce_setting_t *settings)
 {
   int ret;
   int result;
@@ -351,7 +353,7 @@ int lte_get_ce_sync(lte_ce_setting_t *settings)
 
   ret = lapi_req(LTE_CMDID_GETCE,
                  NULL, 0,
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)outarg, nitems(outarg),
                  NULL);
   if (ret == 0)
     {
@@ -361,7 +363,7 @@ int lte_get_ce_sync(lte_ce_setting_t *settings)
   return ret;
 }
 
-int lte_set_ce_sync(lte_ce_setting_t *settings)
+int lte_set_ce_sync(FAR lte_ce_setting_t *settings)
 {
   int ret;
   int result;
@@ -381,8 +383,8 @@ int lte_set_ce_sync(lte_ce_setting_t *settings)
     }
 
   ret = lapi_req(LTE_CMDID_SETCE,
-                 (FAR void *)inarg, ARRAY_SZ(inarg),
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)inarg, nitems(inarg),
+                 (FAR void *)outarg, nitems(outarg),
                  NULL);
   if (ret == 0)
     {
@@ -392,7 +394,7 @@ int lte_set_ce_sync(lte_ce_setting_t *settings)
   return ret;
 }
 
-int lte_get_current_edrx_sync(lte_edrx_setting_t *settings)
+int lte_get_current_edrx_sync(FAR lte_edrx_setting_t *settings)
 {
   int ret;
   int result;
@@ -409,7 +411,7 @@ int lte_get_current_edrx_sync(lte_edrx_setting_t *settings)
 
   ret = lapi_req(LTE_CMDID_GETCEDRX,
                  NULL, 0,
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)outarg, nitems(outarg),
                  NULL);
   if (ret == 0)
     {
@@ -419,7 +421,7 @@ int lte_get_current_edrx_sync(lte_edrx_setting_t *settings)
   return ret;
 }
 
-int lte_get_current_psm_sync(lte_psm_setting_t *settings)
+int lte_get_current_psm_sync(FAR lte_psm_setting_t *settings)
 {
   int ret;
   int result;
@@ -436,7 +438,7 @@ int lte_get_current_psm_sync(lte_psm_setting_t *settings)
 
   ret = lapi_req(LTE_CMDID_GETCPSM,
                  NULL, 0,
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)outarg, nitems(outarg),
                  NULL);
   if (ret == 0)
     {
@@ -461,7 +463,7 @@ int lte_get_edrx(get_edrx_cb_t callback)
                   NULL, 0, NULL, 0, callback);
 }
 
-int lte_set_edrx(lte_edrx_setting_t *settings, set_edrx_cb_t callback)
+int lte_set_edrx(FAR lte_edrx_setting_t *settings, set_edrx_cb_t callback)
 {
   int ret;
   FAR void *inarg[] =
@@ -481,7 +483,7 @@ int lte_set_edrx(lte_edrx_setting_t *settings, set_edrx_cb_t callback)
     }
 
   return lapi_req(LTE_CMDID_SETEDRX | LTE_CMDOPT_ASYNC_BIT,
-                  (FAR void *)inarg, ARRAY_SZ(inarg),
+                  (FAR void *)inarg, nitems(inarg),
                   NULL, 0, callback);
 }
 
@@ -496,7 +498,7 @@ int lte_get_psm(get_psm_cb_t callback)
                   NULL, 0, NULL, 0, callback);
 }
 
-int lte_set_psm(lte_psm_setting_t *settings, set_psm_cb_t callback)
+int lte_set_psm(FAR lte_psm_setting_t *settings, set_psm_cb_t callback)
 {
   FAR void *inarg[] =
     {
@@ -514,7 +516,7 @@ int lte_set_psm(lte_psm_setting_t *settings, set_psm_cb_t callback)
     }
 
   return lapi_req(LTE_CMDID_SETPSM | LTE_CMDOPT_ASYNC_BIT,
-                  (FAR void *)inarg, ARRAY_SZ(inarg),
+                  (FAR void *)inarg, nitems(inarg),
                   NULL, 0, callback);
 }
 
@@ -529,7 +531,7 @@ int lte_get_ce(get_ce_cb_t callback)
                   NULL, 0, NULL, 0, callback);
 }
 
-int lte_set_ce(lte_ce_setting_t *settings, set_ce_cb_t callback)
+int lte_set_ce(FAR lte_ce_setting_t *settings, set_ce_cb_t callback)
 {
   FAR void *inarg[] =
     {
@@ -542,7 +544,7 @@ int lte_set_ce(lte_ce_setting_t *settings, set_ce_cb_t callback)
     }
 
   return lapi_req(LTE_CMDID_SETCE | LTE_CMDOPT_ASYNC_BIT,
-                  (FAR void *)inarg, ARRAY_SZ(inarg),
+                  (FAR void *)inarg, nitems(inarg),
                   NULL, 0, callback);
 }
 

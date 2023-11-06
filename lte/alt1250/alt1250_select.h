@@ -18,8 +18,8 @@
  *
  ****************************************************************************/
 
-#ifndef __LTE_ALT1250_ALT1250_SELECT_H__
-#define __LTE_ALT1250_ALT1250_SELECT_H__
+#ifndef __APPS_LTE_ALT1250_ALT1250_SELECT_H
+#define __APPS_LTE_ALT1250_ALT1250_SELECT_H
 
 /****************************************************************************
  * Included Files
@@ -37,4 +37,4 @@ void init_selectcontainer(FAR struct alt1250_s *dev);
 uint64_t perform_select_event(FAR struct alt1250_s *dev, uint64_t bitmap);
 void restart_select(FAR struct alt1250_s *dev);
 
-#endif  /* __LTE_ALT1250_ALT1250_SELECT_H__ */
+#endif  /* __APPS_LTE_ALT1250_ALT1250_SELECT_H */

@@ -48,7 +48,8 @@ static const usrsock_reqhandler_t handlers[USRSOCK_REQUEST__MAX] =
   [USRSOCK_REQUEST_BIND]        = usockreq_bind,
   [USRSOCK_REQUEST_LISTEN]      = usockreq_listen,
   [USRSOCK_REQUEST_ACCEPT]      = usockreq_accept,
-  [USRSOCK_REQUEST_IOCTL]       = usockreq_ioctl
+  [USRSOCK_REQUEST_IOCTL]       = usockreq_ioctl,
+  [USRSOCK_REQUEST_SHUTDOWN]    = usockreq_shutdown
 };
 
 /****************************************************************************
@@ -60,7 +61,7 @@ static const usrsock_reqhandler_t handlers[USRSOCK_REQUEST__MAX] =
  ****************************************************************************/
 
 int usock_reply(int ufd, int action_code, int32_t result,
-    uint64_t xid, FAR struct usock_ackinfo_s *ackinfo)
+                uint32_t xid, FAR struct usock_ackinfo_s *ackinfo)
 {
   int ret = OK;
 
@@ -72,23 +73,22 @@ int usock_reply(int ufd, int action_code, int32_t result,
       case REP_SEND_ACK_WOFREE:
       case REP_SEND_INPROG:
       case REP_SEND_TERM:
-        ret = usockif_sendack(ufd, result, xid,
+        ret = usockif_sendack(ufd, 0, result, xid,
                     (action_code == REP_SEND_INPROG));
         break;
 
       case REP_SEND_DACK:
-        ret = usockif_senddataack(ufd, result, xid, ackinfo);
+        ret = usockif_senddataack(ufd, 0, result, xid, ackinfo);
         break;
 
     case REP_SEND_ACK_TXREADY:
-        ret = usockif_sendack(ufd, result, xid, false);
-        usockif_sendevent(ufd, ackinfo->usockid, USRSOCK_EVENT_SENDTO_READY);
+        ret = usockif_sendack(ufd, USRSOCK_EVENT_SENDTO_READY, result, xid,
+                              false);
         break;
 
     case REP_SEND_DACK_RXREADY:
-        ret = usockif_senddataack(ufd, result, xid, ackinfo);
-        usockif_sendevent(ufd, ackinfo->usockid,
-                          USRSOCK_EVENT_RECVFROM_AVAIL);
+        ret = usockif_senddataack(ufd, USRSOCK_EVENT_RECVFROM_AVAIL, result,
+                                  xid, ackinfo);
         break;
     }
 
@@ -103,7 +103,7 @@ int perform_usockrequest(FAR struct alt1250_s *dev)
 {
   int ret = OK;
   int32_t usock_result;
-  uint64_t usock_xid;
+  uint32_t usock_xid;
   struct usock_ackinfo_s ackinfo;
 
   if (!IS_USOCKREQ_RECEIVED(dev))
@@ -118,7 +118,7 @@ int perform_usockrequest(FAR struct alt1250_s *dev)
               /* In unsupported ioctl command case */
 
               usock_reply(dev->usockfd, REP_SEND_ACK_WOFREE, ret,
-                                          USOCKREQXID(dev->usockreq), NULL);
+                          USOCKREQXID(dev->usockreq), NULL);
               return OK;
             }
         }

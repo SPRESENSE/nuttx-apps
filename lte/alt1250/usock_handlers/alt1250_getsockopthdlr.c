@@ -41,7 +41,7 @@ static int postproc_getsockopt(FAR struct alt1250_s *dev,
                                FAR struct alt_container_s *reply,
                                FAR struct usock_s *usock,
                                FAR int32_t *usock_result,
-                               FAR uint64_t *usock_xid,
+                               FAR uint32_t *usock_xid,
                                FAR struct usock_ackinfo_s *ackinfo,
                                unsigned long arg)
 {
@@ -57,7 +57,7 @@ static int postproc_getsockopt(FAR struct alt1250_s *dev,
    */
 
   *usock_xid = USOCKET_XID(usock);
-  *usock_result = COMBINE_ERRCODE(*(int *)resp[0], *(int *)resp[1]);
+  *usock_result = COMBINE_ERRCODE(*(FAR int *)resp[0], *(FAR int *)resp[1]);
 
   if (*usock_result >= 0)
     {
@@ -65,8 +65,8 @@ static int postproc_getsockopt(FAR struct alt1250_s *dev,
       *usock_xid = USOCKET_XID(usock);
 
       ackinfo->valuelen = MIN(USOCKET_REQOPTLEN(usock),
-                              *(uint16_t *)(resp[2]));
-      ackinfo->valuelen_nontrunc = *(uint16_t *)(resp[2]);
+                              *(FAR uint16_t *)(resp[2]));
+      ackinfo->valuelen_nontrunc = *(FAR uint16_t *)(resp[2]);
       ackinfo->value_ptr = resp[3];
       ackinfo->buf_ptr = NULL;
 
@@ -91,7 +91,7 @@ int nextstep_getsockopt(FAR struct alt1250_s *dev,
                         FAR struct alt_container_s *reply,
                         FAR struct usock_s *usock,
                         FAR int32_t *usock_result,
-                        FAR uint64_t *usock_xid,
+                        FAR uint32_t *usock_xid,
                         FAR struct usock_ackinfo_s *ackinfo,
                         unsigned long arg)
 {
@@ -142,7 +142,7 @@ int send_getsockopt_command(FAR struct alt1250_s *dev,
   USOCKET_SET_RESPONSE(usock, idx++, requested_option);
 
   set_container_ids(container, USOCKET_USOCKID(usock), LTE_CMDID_GETSOCKOPT);
-  set_container_argument(container, inparam, ARRAY_SZ(inparam));
+  set_container_argument(container, inparam, nitems(inparam));
   set_container_response(container, USOCKET_REP_RESPONSE(usock), idx);
   set_container_postproc(container, func, priv);
 
@@ -156,7 +156,7 @@ int send_getsockopt_command(FAR struct alt1250_s *dev,
 int usockreq_getsockopt(FAR struct alt1250_s *dev,
                         FAR struct usrsock_request_buff_s *req,
                         FAR int32_t *usock_result,
-                        FAR uint64_t *usock_xid,
+                        FAR uint32_t *usock_xid,
                         FAR struct usock_ackinfo_s *ackinfo)
 {
   FAR struct usrsock_request_getsockopt_s *request = &req->request.gopt_req;
@@ -173,7 +173,7 @@ int usockreq_getsockopt(FAR struct alt1250_s *dev,
   if (usock == NULL)
     {
       dbg_alt1250("Failed to get socket context: %u\n",
-                     request->usockid);
+                  request->usockid);
       *usock_result = -EBADFD;
       return REP_SEND_ACK_WOFREE;
     }

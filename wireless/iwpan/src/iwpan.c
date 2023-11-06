@@ -22,6 +22,7 @@
  * Included Files
  ****************************************************************************/
 
+#include <sys/param.h>
 #include <sys/socket.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -82,7 +83,7 @@ static void iwpan_showusage(FAR const char *progname, int exitcode);
 
 static const struct iwpan_command_s g_iwpan_commands[] =
 {
-  {"help",    0, (CODE void *)NULL},
+  {"help",    0, NULL},
   {"show",    1, (CODE void *)iwpan_show_cmd},
   {"cca",     2, (CODE void *)iwpan_cca_cmd},
   {"chan",    2, (CODE void *)iwpan_chan_cmd},
@@ -93,8 +94,6 @@ static const struct iwpan_command_s g_iwpan_commands[] =
   {"saddr",   2, (CODE void *)iwpan_saddr_cmd},
   {"txpwr",   2, (CODE void *)iwpan_txpwr_cmd},
 };
-
-#define NCOMMANDS (sizeof(g_iwpan_commands) / sizeof(struct iwpan_command_s))
 
 /****************************************************************************
  * Private Functions
@@ -660,7 +659,7 @@ int main(int argc, FAR char *argv[])
   /* Find the command in the g_iwpan_command[] list */
 
   iwpancmd = NULL;
-  for (i = 0; i < NCOMMANDS; i++)
+  for (i = 0; i < nitems(g_iwpan_commands); i++)
     {
       FAR const struct iwpan_command_s *cmd = &g_iwpan_commands[i];
       if (strcmp(cmdname, cmd->name) == 0)

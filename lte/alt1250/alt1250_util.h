@@ -18,26 +18,20 @@
  *
  ****************************************************************************/
 
-#ifndef __LTE_ALT1250_ALT1250_UTIL_H__
-#define __LTE_ALT1250_ALT1250_UTIL_H__
+#ifndef __APPS_LTE_ALT1250_ALT1250_UTIL_H
+#define __APPS_LTE_ALT1250_ALT1250_UTIL_H
 
 /****************************************************************************
  * Included Files
  ****************************************************************************/
+
+#include <sys/param.h>
 
 #include "alt1250_daemon.h"
 
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
-
-#ifndef MIN
-#  define MIN(a,b)  (((a) < (b)) ? (a) : (b))
-#endif
-
-#ifndef ARRAY_SZ
-#  define ARRAY_SZ(array) (sizeof(array)/sizeof(array[0]))
-#endif
 
 /****************************************************************************
  * Public Function Prototypes
@@ -46,4 +40,4 @@
 void alt1250_saveapn(FAR struct alt1250_s *dev, FAR lte_apn_setting_t *apn);
 void alt1250_getapn(FAR struct alt1250_s *dev, FAR lte_apn_setting_t *apn);
 
-#endif  /* __LTE_ALT1250_ALT1250_UTIL_H__ */
+#endif  /* __APPS_LTE_ALT1250_ALT1250_UTIL_H */

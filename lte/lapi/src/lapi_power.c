@@ -30,13 +30,13 @@
 #include <unistd.h>
 #include <errno.h>
 #include <strings.h>
+#include <sys/param.h>
 #include <nuttx/wireless/lte/lte_ioctl.h>
 
 #include "lte/lte_api.h"
 #include "lte/lapi.h"
 
 #include "lapi_dbg.h"
-#include "lapi_util.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -59,7 +59,7 @@
  * Public Function Prototypes
  ****************************************************************************/
 
-int alt1250_main(int argc, char *argv[]);
+int alt1250_main(int argc, FAR char *argv[]);
 
 /****************************************************************************
  * Private Data
@@ -142,7 +142,7 @@ int lte_initialize(void)
 
   if (!is_daemon_running())
     {
-      char *argv[2];
+      FAR char *argv[2];
       char addr[ADDR_LEN];
 
       sem_init(&g_sync, 0, 0);
@@ -311,6 +311,6 @@ int lte_hibernation_resume(FAR const uint8_t *res_ctx, int len)
     }
 
   return lapi_req(LTE_CMDID_RESUME,
-                  (FAR void *)inarg, ARRAY_SZ(inarg),
+                  (FAR void *)inarg, nitems(inarg),
                   (FAR void *)&dummy_arg, 0, NULL);
 }

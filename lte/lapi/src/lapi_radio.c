@@ -26,12 +26,11 @@
 
 #include <stdint.h>
 #include <errno.h>
+#include <sys/param.h>
 #include <nuttx/wireless/lte/lte_ioctl.h>
 
 #include "lte/lte_api.h"
 #include "lte/lapi.h"
-
-#include "lapi_util.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -52,7 +51,7 @@ int lte_radio_on_sync(void)
 
   ret = lapi_req(LTE_CMDID_RADIOON,
                  NULL, 0,
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)outarg, nitems(outarg),
                  NULL);
   if (ret == 0)
     {
@@ -73,7 +72,7 @@ int lte_radio_off_sync(void)
 
   ret = lapi_req(LTE_CMDID_RADIOOFF,
                  NULL, 0,
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)outarg, nitems(outarg),
                  NULL);
   if (ret == 0)
     {

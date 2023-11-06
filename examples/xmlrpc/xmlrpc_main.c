@@ -65,13 +65,8 @@
 #include <net/if.h>
 #include <netinet/in.h>
 
-#include <nuttx/net/arp.h>
 #include "netutils/netlib.h"
 #include "netutils/xmlrpc.h"
-
-#ifdef CONFIG_EXAMPLES_XMLRPC_DHCPC
-#  include <arpa/inet.h>
-#endif
 
 /* Here we include the header file for the application(s) we use in
  * our project as defined in the config/<board-name>/defconfig file
@@ -403,7 +398,7 @@ int main(int argc, FAR char *argv[])
 
   setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
 
-  memset((void *)&servaddr, 0, sizeof(servaddr));
+  memset(&servaddr, 0, sizeof(servaddr));
   servaddr.sin_family = AF_INET;
   servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
   servaddr.sin_port = htons(80);

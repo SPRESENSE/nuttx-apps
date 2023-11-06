@@ -26,6 +26,9 @@
  ****************************************************************************/
 
 #include <nuttx/config.h>
+#include <stdbool.h>
+#include <inttypes.h>
+#include <signal.h>
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -81,14 +84,6 @@
 #endif
 
 /****************************************************************************
- * Public Types
- ****************************************************************************/
-
-/****************************************************************************
- * Public Data
- ****************************************************************************/
-
-/****************************************************************************
  * Public Function Prototypes
  ****************************************************************************/
 
@@ -104,7 +99,9 @@ int setvbuf_test(void);
 
 /* dev_null.c ***************************************************************/
 
-int dev_null(void);
+#ifdef CONFIG_DEV_NULL
+int dev_null_test(void);
+#endif
 
 /* fpu.c ********************************************************************/
 
@@ -124,6 +121,12 @@ void restart_test(void);
 
 #ifdef CONFIG_SCHED_WAITPID
 int waitpid_test(void);
+#endif
+
+/* wqueue.c *****************************************************************/
+
+#if defined(CONFIG_SCHED_LPWORK) || defined(CONFIG_SCHED_HPWORK)
+void wqueue_test(void);
 #endif
 
 /* mutex.c ******************************************************************/
@@ -184,6 +187,10 @@ void timedwait_test(void);
 
 void sigprocmask_test(void);
 
+/* sighelper.c **************************************************************/
+
+bool sigset_isequal(FAR const sigset_t *left, FAR const sigset_t *right);
+
 /* sighand.c ****************************************************************/
 
 void sighand_test(void);
@@ -225,6 +232,12 @@ void pthread_rwlock_test(void);
 
 void pthread_rwlock_cancel_test(void);
 
+/* pthread_exit.c ***********************************************************/
+
+#ifdef CONFIG_SCHED_WAITPID
+void pthread_exit_test(void);
+#endif
+
 /* pthread_cleanup.c ********************************************************/
 
 void pthread_cleanup_test(void);
@@ -236,6 +249,10 @@ void barrier_test(void);
 /* prioinherit.c ************************************************************/
 
 void priority_inheritance(void);
+
+/* schedlock.c **************************************************************/
+
+void sched_lock_test(void);
 
 /* vfork.c ******************************************************************/
 

@@ -23,17 +23,17 @@
  ****************************************************************************/
 
 #include <nuttx/config.h>
+#include <nuttx/tls.h>
 
+#include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
-#include <nuttx/tls.h>
-
 #include "ostest.h"
 
-#if CONFIG_TLS_NELEM > 0
+#if defined(CONFIG_TLS_NELEM) && CONFIG_TLS_NELEM > 0
 
 /****************************************************************************
  * Preprocessor Definitions
@@ -85,6 +85,7 @@ static bool verify_tls_info(uintptr_t value)
           printf("tls: ERROR Element %d: Set %lx / read %lx\n",
                  i, (unsigned long)value,
                  (unsigned long)info->tl_elem[i]);
+          ASSERT(false);
           fail = true;
         }
     }

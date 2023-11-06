@@ -27,13 +27,13 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <errno.h>
+#include <sys/param.h>
 #include <nuttx/wireless/lte/lte_ioctl.h>
 
 #include "lte/lte_api.h"
 #include "lte/lapi.h"
 
 #include "lapi_dbg.h"
-#include "lapi_util.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -114,7 +114,7 @@ static int lte_set_report_quality_inparam_check(quality_report_cb_t callback,
 
 /* Synchronous APIs */
 
-int lte_get_netinfo_sync(uint8_t pdn_num, lte_netinfo_t *info)
+int lte_get_netinfo_sync(uint8_t pdn_num, FAR lte_netinfo_t *info)
 {
   int ret;
   int result;
@@ -134,8 +134,8 @@ int lte_get_netinfo_sync(uint8_t pdn_num, lte_netinfo_t *info)
     }
 
   ret = lapi_req(LTE_CMDID_GETNETINFO,
-                 (FAR void *)inarg, ARRAY_SZ(inarg),
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)inarg, nitems(inarg),
+                 (FAR void *)outarg, nitems(outarg),
                  NULL);
   if (ret == 0)
     {
@@ -145,7 +145,7 @@ int lte_get_netinfo_sync(uint8_t pdn_num, lte_netinfo_t *info)
   return ret;
 }
 
-int lte_get_localtime_sync(lte_localtime_t *localtime)
+int lte_get_localtime_sync(FAR lte_localtime_t *localtime)
 {
   int ret;
   int result;
@@ -161,7 +161,7 @@ int lte_get_localtime_sync(lte_localtime_t *localtime)
 
   ret = lapi_req(LTE_CMDID_GETLTIME,
                  NULL, 0,
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)outarg, nitems(outarg),
                  NULL);
   if (ret == 0)
     {
@@ -172,9 +172,9 @@ int lte_get_localtime_sync(lte_localtime_t *localtime)
 }
 
 #ifdef CONFIG_LTE_LAPI_KEEP_COMPATIBILITY
-int lte_get_operator_sync(char *oper)
+int lte_get_operator_sync(FAR char *oper)
 #else
-int lte_get_operator_sync(char *oper, size_t len)
+int lte_get_operator_sync(FAR char *oper, size_t len)
 #endif
 {
   int ret;
@@ -195,7 +195,7 @@ int lte_get_operator_sync(char *oper, size_t len)
 
   ret = lapi_req(LTE_CMDID_GETOPER,
                  NULL, 0,
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)outarg, nitems(outarg),
                  NULL);
   if (ret == 0)
     {
@@ -205,7 +205,7 @@ int lte_get_operator_sync(char *oper, size_t len)
   return ret;
 }
 
-int lte_get_quality_sync(lte_quality_t *quality)
+int lte_get_quality_sync(FAR lte_quality_t *quality)
 {
   int ret;
   int result;
@@ -221,7 +221,7 @@ int lte_get_quality_sync(lte_quality_t *quality)
 
   ret = lapi_req(LTE_CMDID_GETQUAL,
                  NULL, 0,
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)outarg, nitems(outarg),
                  NULL);
   if (ret == 0)
     {
@@ -231,7 +231,7 @@ int lte_get_quality_sync(lte_quality_t *quality)
   return ret;
 }
 
-int lte_get_cellinfo_sync(lte_cellinfo_t *cellinfo)
+int lte_get_cellinfo_sync(FAR lte_cellinfo_t *cellinfo)
 {
   int ret;
   int result;
@@ -247,7 +247,7 @@ int lte_get_cellinfo_sync(lte_cellinfo_t *cellinfo)
 
   ret = lapi_req(LTE_CMDID_GETCELL,
                  NULL, 0,
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)outarg, nitems(outarg),
                  NULL);
   if (ret == 0)
     {
@@ -269,7 +269,7 @@ int lte_get_rat_sync(void)
 
   ret = lapi_req(LTE_CMDID_GETRAT,
                  NULL, 0,
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)outarg, nitems(outarg),
                  NULL);
   if (ret == 0)
     {
@@ -299,8 +299,8 @@ int lte_set_rat_sync(uint8_t rat, bool persistent)
     }
 
   ret = lapi_req(LTE_CMDID_SETRAT,
-                 (FAR void *)inarg, ARRAY_SZ(inarg),
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)inarg, nitems(inarg),
+                 (FAR void *)outarg, nitems(outarg),
                  NULL);
   if (ret == 0)
     {
@@ -310,7 +310,7 @@ int lte_set_rat_sync(uint8_t rat, bool persistent)
   return ret;
 }
 
-int lte_get_ratinfo_sync(lte_ratinfo_t *info)
+int lte_get_ratinfo_sync(FAR lte_ratinfo_t *info)
 {
   int ret;
   int result;
@@ -326,7 +326,7 @@ int lte_get_ratinfo_sync(lte_ratinfo_t *info)
 
   ret = lapi_req(LTE_CMDID_GETRATINFO,
                  NULL, 0,
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)outarg, nitems(outarg),
                  NULL);
   if (ret == 0)
     {
@@ -401,8 +401,8 @@ int lte_set_report_netinfo(netinfo_report_cb_t callback)
     };
 
   ret = lapi_req(LTE_CMDID_REPNETINFO,
-                 (FAR void *)inarg, ARRAY_SZ(inarg),
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)inarg, nitems(inarg),
+                 (FAR void *)outarg, nitems(outarg),
                  callback);
   if (ret == 0)
     {
@@ -428,8 +428,8 @@ int lte_set_report_localtime(localtime_report_cb_t callback)
     };
 
   ret = lapi_req(LTE_CMDID_REPLTIME,
-                 (FAR void *)inarg, ARRAY_SZ(inarg),
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)inarg, nitems(inarg),
+                 (FAR void *)outarg, nitems(outarg),
                  callback);
   if (ret == 0)
     {
@@ -459,8 +459,8 @@ int lte_set_report_quality(quality_report_cb_t callback, uint32_t period)
     }
 
   ret = lapi_req(LTE_CMDID_REPQUAL,
-                 (FAR void *)inarg, ARRAY_SZ(inarg),
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)inarg, nitems(inarg),
+                 (FAR void *)outarg, nitems(outarg),
                  callback);
   if (ret == 0)
     {
@@ -491,8 +491,8 @@ int lte_set_report_cellinfo(cellinfo_report_cb_t callback,
     }
 
   ret = lapi_req(LTE_CMDID_REPCELL,
-                 (FAR void *)inarg, ARRAY_SZ(inarg),
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)inarg, nitems(inarg),
+                 (FAR void *)outarg, nitems(outarg),
                  callback);
   if (ret == 0)
     {

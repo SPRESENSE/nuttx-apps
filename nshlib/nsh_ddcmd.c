@@ -24,9 +24,12 @@
 
 #include <nuttx/config.h>
 
+#include <nuttx/clock.h>
+
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -58,6 +61,8 @@
 
 #undef CAN_PIPE_FROM_STD
 
+#define g_dd "dd"
+
 /****************************************************************************
  * Private Types
  ****************************************************************************/
@@ -66,22 +71,16 @@ struct dd_s
 {
   FAR struct nsh_vtbl_s *vtbl;
 
-  int      infd;       /* File descriptor of the input device */
-  int      outfd;      /* File descriptor of the output device */
-  uint32_t nsectors;   /* Number of sectors to transfer */
-  uint32_t sector;     /* The current sector number */
-  uint32_t skip;       /* The number of sectors skipped on input */
-  bool     eof;        /* true: The end of the input or output file has been hit */
-  uint16_t sectsize;   /* Size of one sector */
-  uint16_t nbytes;     /* Number of valid bytes in the buffer */
-  uint8_t *buffer;     /* Buffer of data to write to the output file */
+  int          infd;       /* File descriptor of the input device */
+  int          outfd;      /* File descriptor of the output device */
+  uint32_t     nsectors;   /* Number of sectors to transfer */
+  uint32_t     skip;       /* The number of sectors skipped on input */
+  bool         eof;        /* true: The end of the input or output file has been hit */
+  bool         verify;     /* true: Verify infile and outfile correctness */
+  size_t       sectsize;   /* Size of one sector */
+  size_t       nbytes;     /* Number of valid bytes in the buffer */
+  FAR uint8_t *buffer;     /* Buffer of data to write to the output file */
 };
-
-/****************************************************************************
- * Private Data
- ****************************************************************************/
-
-static const char g_dd[] = "dd";
 
 /****************************************************************************
  * Private Functions
@@ -94,7 +93,7 @@ static const char g_dd[] = "dd";
 static int dd_write(FAR struct dd_s *dd)
 {
   FAR uint8_t *buffer = dd->buffer;
-  uint16_t written ;
+  size_t written;
   ssize_t nbytes;
 
   /* Is the out buffer full (or is this the last one)? */
@@ -172,7 +171,8 @@ static inline int dd_infopen(FAR const char *name, FAR struct dd_s *dd)
 
 static inline int dd_outfopen(FAR const char *name, FAR struct dd_s *dd)
 {
-  dd->outfd = open(name, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+  dd->outfd = open(name, (dd->verify ? O_RDWR : O_WRONLY) |
+                          O_CREAT | O_TRUNC, 0644);
   if (dd->outfd < 0)
     {
       FAR struct nsh_vtbl_s *vtbl = dd->vtbl;
@@ -183,6 +183,76 @@ static inline int dd_outfopen(FAR const char *name, FAR struct dd_s *dd)
   return OK;
 }
 
+static int dd_verify(FAR const char *infile, FAR const char *outfile,
+                     FAR struct dd_s *dd)
+{
+  FAR uint8_t *buffer;
+  unsigned sector = 0;
+  int ret = OK;
+
+  UNUSED(infile);
+  UNUSED(outfile);
+
+  ret = lseek(dd->infd, dd->skip ? dd->skip * dd->sectsize : 0, SEEK_SET);
+  if (ret < 0)
+    {
+      nsh_error(dd->vtbl, g_fmtcmdfailed, g_dd, "lseek", NSH_ERRNO);
+      return ret;
+    }
+
+  dd->eof = 0;
+  ret = lseek(dd->outfd, 0, SEEK_SET);
+  if (ret < 0)
+    {
+      nsh_error(dd->vtbl, g_fmtcmdfailed, g_dd, "lseek", NSH_ERRNO);
+      return ret;
+    }
+
+  buffer = malloc(dd->sectsize);
+  if (buffer == NULL)
+    {
+      return ERROR;
+    }
+
+  while (!dd->eof && sector < dd->nsectors)
+    {
+      ret = dd_read(dd);
+      if (ret < 0)
+        {
+          break;
+        }
+
+      ret = read(dd->outfd, buffer, dd->nbytes);
+      if (ret != dd->nbytes)
+        {
+          nsh_error(dd->vtbl, g_fmtcmdfailed, g_dd, "read", NSH_ERRNO);
+          break;
+        }
+
+      if (memcmp(dd->buffer, buffer, dd->nbytes) != 0)
+        {
+          char msg[32];
+          snprintf(msg, sizeof(msg), "infile sector %d", sector);
+          nsh_dumpbuffer(dd->vtbl, msg, dd->buffer, dd->nbytes);
+          snprintf(msg, sizeof(msg), "\noutfile sector %d", sector);
+          nsh_dumpbuffer(dd->vtbl, msg, buffer, dd->nbytes);
+          nsh_output(dd->vtbl, "\n");
+          ret = ERROR;
+          break;
+        }
+
+      sector++;
+    }
+
+  if (ret < 0)
+    {
+      nsh_error(dd->vtbl, g_fmtcmdfailed, g_dd, "dd_verify", ret);
+    }
+
+  free(buffer);
+  return ret;
+}
+
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
@@ -191,7 +261,7 @@ static inline int dd_outfopen(FAR const char *name, FAR struct dd_s *dd)
  * Name: cmd_dd
  ****************************************************************************/
 
-int cmd_dd(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
+int cmd_dd(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv)
 {
   struct dd_s dd;
   FAR char *infile = NULL;
@@ -202,6 +272,7 @@ int cmd_dd(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
   uint64_t elapsed;
   uint64_t total;
 #endif
+  uint32_t sector = 0;
   int ret = ERROR;
   int i;
 
@@ -262,6 +333,10 @@ int cmd_dd(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
         {
           dd.skip = atoi(&argv[i][5]);
         }
+      else if (strncmp(argv[i], "verify", 6) == 0)
+        {
+          dd.verify = true;
+        }
     }
 
 #ifndef CAN_PIPE_FROM_STD
@@ -286,7 +361,7 @@ int cmd_dd(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
   ret = dd_infopen(infile, &dd);
   if (ret < 0)
     {
-      goto errout_with_paths;
+      goto errout_with_alloc;
     }
 
   /* Open the output file */
@@ -303,8 +378,18 @@ int cmd_dd(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
   clock_gettime(CLOCK_MONOTONIC, &ts0);
 #endif
 
-  dd.sector = 0;
-  while (!dd.eof && dd.nsectors > 0)
+  if (dd.skip)
+    {
+      ret = lseek(dd.infd, dd.skip * dd.sectsize, SEEK_SET);
+      if (ret < -1)
+        {
+          nsh_error(vtbl, g_fmtcmdfailed, g_dd, "lseek", NSH_ERRNO);
+          ret = ERROR;
+          goto errout_with_outf;
+        }
+    }
+
+  while (!dd.eof && sector < dd.nsectors)
     {
       /* Read one sector from from the input */
 
@@ -318,31 +403,17 @@ int cmd_dd(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
 
       if (!dd.eof)
         {
-          /* Pad with zero if necessary (at the end of file only) */
-
-          for (i = dd.nbytes; i < dd.sectsize; i++)
-            {
-              dd.buffer[i] = 0;
-            }
-
           /* Write one sector to the output file */
 
-          if (dd.sector >= dd.skip)
+          ret = dd_write(&dd);
+          if (ret < 0)
             {
-              ret = dd_write(&dd);
-              if (ret < 0)
-                {
-                  goto errout_with_outf;
-                }
-
-              /* Decrement to show that a sector was written */
-
-              dd.nsectors--;
+              goto errout_with_outf;
             }
 
           /* Increment the sector number */
 
-          dd.sector++;
+          sector++;
         }
     }
 
@@ -355,7 +426,7 @@ int cmd_dd(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
   elapsed -= (((uint64_t)ts0.tv_sec * NSEC_PER_SEC) + ts0.tv_nsec);
   elapsed /= NSEC_PER_USEC; /* usec */
 
-  total = ((uint64_t)dd.sector * (uint64_t)dd.sectsize);
+  total = ((uint64_t)sector * (uint64_t)dd.sectsize);
 
   nsh_output(vtbl, "%llu bytes copied, %u usec, ",
              total, (unsigned int)elapsed);
@@ -364,11 +435,18 @@ int cmd_dd(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
              / ((double)elapsed / USEC_PER_SEC)));
 #endif
 
+  if (ret == 0 && dd.verify)
+    {
+      ret = dd_verify(infile, outfile, &dd);
+    }
+
 errout_with_outf:
   close(dd.outfd);
 
 errout_with_inf:
   close(dd.infd);
+
+errout_with_alloc:
   free(dd.buffer);
 
 errout_with_paths:

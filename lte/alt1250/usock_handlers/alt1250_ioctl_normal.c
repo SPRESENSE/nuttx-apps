@@ -76,7 +76,7 @@ static int postproc_reportnet(FAR struct alt1250_s *dev,
                               FAR struct alt_container_s *reply,
                               FAR struct usock_s *usock,
                               FAR int32_t *usock_result,
-                              FAR uint64_t *usock_xid,
+                              FAR uint32_t *usock_xid,
                               FAR struct usock_ackinfo_s *ackinfo,
                               unsigned long is_async)
 {
@@ -98,7 +98,7 @@ static int postproc_radioon(FAR struct alt1250_s *dev,
                             FAR struct alt_container_s *reply,
                             FAR struct usock_s *usock,
                             FAR int32_t *usock_result,
-                            FAR uint64_t *usock_xid,
+                            FAR uint32_t *usock_xid,
                             FAR struct usock_ackinfo_s *ackinfo,
                             unsigned long arg)
 {
@@ -129,7 +129,7 @@ static int postproc_actpdn(FAR struct alt1250_s *dev,
                               FAR struct alt_container_s *reply,
                               FAR struct usock_s *usock,
                               FAR int32_t *usock_result,
-                              FAR uint64_t *usock_xid,
+                              FAR uint32_t *usock_xid,
                               FAR struct usock_ackinfo_s *ackinfo,
                               unsigned long is_async)
 {
@@ -162,7 +162,7 @@ int postproc_fwgetversion(FAR struct alt1250_s *dev,
                           FAR struct alt_container_s *reply,
                           FAR struct usock_s *usock,
                           FAR int32_t *usock_result,
-                          FAR uint64_t *usock_xid,
+                          FAR uint32_t *usock_xid,
                           FAR struct usock_ackinfo_s *ackinfo,
                           unsigned long arg)
 {
@@ -213,7 +213,7 @@ static int postproc_setreport(FAR struct alt1250_s *dev,
                               FAR struct alt_container_s *reply,
                               FAR struct usock_s *usock,
                               FAR int32_t *usock_result,
-                              FAR uint64_t *usock_xid,
+                              FAR uint32_t *usock_xid,
                               FAR struct usock_ackinfo_s *ackinfo,
                               unsigned long arg)
 {
@@ -335,7 +335,8 @@ static int lte_context_resume(FAR struct alt1250_s *dev,
     }
 
   ret = alt1250_apply_daemon_context(dev,
-                                     (FAR struct alt1250_save_ctx *)ctx_data);
+                                     (FAR struct alt1250_save_ctx *)
+                                     ctx_data);
   if (ret < 0)
     {
       dbg_alt1250("Failed to apply saved alt1250 context(%d).\n", ret);
@@ -403,7 +404,7 @@ error:
 int usockreq_ioctl_normal(FAR struct alt1250_s *dev,
                           FAR struct usrsock_request_buff_s *req,
                           FAR int32_t *usock_result,
-                          FAR uint64_t *usock_xid,
+                          FAR uint32_t *usock_xid,
                           FAR struct usock_ackinfo_s *ackinfo)
 {
   FAR struct usrsock_request_ioctl_s *request = &req->request.ioctl_req;
@@ -506,7 +507,8 @@ int usockreq_ioctl_normal(FAR struct alt1250_s *dev,
 
 #ifdef CONFIG_LTE_ALT1250_ENABLE_HIBERNATION_MODE
       case LTE_CMDID_RESUME:
-        return lte_context_resume(dev, ltecmd, container, usock, usock_result);
+        return lte_context_resume(dev, ltecmd, container, usock,
+                                  usock_result);
 #endif
 
       case LTE_CMDID_SAVE_LOG:

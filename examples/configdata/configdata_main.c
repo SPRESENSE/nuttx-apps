@@ -33,9 +33,9 @@
 #include <fcntl.h>
 #include <string.h>
 #include <errno.h>
-#include <crc32.h>
 #include <debug.h>
 
+#include <nuttx/crc32.h>
 #include <nuttx/mtd/mtd.h>
 #include <nuttx/mtd/configdata.h>
 #include <nuttx/fs/ioctl.h>
@@ -302,7 +302,7 @@ static inline int
   config.instance = entry->instance;
   config.len = entry->len;
   config.configdata = g_entryimage;
-  ret = ioctl(g_fd, CFGDIOC_SETCONFIG, (unsigned long) &config);
+  ret = ioctl(g_fd, CFGDIOC_SETCONFIG, (unsigned long)&config);
   if (ret < 0)
     {
       entry->id = 0;
@@ -368,7 +368,7 @@ static inline int
   config.instance = entry->instance;
   config.len = entry->len;
   config.configdata = g_entryimage;
-  ret = ioctl(g_fd, CFGDIOC_GETCONFIG, (unsigned long) &config);
+  ret = ioctl(g_fd, CFGDIOC_GETCONFIG, (unsigned long)&config);
   if (ret < 0)
     {
       return ERROR;
@@ -399,11 +399,9 @@ static int configdata_verifyconfig(void)
   int ret;
   int errcode = OK;
   int i;
-  static int iteration = 0;
 
   /* Create a file for each unused file structure */
 
-  iteration++;
   for (i = 0; i < CONFIG_EXAMPLES_CONFIGDATA_MAXENTRIES; i++)
     {
       entry = &g_entries[i];

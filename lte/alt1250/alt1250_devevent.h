@@ -18,8 +18,8 @@
  *
  ****************************************************************************/
 
-#ifndef __LTE_ALT1250_ALT1250_DEVEVENT_H__
-#define __LTE_ALT1250_ALT1250_DEVEVENT_H__
+#ifndef __APPS_LTE_ALT1250_ALT1250_DEVEVENT_H
+#define __APPS_LTE_ALT1250_ALT1250_DEVEVENT_H
 
 /****************************************************************************
  * Included Files
@@ -29,4 +29,4 @@
 
 int perform_alt1250events(FAR struct alt1250_s *dev);
 
-#endif  /* __LTE_ALT1250_ALT1250_DEVEVENT_H__ */
+#endif  /* __APPS_LTE_ALT1250_ALT1250_DEVEVENT_H */

@@ -53,10 +53,13 @@
 #define ALTFDNO (0)
 #define USOCKFDNO (1)
 
-#define SET_POLLIN(fds, fid) { \
-  (fds).fd = (fid);  \
-  (fds).events = POLLIN; \
-}
+#define SET_POLLIN(fds, fid) \
+  do \
+    { \
+      (fds).fd = (fid);  \
+      (fds).events = POLLIN; \
+    } \
+  while (0)
 
 #define IS_POLLIN(fds) ((fds).revents & POLLIN)
 
@@ -259,7 +262,7 @@ int main(int argc, FAR char *argv[])
 {
   int ret;
   FAR char *endptr;
-  sem_t *syncsem = NULL;
+  FAR sem_t *syncsem = NULL;
 
   if (argc > 1)
     {
@@ -339,7 +342,7 @@ int alt1250_count_opened_sockets(FAR struct alt1250_s *dev)
       return ERROR;
     }
 
-  for (i = 0; i < ARRAY_SZ(dev->sockets); i++)
+  for (i = 0; i < nitems(dev->sockets); i++)
     {
       sock = &dev->sockets[i];
       if (sock->state != SOCKET_STATE_CLOSED)

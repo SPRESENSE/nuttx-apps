@@ -262,7 +262,7 @@ int main(int argc, FAR char *argv[])
 
   /* Make sure that we are using our symbol tablee */
 
-  symdesc.symtab   = (FAR struct symtab_s *)g_spawn_exports; /* Discard 'const' */
+  symdesc.symtab   = g_spawn_exports;
   symdesc.nsymbols = g_spawn_nexports;
   boardctl(BOARDIOC_APP_SYMTAB, (uintptr_t)&symdesc);
 
@@ -305,7 +305,7 @@ int main(int argc, FAR char *argv[])
 #ifdef CONFIG_LIBC_ENVPATH
   filepath = g_hello_argv[0];
 #else
-  snprintf(fullpath, 128, "%s/%s", MOUNTPT, g_hello_argv[0]);
+  snprintf(fullpath, sizeof(fullpath), "%s/%s", MOUNTPT, g_hello_argv[0]);
   filepath = fullpath;
 #endif
 
@@ -383,7 +383,7 @@ int main(int argc, FAR char *argv[])
 
   posix_spawn_file_actions_dump(&file_actions);
 
-  snprintf(fullpath, 128, "%s/%s", MOUNTPT, g_data);
+  snprintf(fullpath, sizeof(fullpath), "%s/%s", MOUNTPT, g_data);
   ret = posix_spawn_file_actions_addopen(&file_actions, 0, fullpath,
                                          O_RDONLY, 0644);
   if (ret != 0)
@@ -404,7 +404,7 @@ int main(int argc, FAR char *argv[])
 #ifdef CONFIG_LIBC_ENVPATH
   filepath = g_redirect_argv[0];
 #else
-  snprintf(fullpath, 128, "%s/%s", MOUNTPT, g_redirect_argv[0]);
+  snprintf(fullpath, sizeof(fullpath), "%s/%s", MOUNTPT, g_redirect_argv[0]);
   filepath = fullpath;
 #endif
 

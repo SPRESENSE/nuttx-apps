@@ -47,7 +47,7 @@ static int postproc_getfl(FAR struct alt1250_s *dev,
                           FAR struct alt_container_s *reply,
                           FAR struct usock_s *usock,
                           FAR int32_t *usock_result,
-                          FAR uint64_t *usock_xid,
+                          FAR uint32_t *usock_xid,
                           FAR struct usock_ackinfo_s *ackinfo,
                           unsigned long arg);
 
@@ -55,7 +55,7 @@ static int postproc_setfl(FAR struct alt1250_s *dev,
                               FAR struct alt_container_s *reply,
                               FAR struct usock_s *usock,
                               FAR int32_t *usock_result,
-                              FAR uint64_t *usock_xid,
+                              FAR uint32_t *usock_xid,
                               FAR struct usock_ackinfo_s *ackinfo,
                               unsigned long arg);
 
@@ -89,7 +89,7 @@ static int send_fctl_command(FAR struct alt1250_s *dev,
   USOCKET_SET_RESPONSE(usock, idx++, USOCKET_REP_ERRCODE(usock));
 
   set_container_ids(container, USOCKET_USOCKID(usock), LTE_CMDID_FCNTL);
-  set_container_argument(container, inparam, ARRAY_SZ(inparam));
+  set_container_argument(container, inparam, nitems(inparam));
   set_container_response(container, USOCKET_REP_RESPONSE(usock), idx);
   set_container_postproc(container, cmd == ALTCOM_SETFL ? postproc_setfl :
                           cmd == ALTCOM_GETFL ? postproc_getfl : NULL, 0);
@@ -105,7 +105,7 @@ static int postproc_setfl(FAR struct alt1250_s *dev,
                               FAR struct alt_container_s *reply,
                               FAR struct usock_s *usock,
                               FAR int32_t *usock_result,
-                              FAR uint64_t *usock_xid,
+                              FAR uint32_t *usock_xid,
                               FAR struct usock_ackinfo_s *ackinfo,
                               unsigned long arg)
 {
@@ -119,11 +119,17 @@ static int postproc_setfl(FAR struct alt1250_s *dev,
   dbg_alt1250("%s start\n", __func__);
 
   *usock_xid = USOCKET_XID(usock);
-  *usock_result = COMBINE_ERRCODE(*(int *)resp[0], *(int *)resp[1]);
+  *usock_result = COMBINE_ERRCODE(*(FAR int *)resp[0], *(FAR int *)resp[1]);
 
   if (*usock_result >= 0)
     {
       USOCKET_SET_STATE(usock, SOCKET_STATE_OPENED);
+      if (USOCKET_TYPE(usock) == SOCK_DGRAM)
+        {
+          ret = REP_SEND_ACK_TXREADY;
+          USOCKET_CLR_SELECTABLE(usock, SELECT_WRITABLE);
+        }
+
       usocket_commitstate(dev);
 
       switch (USOCKET_REQID(usock))
@@ -174,7 +180,7 @@ static int postproc_setfl(FAR struct alt1250_s *dev,
             break;
 
           default:
-            dbg_alt1250("unexpected sequense. reqid:0x%02x\n",
+            dbg_alt1250("unexpected sequence. reqid:0x%02x\n",
                         USOCKET_REQID(usock));
             *usock_result = -EFAULT;
             break;
@@ -202,7 +208,7 @@ static int postproc_getfl(FAR struct alt1250_s *dev,
                           FAR struct alt_container_s *reply,
                           FAR struct usock_s *usock,
                           FAR int32_t *usock_result,
-                          FAR uint64_t *usock_xid,
+                          FAR uint32_t *usock_xid,
                           FAR struct usock_ackinfo_s *ackinfo,
                           unsigned long arg)
 {
@@ -216,7 +222,7 @@ static int postproc_getfl(FAR struct alt1250_s *dev,
   dbg_alt1250("%s start\n", __func__);
 
   *usock_xid = USOCKET_XID(usock);
-  *usock_result = COMBINE_ERRCODE(*(int *)resp[0], *(int *)resp[1]);
+  *usock_result = COMBINE_ERRCODE(*(FAR int *)resp[0], *(FAR int *)resp[1]);
 
   if (*usock_result >= 0)
     {
@@ -255,7 +261,7 @@ static int postproc_socket(FAR struct alt1250_s *dev,
                            FAR struct alt_container_s *reply,
                            FAR struct usock_s *usock,
                            FAR int32_t *usock_result,
-                           FAR uint64_t *usock_xid,
+                           FAR uint32_t *usock_xid,
                            FAR struct usock_ackinfo_s *ackinfo,
                            unsigned long arg)
 {
@@ -269,7 +275,7 @@ static int postproc_socket(FAR struct alt1250_s *dev,
   dbg_alt1250("%s start\n", __func__);
 
   *usock_xid = USOCKET_XID(usock);
-  *usock_result = COMBINE_ERRCODE(*(int *)resp[0], *(int *)resp[1]);
+  *usock_result = COMBINE_ERRCODE(*(FAR int *)resp[0], *(FAR int *)resp[1]);
 
   if (*usock_result >= 0)
     {
@@ -327,7 +333,7 @@ static int send_socket_command(FAR struct alt1250_s *dev,
   USOCKET_SET_RESPONSE(usock, idx++, USOCKET_REP_ERRCODE(usock));
 
   set_container_ids(container, USOCKET_USOCKID(usock), LTE_CMDID_SOCKET);
-  set_container_argument(container, inparam, ARRAY_SZ(inparam));
+  set_container_argument(container, inparam, nitems(inparam));
   set_container_response(container, USOCKET_REP_RESPONSE(usock), idx);
   set_container_postproc(container, postproc_socket, 0);
 
@@ -371,7 +377,7 @@ int open_altsocket(FAR struct alt1250_s *dev,
 int usockreq_socket(FAR struct alt1250_s *dev,
                     FAR struct usrsock_request_buff_s *req,
                     FAR int32_t *usock_result,
-                    FAR uint64_t *usock_xid,
+                    FAR uint32_t *usock_xid,
                     FAR struct usock_ackinfo_s *ackinfo)
 {
   FAR struct usrsock_request_socket_s *request = &req->request.sock_req;
@@ -393,11 +399,11 @@ int usockreq_socket(FAR struct alt1250_s *dev,
            request->type != SOCK_CTRL)
     {
       /* If domain is AF_INET while usock_enable is false,
-       * set usockid to -EPROTONOSUPPORT to fallback kernel
+       * set usockid to -ENOTSUP to fallback kernel
        * network stack.
        */
 
-      *usock_result = -EPROTONOSUPPORT;
+      *usock_result = -ENOTSUP;
       return REP_SEND_ACK_WOFREE;
     }
 

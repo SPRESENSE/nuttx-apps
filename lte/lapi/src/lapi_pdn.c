@@ -27,13 +27,13 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <errno.h>
+#include <sys/param.h>
 #include <nuttx/wireless/lte/lte_ioctl.h>
 
 #include "lte/lte_api.h"
 #include "lte/lapi.h"
 
 #include "lapi_dbg.h"
-#include "lapi_util.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -43,7 +43,7 @@
  * Private Functions
  ****************************************************************************/
 
-static int lte_activate_pdn_inparam_check(lte_apn_setting_t *apn)
+static int lte_activate_pdn_inparam_check(FAR lte_apn_setting_t *apn)
 {
   int32_t mask = 0;
 
@@ -75,14 +75,14 @@ static int lte_activate_pdn_inparam_check(lte_apn_setting_t *apn)
 
   if (apn->user_name && apn->password)
     {
-      if (strnlen((char *)apn->user_name, LTE_APN_USER_NAME_LEN) >=
+      if (strnlen((FAR char *)apn->user_name, LTE_APN_USER_NAME_LEN) >=
         LTE_APN_USER_NAME_LEN)
         {
           lapi_printf("username is length overflow.\n");
           return -EINVAL;
         }
 
-      if (strnlen((char *)apn->password, LTE_APN_PASSWD_LEN) >=
+      if (strnlen((FAR char *)apn->password, LTE_APN_PASSWD_LEN) >=
         LTE_APN_PASSWD_LEN)
         {
           lapi_printf("password is length overflow.\n");
@@ -130,7 +130,7 @@ static int lte_deactivate_pdn_inparam_check(uint8_t session_id)
 
 /* Synchronous APIs */
 
-int lte_activate_pdn_sync(lte_apn_setting_t *apn, lte_pdn_t *pdn)
+int lte_activate_pdn_sync(FAR lte_apn_setting_t *apn, FAR lte_pdn_t *pdn)
 {
   int ret;
   int result;
@@ -150,8 +150,8 @@ int lte_activate_pdn_sync(lte_apn_setting_t *apn, lte_pdn_t *pdn)
     }
 
   ret = lapi_req(LTE_CMDID_ACTPDN,
-                 (FAR void *)inarg, ARRAY_SZ(inarg),
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)inarg, nitems(inarg),
+                 (FAR void *)outarg, nitems(outarg),
                  NULL);
   if (ret == 0)
     {
@@ -181,8 +181,8 @@ int lte_deactivate_pdn_sync(uint8_t session_id)
     }
 
   ret = lapi_req(LTE_CMDID_DEACTPDN,
-                 (FAR void *)inarg, ARRAY_SZ(inarg),
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)inarg, nitems(inarg),
+                 (FAR void *)outarg, nitems(outarg),
                  NULL);
   if (ret == 0)
     {
@@ -194,7 +194,7 @@ int lte_deactivate_pdn_sync(uint8_t session_id)
 
 /* Asynchronous APIs */
 
-int lte_activate_pdn(lte_apn_setting_t *apn, activate_pdn_cb_t callback)
+int lte_activate_pdn(FAR lte_apn_setting_t *apn, activate_pdn_cb_t callback)
 {
   FAR void *inarg[] =
     {
@@ -212,7 +212,7 @@ int lte_activate_pdn(lte_apn_setting_t *apn, activate_pdn_cb_t callback)
     }
 
   return lapi_req(LTE_CMDID_ACTPDN | LTE_CMDOPT_ASYNC_BIT,
-                  (FAR void *)inarg, ARRAY_SZ(inarg),
+                  (FAR void *)inarg, nitems(inarg),
                   NULL, 0, callback);
 }
 
@@ -236,7 +236,7 @@ int lte_deactivate_pdn(uint8_t session_id, deactivate_pdn_cb_t callback)
     }
 
   return lapi_req(LTE_CMDID_DEACTPDN | LTE_CMDOPT_ASYNC_BIT,
-                  (FAR void *)inarg, ARRAY_SZ(inarg),
+                  (FAR void *)inarg, nitems(inarg),
                   NULL, 0, callback);
 }
 
@@ -253,7 +253,7 @@ int lte_activate_pdn_cancel(void)
 
   ret = lapi_req(LTE_CMDID_ACTPDNCAN,
                  NULL, 0,
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)outarg, nitems(outarg),
                  NULL);
   if (ret == 0)
     {

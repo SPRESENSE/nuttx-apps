@@ -440,7 +440,8 @@ CSRCS += \
 
 CFLAGS += -DLTC_SOURCE -DLTM_DESC
 CFLAGS += -Wno-deprecated-declarations
-
+CFLAGS += -Dblake2s_init=libtomcrypt_blake2s_init
+CFLAGS += -Dmd5_init=libtomcrypt_md5_init
 #CFLAGS += -Wno-format
 
 ifneq ($(CONFIG_LIBTOMCRYPT_DEMOS),)
@@ -463,6 +464,23 @@ endif
 
 endif
 
+ifneq ($(CONFIG_LIBTOMCRYPT_TEST),)
+${shell mkdir -p $(BOARD_DIR)/resource/libtomcrypt}
+${shell cp libtomcrypt/tests/*.key $(BOARD_DIR)/resource/libtomcrypt}
+${shell cp libtomcrypt/tests/*.der $(BOARD_DIR)/resource/libtomcrypt}
+CFLAGS += -DKEY_DIR=\"/resource/libtomcrypt\"
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/crypto/libtomcrypt/libtomcrypt/tests
+CFLAGS += -Dbase64_decode=libtomcrypt_base64_decode
+CFLAGS += -Dbase64_encode=libtomcrypt_encode
+NEWSRC := $(wildcard libtomcrypt/tests/*.c)
+CSRCS += $(filter-out $(LIBTOMCRYPT_UNPACKNAME)/tests/test.c, $(NEWSRC))
+MAINSRC += $(LIBTOMCRYPT_UNPACKNAME)/tests/test.c
+
+PROGNAME += $(CONFIG_LIBTOMCRYPT_TEST_PROGNAME)
+PRIORITY  += $(CONFIG_LIBTOMCRYPT_TEST_PRIORITY)
+STACKSIZE += $(CONFIG_LIBTOMCRYPT_TEST_STACKSIZE)
+endif
+
 $(LIBTOMCRYPT_ZIP):
 	@echo "Downloading: $(LIBTOMCRYPT_ZIP)"
 	$(Q) curl -O -L $(CONFIG_LIBTOMCRYPT_URL)/$(LIBTOMCRYPT_ZIP)
@@ -476,10 +494,13 @@ $(LIBTOMCRYPT_UNPACKNAME): $(LIBTOMCRYPT_ZIP)
 	$(Q) patch -p0 < ltcrypt-flush.patch # Missing stdout flush in demo app
 	$(Q) touch $(LIBTOMCRYPT_UNPACKNAME)
 
+# Download and unpack tarball if no git repo found
+ifeq ($(wildcard $(LIBTOMCRYPT_UNPACKNAME)/.git),)
 context:: $(LIBTOMCRYPT_UNPACKNAME)
 
 distclean::
 	$(call DELDIR, $(LIBTOMCRYPT_UNPACKNAME))
 	$(call DELFILE, $(LIBTOMCRYPT_ZIP))
+endif
 
 include $(APPDIR)/Application.mk

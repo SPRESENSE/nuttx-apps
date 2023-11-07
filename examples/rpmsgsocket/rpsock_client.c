@@ -24,16 +24,16 @@
 
 #include <nuttx/config.h>
 
-#include <sys/socket.h>
-#include <netpacket/rpmsg.h>
-
 #include <assert.h>
+#include <errno.h>
+#include <netpacket/rpmsg.h>
+#include <poll.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
-#include <poll.h>
-#include <errno.h>
+#include <unistd.h>
+#include <sys/socket.h>
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -201,7 +201,7 @@ static int rpsock_unsync_test(struct rpsock_arg_s *args)
                   if (intp[i] != ALIGN_UP(total) / sizeof(uint32_t) + i)
                     {
                       printf("client check fail total %d, \
-                              i %d, %08x, %08x\n",
+                              i %d, %08" PRIx32 ", %08x\n",
                               ALIGN_UP(total), i, intp[i],
                               ALIGN_UP(total) / sizeof(uint32_t) + i);
                     }
@@ -274,8 +274,8 @@ static int rpsock_stream_client(int argc, char *argv[])
   /* Connect the socket to the server */
 
   myaddr.rp_family = AF_RPMSG;
-  strncpy(myaddr.rp_name, argv[3], RPMSG_SOCKET_NAME_SIZE);
-  strncpy(myaddr.rp_cpu, argv[4], RPMSG_SOCKET_CPU_SIZE);
+  strlcpy(myaddr.rp_name, argv[3], RPMSG_SOCKET_NAME_SIZE);
+  strlcpy(myaddr.rp_cpu, argv[4], RPMSG_SOCKET_CPU_SIZE);
 
   printf("client: Connecting to %s,%s...\n", myaddr.rp_cpu, myaddr.rp_name);
   ret = connect(sockfd, (struct sockaddr *)&myaddr, sizeof(myaddr));
@@ -325,7 +325,7 @@ static int rpsock_stream_client(int argc, char *argv[])
           ptr[i] = cnt * 100 + i;
         }
 
-      printf("client send data, cnt %d, total len %d, BUFHEAD %s\n",
+      printf("client send data, cnt %d, total len %zu, BUFHEAD %s\n",
                         cnt, sendsize, outbuf);
 
       tmp = outbuf;
@@ -368,7 +368,7 @@ static int rpsock_stream_client(int argc, char *argv[])
             }
           else if (act < 0)
             {
-              printf("client recv data failed %d\n", act);
+              printf("client recv data failed %zd\n", act);
               break;
             }
 
@@ -382,8 +382,8 @@ static int rpsock_stream_client(int argc, char *argv[])
 
           if (recvsize >= sendsize)
             {
-              printf("client recv total %d, send total %d\n",
-                      recvsize, sendsize);
+              printf("client recv total %zu, send total %zu\n",
+                     recvsize, sendsize);
               break;
             }
         }
@@ -468,8 +468,8 @@ static int rpsock_dgram_client(int argc, char *argv[])
   /* Connect the socket to the server */
 
   myaddr.rp_family = AF_RPMSG;
-  strncpy(myaddr.rp_name, argv[3], RPMSG_SOCKET_NAME_SIZE);
-  strncpy(myaddr.rp_cpu, argv[4], RPMSG_SOCKET_CPU_SIZE);
+  strlcpy(myaddr.rp_name, argv[3], RPMSG_SOCKET_NAME_SIZE);
+  strlcpy(myaddr.rp_cpu, argv[4], RPMSG_SOCKET_CPU_SIZE);
 
   printf("client: Connecting to %s,%s...\n", myaddr.rp_cpu, myaddr.rp_name);
   ret = connect(sockfd, (struct sockaddr *)&myaddr, sizeof(myaddr));

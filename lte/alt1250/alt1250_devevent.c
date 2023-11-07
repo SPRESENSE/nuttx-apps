@@ -58,9 +58,9 @@
  ****************************************************************************/
 
 static int handle_replypkt(FAR struct alt1250_s *dev,
-  FAR struct alt_container_s *reply,
-  FAR int32_t *usock_result, uint64_t *usock_xid,
-  FAR struct usock_ackinfo_s *ackinfo)
+                           FAR struct alt_container_s *reply,
+                           FAR int32_t *usock_result, uint32_t *usock_xid,
+                           FAR struct usock_ackinfo_s *ackinfo)
 {
   int ret;
   FAR struct usock_s *usock;
@@ -88,11 +88,11 @@ static int handle_replypkt(FAR struct alt1250_s *dev,
  ****************************************************************************/
 
 static int perform_alt1250_reply(FAR struct alt1250_s *dev,
-    FAR struct alt_container_s *container)
+                                 FAR struct alt_container_s *container)
 {
   int ret = REP_NO_ACK;
   int32_t ack_result = OK;
-  uint64_t ack_xid = 0;
+  uint32_t ack_xid = 0;
   struct usock_ackinfo_s ackinfo;
 
   ret = handle_replypkt(dev, container, &ack_result, &ack_xid, &ackinfo);
@@ -137,7 +137,8 @@ static int handle_intentional_reset(FAR struct alt1250_s *dev)
 {
   if (dev->lwm2m_apply_xid >= 0)
     {
-      usockif_sendack(dev->usockfd, 0, (uint64_t)dev->lwm2m_apply_xid, false);
+      usockif_sendack(dev->usockfd, 0, 0, (uint32_t)dev->lwm2m_apply_xid,
+                      false);
       dev->lwm2m_apply_xid = -1;
     }
 

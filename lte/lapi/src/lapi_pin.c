@@ -27,13 +27,13 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <errno.h>
+#include <sys/param.h>
 #include <nuttx/wireless/lte/lte_ioctl.h>
 
 #include "lte/lte_api.h"
 #include "lte/lapi.h"
 
 #include "lapi_dbg.h"
-#include "lapi_util.h"
 
 /****************************************************************************
  * Public Functions
@@ -41,25 +41,25 @@
 
 /* Synchronous APIs */
 
-int lte_get_pinset_sync(lte_getpin_t *pinset)
+int lte_get_pinset_sync(FAR lte_getpin_t *pinset)
 {
   return -ENOTSUP;
 }
 
-int lte_set_pinenable_sync(bool enable, char *pincode,
-  uint8_t *attemptsleft)
+int lte_set_pinenable_sync(bool enable, FAR char *pincode,
+  FAR uint8_t *attemptsleft)
 {
   return -ENOTSUP;
 }
 
-int lte_change_pin_sync(int8_t target_pin, char *pincode,
-  char *new_pincode, uint8_t *attemptsleft)
+int lte_change_pin_sync(int8_t target_pin, FAR char *pincode,
+  FAR char *new_pincode, FAR uint8_t *attemptsleft)
 {
   return -ENOTSUP;
 }
 
-int lte_enter_pin_sync(char *pincode, char *new_pincode,
-  uint8_t *simstat, uint8_t *attemptsleft)
+int lte_enter_pin_sync(FAR char *pincode, FAR char *new_pincode,
+  FAR uint8_t *simstat, FAR uint8_t *attemptsleft)
 {
   return -ENOTSUP;
 }
@@ -73,19 +73,19 @@ int lte_get_pinset(get_pinset_cb_t callback)
   return -ENOTSUP;
 }
 
-int lte_set_pinenable(bool enable, char *pincode,
+int lte_set_pinenable(bool enable, FAR char *pincode,
   set_pinenable_cb_t callback)
 {
   return -ENOTSUP;
 }
 
-int lte_change_pin(int8_t target_pin, char *pincode,
-  char *new_pincode, change_pin_cb_t callback)
+int lte_change_pin(int8_t target_pin, FAR char *pincode,
+  FAR char *new_pincode, change_pin_cb_t callback)
 {
   return -ENOTSUP;
 }
 
-int lte_enter_pin(char *pincode, char *new_pincode,
+int lte_enter_pin(FAR char *pincode, FAR char *new_pincode,
   enter_pin_cb_t callback)
 {
   return -ENOTSUP;

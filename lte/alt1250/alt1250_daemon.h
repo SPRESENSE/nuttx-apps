@@ -18,8 +18,8 @@
  *
  ****************************************************************************/
 
-#ifndef __LTE_ALT1250_ALT1250_DAEMON_H__
-#define __LTE_ALT1250_ALT1250_DAEMON_H__
+#ifndef __APPS_LTE_ALT1250_ALT1250_DAEMON_H
+#define __APPS_LTE_ALT1250_ALT1250_DAEMON_H
 
 /****************************************************************************
  * Included Files
@@ -29,11 +29,11 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <queue.h>
 #include <mqueue.h>
 #include <semaphore.h>
 #include <string.h>
 
+#include <nuttx/queue.h>
 #include <nuttx/net/netdev.h>
 #include <nuttx/wireless/lte/lte.h>
 #include <nuttx/modem/alt1250.h>
@@ -172,4 +172,4 @@ int alt1250_apply_daemon_context(FAR struct alt1250_s *dev,
                                  FAR struct alt1250_save_ctx *ctx);
 #endif
 
-#endif  /* __LTE_ALT1250_ALT1250_DAEMON_H__ */
+#endif  /* __APPS_LTE_ALT1250_ALT1250_DAEMON_H */

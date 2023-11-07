@@ -40,12 +40,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#include <nuttx/net/arp.h>
 #include "netutils/netlib.h"
-
-#ifdef CONFIG_EXAMPLES_TCPECHO_DHCPC
-#  include <arpa/inet.h>
-#endif
 
 /* Here we include the header file for the application(s) we use in
  * our project as defined in the config/<board-name>/defconfig file
@@ -79,7 +74,7 @@ static int tcpecho_server(void);
  * Private Functions
  ****************************************************************************/
 
-static int tcpecho_netsetup()
+static int tcpecho_netsetup(void)
 {
   /* If this task is excecutated as an NSH built-in function, then the
    * network has already been configured by NSH's start-up logic.

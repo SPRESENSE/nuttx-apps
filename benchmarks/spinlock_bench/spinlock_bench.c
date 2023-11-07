@@ -1,5 +1,5 @@
 /****************************************************************************
- * apps/testing/monkey/monkey_log.c
+ * apps/benchmarks/spinlock_bench/spinlock_bench.c
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -22,74 +22,89 @@
  * Included Files
  ****************************************************************************/
 
-#include <stdarg.h>
 #include <stdio.h>
-#include <syslog.h>
-#include "monkey_log.h"
+#include <assert.h>
+#include <errno.h>
+#include <nuttx/spinlock.h>
+#include <time.h>
 
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
 
+#define TEST_NUM CONFIG_SPINLOCK_MULTITHREAD
+#define THREAD_NUM CONFIG_SPINLOCK_MULTITHREAD
+
 /****************************************************************************
- * Private Data
+ * Private Type
  ****************************************************************************/
 
-static enum monkey_log_level_type_e g_log_level = MONKEY_LOG_LEVEL_NOTICE;
+struct thread_parmeter_s
+{
+  FAR int *result;
+  FAR spinlock_t *lock;
+};
+
+/****************************************************************************
+ * Private Functions
+ ****************************************************************************/
+
+static FAR void *thread_spinlock(FAR void *parameter)
+{
+  FAR int *result = ((FAR struct thread_parmeter_s *)parameter)->result;
+  FAR spinlock_t *lock = ((FAR struct thread_parmeter_s *)parameter)->lock;
+
+  int i;
+
+  for (i = 0; i < TEST_NUM; i++)
+    {
+      spin_lock(lock);
+      (*result)++;
+      spin_unlock(lock);
+    }
+
+  return NULL;
+}
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 
-/****************************************************************************
- * Name: monkey_log_printf
- ****************************************************************************/
-
-void monkey_log_printf(enum monkey_log_level_type_e level,
-                       FAR const char *func,
-                       FAR const char *fmt,
-                       ...)
+void main(void)
 {
-  struct va_format vaf;
-  va_list ap;
+  spinlock_t lock = SP_UNLOCKED;
+  int result = 0;
+  pthread_t thread[THREAD_NUM];
+  struct thread_parmeter_s para;
+  clock_t start;
+  clock_t end;
 
-  static const int priority[MONKEY_LOG_LEVEL_LAST] =
-    {
-      LOG_INFO, LOG_NOTICE, LOG_WARNING, LOG_ERR
-    };
+  int status;
+  int i;
 
-  if (level < g_log_level)
+  para.result = &result;
+  para.lock = &lock;
+
+  start = perf_gettime();
+  for (i = 0; i < THREAD_NUM; ++i)
     {
-      return;
+      status = pthread_create(&thread[i], NULL,
+                              thread_spinlock, &para);
+      if (status != 0)
+        {
+          printf("spinlock_test: ERROR pthread_create failed, status=%d\n",
+                 status);
+          ASSERT(false);
+        }
     }
 
-  va_start(ap, fmt);
-  vaf.fmt = fmt;
-  vaf.va  = &ap;
-  syslog(priority[level], "[monkey] %s: %pV\n", func, &vaf);
-  va_end(ap);
-}
-
-/****************************************************************************
- * Name: monkey_log_set_level
- ****************************************************************************/
-
-void monkey_log_set_level(enum monkey_log_level_type_e level)
-{
-  if (level >= MONKEY_LOG_LEVEL_LAST)
+  for (i = 0; i < THREAD_NUM; ++i)
     {
-      MONKEY_LOG_WARN("error level: %d", level);
-      return;
+      pthread_join(thread[i], NULL);
     }
 
-  g_log_level = level;
-}
+  end = perf_gettime();
+  assert(result == THREAD_NUM * TEST_NUM);
 
-/****************************************************************************
- * Name: monkey_log_get_level
- ****************************************************************************/
-
-enum monkey_log_level_type_e monkey_log_get_level(void)
-{
-  return g_log_level;
+  printf("total_time: %lu\n", end - start);
 }

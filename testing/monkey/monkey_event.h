@@ -1,5 +1,5 @@
 /****************************************************************************
- * apps/examples/foc/foc_device.h
+ * apps/testing/monkey/monkey_event.h
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,49 +18,60 @@
  *
  ****************************************************************************/
 
-#ifndef __APPS_EXAMPLES_FOC_FOC_DEVICE_H
-#define __APPS_EXAMPLES_FOC_FOC_DEVICE_H
+#ifndef __APPS_TESTING_MONKEY_EVENT_H
+#define __APPS_TESTING_MONKEY_EVENT_H
 
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
-#include <nuttx/config.h>
-
-#include "foc_perf.h"
-
-#include "industry/foc/foc_utils.h"
+#include <stdint.h>
+#include "monkey_type.h"
 
 /****************************************************************************
- * Public Type Definition
+ * Public Types
  ****************************************************************************/
 
-/* FOC device data */
-
-struct foc_device_s
+struct monkey_event_param_s
 {
-  int                 fd;      /* FOC device */
-  struct foc_info_s   info;    /* FOC dev info */
-  struct foc_state_s  state;   /* FOC dev state */
-  struct foc_params_s params;  /* FOC dev params */
-#ifdef CONFIG_EXAMPLES_FOC_PERF
-  struct foc_perf_s   perf;    /* FOC dev perf */
-#endif
+  enum monkey_event_e event;
+  int duration;
+  int x1;
+  int y1;
+  int x2;
+  int y2;
 };
-
-/****************************************************************************
- * Public Data
- ****************************************************************************/
 
 /****************************************************************************
  * Public Function Prototypes
  ****************************************************************************/
 
-int foc_device_init(FAR struct foc_device_s *dev, int id);
-int foc_device_deinit(FAR struct foc_device_s *dev);
-int foc_device_start(FAR struct foc_device_s *dev, bool state);
-int foc_dev_state_get(FAR struct foc_device_s *dev);
-int foc_dev_params_set(FAR struct foc_device_s *dev);
-int foc_dev_state_handle(FAR struct foc_device_s *dev, FAR bool *flag);
+#ifdef __cplusplus
+#define EXTERN extern "C"
+extern "C"
+{
+#else
+#define EXTERN extern
+#endif
 
-#endif /* __APPS_EXAMPLES_FOC_FOC_DEVICE_H */
+/****************************************************************************
+ * Name: monkey_event_gen
+ ****************************************************************************/
+
+void monkey_event_gen(FAR struct monkey_s *monkey,
+                      FAR struct monkey_event_param_s *param);
+
+/****************************************************************************
+ * Name: monkey_event_exec
+ ****************************************************************************/
+
+bool monkey_event_exec(FAR struct monkey_s *monkey,
+                       FAR struct monkey_dev_s *dev,
+                       FAR const struct monkey_event_param_s *param);
+
+#undef EXTERN
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* __APPS_TESTING_MONKEY_EVENT_H */

@@ -1,5 +1,5 @@
 ############################################################################
-# apps/examples/foc/Makefile
+# apps/benchmarks/spinlock_bench/Makefile
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -20,46 +20,20 @@
 
 include $(APPDIR)/Make.defs
 
-# FOC built-in application info
+# spinlock_bench application
 
-PROGNAME  = foc
-PRIORITY  = SCHED_PRIORITY_DEFAULT
-STACKSIZE = $(CONFIG_DEFAULT_TASK_STACKSIZE)
-MODULE    = $(CONFIG_EXAMPLES_FOC)
+############################################################################
+# Applications Configuration
+############################################################################
 
-# FOC motor controller example
+MODULE = $(CONFIG_BENCHMARK_SPINLOCK)
 
-MAINSRC = foc_main.c
+PROGNAME  += $(CONFIG_SPINLOCK_PROGNAME)
+PRIORITY  += $(CONFIG_SPINLOCK_PRIORITY)
+STACKSIZE += $(CONFIG_SPINLOCK_STACKSIZE)
 
-ASRCS =
-CSRCS = foc_device.c foc_mq.c foc_thr.c foc_intf.c
+MAINSRC += spinlock_bench.c
 
-ifeq ($(CONFIG_BUILTIN),y)
-CSRCS += foc_parseargs.c
-endif
-
-# fixed16 support
-
-ifeq ($(CONFIG_INDUSTRY_FOC_FIXED16),y)
-  CSRCS += foc_fixed16_thr.c foc_motor_b16.c
-endif
-
-# float32 support
-
-ifeq ($(CONFIG_INDUSTRY_FOC_FLOAT),y)
-  CSRCS += foc_float_thr.c foc_motor_f32.c
-endif
-
-# NxScope support
-
-ifeq ($(CONFIG_EXAMPLES_FOC_NXSCOPE),y)
-  CSRCS += foc_nxscope.c
-endif
-
-# perf support
-
-ifeq ($(CONFIG_EXAMPLES_FOC_PERF),y)
-CSRCS += foc_perf.c
-endif
+# Build with WebAssembly when CONFIG_INTERPRETERS_WAMR is enabled
 
 include $(APPDIR)/Application.mk

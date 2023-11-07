@@ -32,4 +32,65 @@ config EXAMPLES_CAMERA_OUTPUT_LCD
 	---help---
 		This enables to output the captured RGB565 image to LCD.
 
+config EXAMPLES_CAMERA_IMAGE_JPG_SIZE
+	int "Image buffer size for JPEG data"
+	default 524288
+	---help---
+		The size of the buffer used for capturing still data.
+		Default:52288 (= 512x1024)
+
+config EXAMPLES_CAMERA_IMAGE_RGB_SIZE
+	int "Image buffer size for RGB data"
+	default 153600
+	---help---
+		The size of the buffer used for capturing video data.
+		Default:153600 (= 320x240x2) at QVGA RGB565 format 
+
+config EXAMPLES_CAMERA_VIDEO_BUFNUM
+	int "Number of frame buffers for video"
+	default 3
+	---help---
+		The number of frame buffers for video data. Default:3
+
+config EXAMPLES_CAMERA_STILL_BUFNUM
+	int "Number of frame buffers for still"
+	default 1
+	---help---
+		The number of frame buffers for still data. Default:1
+
+config EXAMPLES_CAMERA_MAX_CAPTURE_NUM
+	int "Max number of captures"
+	default 100
+	---help---
+		The maximum number of captures as threshold in command argument. Default:100
+
+config EXAMPLES_CAMERA_DEFAULT_CAPTURE_NUM
+	int "Default number of captures"
+	default 10
+	---help---
+		The default number of captures. Default:10
+
+config EXAMPLES_CAMERA_START_CAPTURE_TIME
+	int "Start capture time (seconds)"
+	default 5
+	---help---
+		The wait value until the start of capture. Default:5
+
+config EXAMPLES_CAMERA_KEEP_VIDEO_TIME
+	int "Keep video time (seconds)"
+	default 10
+	---help---
+		The period value for dispaying on the LCD after the end of capture. Default:10
+
+config EXAMPLES_CAMERA_SPOT_METERING_POSX
+	int "Position x-axis for spot metering"
+	default 10
+	---help---
+		The x-axis value for spot metering position. Default:10
+
+config EXAMPLES_CAMERA_SPOT_METERING_POSY
+	int "Position y-axis for spot metering"
+	default 20
+	---help---
+		The y-axis value for spot metering position. Default:20
 endif

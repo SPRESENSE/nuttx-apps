@@ -431,7 +431,7 @@ static int foc_motor_torq(FAR struct foc_motor_f32_s *motor, uint32_t torq)
 
   /* Update motor torque destination */
 
-  motor->torq.des = (torq * SETPOINT_INTF_SCALE *
+  motor->torq.des = (motor->dir * torq * SETPOINT_INTF_SCALE *
                      motor->envp->cfg->torqmax / 1000.0f);
 
   return OK;
@@ -449,7 +449,7 @@ static int foc_motor_vel(FAR struct foc_motor_f32_s *motor, uint32_t vel)
 
   /* Update motor velocity destination */
 
-  motor->vel.des = (vel * SETPOINT_INTF_SCALE *
+  motor->vel.des = (motor->dir * vel * SETPOINT_INTF_SCALE *
                     motor->envp->cfg->velmax / 1000.0f);
 
   return OK;
@@ -467,7 +467,7 @@ static int foc_motor_pos(FAR struct foc_motor_f32_s *motor, uint32_t pos)
 
   /* Update motor position destination */
 
-  motor->pos.des = (pos * SETPOINT_INTF_SCALE *
+  motor->pos.des = (motor->dir * pos * SETPOINT_INTF_SCALE *
                     motor->envp->cfg->posmax / 1000.0f);
 
   return OK;
@@ -602,7 +602,7 @@ static int foc_motor_state(FAR struct foc_motor_f32_s *motor, int state)
 
   DEBUGASSERT(motor);
 
-  /* Update motor state */
+  /* Update motor state - this function is called every controller cycle */
 
   switch (state)
     {
@@ -620,12 +620,24 @@ static int foc_motor_state(FAR struct foc_motor_f32_s *motor, int state)
 
       case FOC_EXAMPLE_STATE_STOP:
         {
+#ifdef CONFIG_EXAMPLES_FOC_SENSORLESS
+          /* For sensorless we can just set Q reference to lock the motor */
+
           motor->dir = DIR_NONE;
 
           /* DQ vector not zero - active brake */
 
           motor->dq_ref.q = CONFIG_EXAMPLES_FOC_STOP_CURRENT / 1000.0f;
           motor->dq_ref.d = 0.0f;
+#else
+          /* For sensored mode we set requested velocity to 0 */
+
+#  ifdef CONFIG_EXAMPLES_FOC_HAVE_VEL
+          motor->vel.des = 0.0f;
+#  else
+#    error STOP state for sensored mode requires velocity support
+#  endif
+#endif
 
           break;
         }
@@ -882,10 +894,15 @@ static int foc_motor_run(FAR struct foc_motor_f32_s *motor)
   q_ref = motor->dq_ref.q;
   d_ref = motor->dq_ref.d;
 
-  /* Ignore controller if motor is free or stopped */
+  /* Ignore controller if motor is free (sensorless and sensored mode)
+   * or stopped (only sensorless mode)
+   */
 
-  if (motor->mq.app_state == FOC_EXAMPLE_STATE_FREE ||
-      motor->mq.app_state == FOC_EXAMPLE_STATE_STOP)
+  if (motor->mq.app_state == FOC_EXAMPLE_STATE_FREE
+#ifdef CONFIG_EXAMPLES_FOC_SENSORLESS
+      || motor->mq.app_state == FOC_EXAMPLE_STATE_STOP
+#endif
+    )
     {
       goto no_controller;
     }
@@ -897,7 +914,9 @@ static int foc_motor_run(FAR struct foc_motor_f32_s *motor)
 #ifdef CONFIG_EXAMPLES_FOC_HAVE_TORQ
       case FOC_MMODE_TORQ:
         {
-          motor->torq.set = motor->dir * motor->torq.des;
+          /* Torque setpoint */
+
+          motor->torq.set = motor->torq.des;
 
           q_ref = motor->torq.set;
           d_ref = 0.0f;
@@ -914,7 +933,7 @@ static int foc_motor_run(FAR struct foc_motor_f32_s *motor)
               /* Run velocity ramp controller */
 
               ret = foc_ramp_run_f32(&motor->ramp,
-                                     motor->dir * motor->vel.des,
+                                     motor->vel.des,
                                      motor->vel.now,
                                      &motor->vel.set);
               if (ret < 0)
@@ -1198,7 +1217,7 @@ static int foc_motor_vel_get(FAR struct foc_motor_f32_s *motor)
   UNUSED(vout);
 
   motor->vel_el = motor->vel.set;
-#elif defined(CONFIG_EXAMPLES_FOC_VELOBS)
+#elif defined(CONFIG_EXAMPLES_FOC_VELOBS) && defined(CONFIG_EXAMPLES_FOC_SENSORLESS)
   if (motor->openloop_now == FOC_OPENLOOP_DISABLED)
     {
       /* Get electrical velocity from observer if we are in closed-loop */
@@ -1211,6 +1230,10 @@ static int foc_motor_vel_get(FAR struct foc_motor_f32_s *motor)
 
       motor->vel_el = motor->vel.set;
     }
+#elif defined(CONFIG_EXAMPLES_FOC_VELOBS) && defined(CONFIG_EXAMPLES_FOC_SENSORED)
+  /* Get electrical velocity from observer in sensored mode */
+
+  motor->vel_el = motor->vel_obs;
 #else
   /* Need electrical velocity source here - raise assertion */
 

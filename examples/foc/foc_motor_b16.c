@@ -26,6 +26,7 @@
 
 #include <assert.h>
 #include <string.h>
+#include <dspb16.h>
 
 #include "foc_cfg.h"
 #include "foc_debug.h"
@@ -924,27 +925,30 @@ static int foc_motor_run(FAR struct foc_motor_b16_s *motor)
       goto no_controller;
     }
 
-  /* Controller */
+  /* Controller.
+   *
+   * The FOC motor controller is a cascade controller:
+   *
+   *   1. Position controller sets requested velocity,
+   *   2. Velocity controller sets requested torque,
+   *   3. Torque controller sets requested motor phase voltages.
+   *
+   *      NOTE: the motor torque is directly proportional to the motor
+   *            current which is proportional to the motor set voltage
+   */
 
   switch (motor->envp->cfg->mmode)
     {
-#ifdef CONFIG_EXAMPLES_FOC_HAVE_TORQ
-      case FOC_MMODE_TORQ:
-        {
-          /* Torque setpoint */
-
-          motor->torq.set = motor->torq.des;
-
-          q_ref = motor->torq.set;
-          d_ref = 0;
-
-          break;
-        }
-#endif
-
 #ifdef CONFIG_EXAMPLES_FOC_HAVE_VEL
       case FOC_MMODE_VEL:
         {
+          /* Saturate velocity */
+
+          f_saturate_b16(&motor->vel.des, -motor->vel_sat,
+                         motor->vel_sat);
+
+          /* Velocity controller */
+
           if (motor->time % VEL_CONTROL_PRESCALER == 0)
             {
               /* Run velocity ramp controller */
@@ -972,13 +976,30 @@ static int foc_motor_run(FAR struct foc_motor_b16_s *motor)
 #ifdef CONFIG_EXAMPLES_FOC_VELCTRL_PI
                   /* PI velocit controller */
 
-                  q_ref = pi_controller_b16(&motor->vel_pi, vel_err);
-                  d_ref = 0;
+                  motor->torq.des = pi_controller_b16(&motor->vel_pi,
+                                                      vel_err);
 #else
 #  error Missing velocity controller
 #endif
                 }
             }
+
+          /* Don't break here! pass to torque controller */
+        }
+#endif
+
+#ifdef CONFIG_EXAMPLES_FOC_HAVE_TORQ
+      case FOC_MMODE_TORQ:
+        {
+          /* Saturate torque */
+
+          f_saturate_b16(&motor->torq.des, -motor->torq_sat,
+                         motor->torq_sat);
+
+          /* Torque setpoint */
+
+          motor->torq.set = motor->torq.des;
+          motor->torq.now = motor->foc_state.idq.q;
 
           break;
         }
@@ -990,6 +1011,11 @@ static int foc_motor_run(FAR struct foc_motor_b16_s *motor)
           goto errout;
         }
     }
+
+  /* Get dq ref */
+
+  q_ref = motor->torq.set;
+  d_ref = 0;
 
 #ifdef CONFIG_EXAMPLES_FOC_HAVE_OPENLOOP
   /* Force open-loop current */
@@ -1320,10 +1346,15 @@ int foc_motor_init(FAR struct foc_motor_b16_s *motor,
   /* Initialize motor data */
 
   motor->per        = b16divi(b16ONE, CONFIG_EXAMPLES_FOC_NOTIFIER_FREQ);
-  motor->iphase_adc = ftob16((CONFIG_EXAMPLES_FOC_IPHASE_ADC) / 100000.0f);
 #ifdef CONFIG_EXAMPLES_FOC_ANGOBS
   motor->ol_thr     = ftob16(motor->envp->cfg->ol_thr / 1.0f);
   motor->ol_hys     = ftob16(motor->envp->cfg->ol_hys / 1.0f);
+#endif
+#ifdef CONFIG_EXAMPLES_FOC_HAVE_TORQ
+  motor->torq_sat   = ftob16(CONFIG_EXAMPLES_FOC_TORQ_MAX / 1000.0f);
+#endif
+#ifdef CONFIG_EXAMPLES_FOC_HAVE_VEL
+  motor->vel_sat    = ftob16(CONFIG_EXAMPLES_FOC_VEL_MAX / 1.0f);
 #endif
 
 #ifdef CONFIG_EXAMPLES_FOC_HAVE_RUN
@@ -1528,9 +1559,7 @@ int foc_motor_init(FAR struct foc_motor_b16_s *motor,
                    ftob16(motor->envp->cfg->vel_pi_kp / 1000000.0f),
                    ftob16(motor->envp->cfg->vel_pi_ki / 1000000.0f));
 
-  pi_saturation_set_b16(&motor->vel_pi,
-                   ftob16(-CONFIG_EXAMPLES_FOC_VELCTRL_PI_SAT / 1000.0f),
-                   ftob16(CONFIG_EXAMPLES_FOC_VELCTRL_PI_SAT / 1000.0f));
+  pi_saturation_set_b16(&motor->vel_pi,  -motor->torq_sat, motor->torq_sat);
 
   pi_antiwindup_enable_b16(&motor->vel_pi, ftob16(0.99f), true);
 #endif

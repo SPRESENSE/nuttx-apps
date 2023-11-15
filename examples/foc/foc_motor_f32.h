@@ -90,12 +90,15 @@ struct foc_motor_f32_s
   int                           time;         /* Helper counter */
   float                         vbus;         /* Power bus voltage */
   float                         per;          /* Controller period in seconds */
-  float                         iphase_adc;   /* Iphase ADC scaling factor */
-  float                         pwm_duty_max; /* PWM duty max */
 #ifdef CONFIG_EXAMPLES_FOC_ANGOBS
   float                         ol_thr;       /* Angle observer threshold velocity */
   float                         ol_hys;       /* Angle observer hysteresis */
 #endif
+
+  /* Data from FOC device ***************************************************/
+
+  float                         iphase_adc;   /* Iphase ADC scaling factor */
+  float                         pwm_duty_max; /* PWM duty max */
 
   /* Velocity controller data ***********************************************/
 
@@ -133,9 +136,11 @@ struct foc_motor_f32_s
 
 #ifdef CONFIG_EXAMPLES_FOC_HAVE_TORQ
   struct foc_setpoint_f32_s     torq;         /* Torque setpoint */
+  float                         torq_sat;     /* Torque saturation */
 #endif
 #ifdef CONFIG_EXAMPLES_FOC_HAVE_VEL
   struct foc_setpoint_f32_s     vel;          /* Velocity setpoint */
+  float                         vel_sat;      /* Velocity saturation */
 #endif
 #ifdef CONFIG_EXAMPLES_FOC_HAVE_POS
   struct foc_setpoint_f32_s     pos;          /* Position setpoint */

@@ -279,6 +279,10 @@ int usockif_readreqioctl(int fd, FAR struct usrsock_request_buff_s *buf)
       case SIOCSMSSSCA:
         rsize = sizeof(struct lte_smsreq_s);
         break;
+      case SIOCGETCONTEXT:
+      case SIOCSETCONTEXT:
+        rsize = sizeof(struct socket_context_s);
+        break;
       default:
         dbg_alt1250("Unsupported command:0x%08lx\n", req->cmd);
         return -ENOTTY;

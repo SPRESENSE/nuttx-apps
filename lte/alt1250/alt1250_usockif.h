@@ -32,6 +32,7 @@
 #include <nuttx/net/usrsock.h>
 
 #include <nuttx/wireless/lte/lte_ioctl.h>
+#include <nuttx/net/net.h>
 
 #define DEV_USRSOCK  "/dev/usrsock"
 
@@ -55,6 +56,12 @@
 
 #define usockif_sendrxready(fff, iii)  \
           usockif_sendevent((fff), (iii), USRSOCK_EVENT_RECVFROM_AVAIL)
+
+#define usockif_sendconnected(fff, iii)  \
+          usockif_sendevent((fff), (iii), USRSOCK_EVENT_CONNECTED)
+
+#define usockif_sendlistening(fff, iii)  \
+          usockif_sendevent((fff), (iii), USRSOCK_EVENT_LISTENING)
 
 /****************************************************************************
  * Public Data Type
@@ -87,6 +94,7 @@ union usrsock_request_ioctl_u
   struct ifreq ifreq;
   uint8_t sock_type;
   struct lte_smsreq_s smsreq;
+  struct socket_context_s sctxreq;
 };
 
 struct usrsock_request_buff_s

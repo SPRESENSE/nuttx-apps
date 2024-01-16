@@ -147,14 +147,13 @@ static void free_audio_buffers(FAR struct nxaudio_s *nxaudio)
 
 void fin_nxaudio(FAR struct nxaudio_s *nxaudio)
 {
-  free_audio_buffers(nxaudio);
-  ioctl(nxaudio->fd, AUDIOIOC_STOP, 0);
+  ioctl(nxaudio->fd, AUDIOIOC_SHUTDOWN, 0);
   ioctl(nxaudio->fd, AUDIOIOC_UNREGISTERMQ, (unsigned long)nxaudio->mq);
   ioctl(nxaudio->fd, AUDIOIOC_RELEASE, 0);
-  ioctl(nxaudio->fd, AUDIOIOC_SHUTDOWN, 0);
+  free_audio_buffers(nxaudio);
+  close(nxaudio->fd);
   mq_close(nxaudio->mq);
   mq_unlink(CONFIG_AUDIOUTILS_NXAUDIO_MSGQNAME);
-  close(nxaudio->fd);
 }
 
 /****************************************************************************
@@ -251,6 +250,8 @@ int nxaudio_start(FAR struct nxaudio_s *nxaudio)
 int nxaudio_stop(FAR struct nxaudio_s *nxaudio)
 {
   struct audio_msg_s term_msg;
+
+  ioctl(nxaudio->fd, AUDIOIOC_STOP, 0);
 
   term_msg.msg_id = AUDIO_MSG_STOP;
   term_msg.u.data = 0;

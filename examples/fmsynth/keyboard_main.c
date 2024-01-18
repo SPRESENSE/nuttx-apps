@@ -79,7 +79,6 @@ struct key_convert_s
  * Private Function Prototypes
  ****************************************************************************/
 
-extern int board_external_amp_mute_control(bool en);
 static void app_dequeue_cb(unsigned long arg,
                            FAR struct ap_buffer_s *apb);
 static void app_complete_cb(unsigned long arg);
@@ -437,8 +436,6 @@ int main(int argc, FAR char *argv[])
             }
         }
     }
-
-  board_external_amp_mute_control(true);
 
   nxaudio_stop(&g_kbd.nxaudio);
   pthread_join(pid, NULL);

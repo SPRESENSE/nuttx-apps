@@ -167,12 +167,17 @@ int init_nxaudio(FAR struct nxaudio_s *nxaudio,
                               CONFIG_AUDIOUTILS_NXAUDIO_MSGQNAME);
 }
 
+/****************************************************************************
+ * name: init_nxaudio_devname
+ ****************************************************************************/
+
 int init_nxaudio_devname(FAR struct nxaudio_s *nxaudio,
                  int fs, int bps, int chnum,
                  const char *devname, const char *mqname)
 {
   struct ap_buffer_info_s buf_info;
 
+  printf("Devname: %s\n", devname);
   nxaudio->fd = open(devname, O_RDWR | O_CLOEXEC);
   if (nxaudio->fd >= 0)
     {
@@ -223,6 +228,24 @@ int nxaudio_enqbuffer(FAR struct nxaudio_s *nxaudio,
 
   return ioctl(nxaudio->fd, AUDIOIOC_ENQUEUEBUFFER,
                (unsigned long)(uintptr_t)&desc);
+}
+
+/****************************************************************************
+ * name: nxaudio_pause
+ ****************************************************************************/
+
+int nxaudio_pause(FAR struct nxaudio_s *nxaudio)
+{
+  return ioctl(nxaudio->fd, AUDIOIOC_PAUSE, 0);
+}
+
+/****************************************************************************
+ * name: nxaudio_resume
+ ****************************************************************************/
+
+int nxaudio_resume(FAR struct nxaudio_s *nxaudio)
+{
+  return ioctl(nxaudio->fd, AUDIOIOC_RESUME, 0);
 }
 
 /****************************************************************************

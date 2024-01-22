@@ -177,7 +177,6 @@ int init_nxaudio_devname(FAR struct nxaudio_s *nxaudio,
 {
   struct ap_buffer_info_s buf_info;
 
-  printf("Devname: %s\n", devname);
   nxaudio->fd = open(devname, O_RDWR | O_CLOEXEC);
   if (nxaudio->fd >= 0)
     {

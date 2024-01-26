@@ -137,7 +137,7 @@ static int handle_intentional_reset(FAR struct alt1250_s *dev)
 {
   if (dev->lwm2m_apply_xid >= 0)
     {
-      usockif_sendack(dev->usockfd, 0, (uint32_t)dev->lwm2m_apply_xid,
+      usockif_sendack(dev->usockfd, 0, 0, (uint32_t)dev->lwm2m_apply_xid,
                       false);
       dev->lwm2m_apply_xid = -1;
     }
@@ -232,8 +232,7 @@ static void perform_alt1250_apistopevt(FAR struct alt1250_s *dev)
 
   /* When entering Suspend mode, all Sockets must be closed. */
 
-  ret = alt1250_count_opened_sockets(dev);
-
+  ret = usocket_active_sockets(dev);
   if (ret < 0)
     {
       dbg_alt1250("Failed to count opened sockets.\n");
@@ -317,9 +316,7 @@ static void perform_alt1250_restartevt(FAR struct alt1250_s *dev)
 
 static void perform_alt1250_suspendevt(FAR struct alt1250_s *dev)
 {
-  /* TODO: Register Select to be notified by ALT1250 when an event is
-   * received during Sleep for a Socket in Suspend.
-   */
+  restart_select(dev, true);
 
   /* Notify the application of the context data required for resume. */
 

@@ -103,6 +103,13 @@ int postproc_sockcommon(FAR struct alt1250_s *dev,
         }
         break;
 
+      case USRSOCK_REQUEST_LISTEN:
+        {
+          USOCKET_SET_STATE(usock, SOCKET_STATE_LISTENED);
+          usocket_commitstate(dev);
+        }
+        break;
+
       case USRSOCK_REQUEST_CLOSE:
         {
           usocket_free(usock);

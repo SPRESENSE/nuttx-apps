@@ -34,12 +34,6 @@
 #include "alt1250_usrsock_hdlr.h"
 
 /****************************************************************************
- * Pre-processor Definitions
- ****************************************************************************/
-
-#define IS_SUPPORTED_INET_DOMAIN(d) (((d) == AF_INET) || ((d) == AF_INET6))
-
-/****************************************************************************
  * Private Functions Prototypes
  ****************************************************************************/
 
@@ -62,6 +56,65 @@ static int postproc_setfl(FAR struct alt1250_s *dev,
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
+
+/****************************************************************************
+ * name: postproc_socketterr
+ ****************************************************************************/
+
+static int postproc_socketterr(FAR struct alt1250_s *dev,
+                               FAR struct alt_container_s *reply,
+                               FAR struct usock_s *usock,
+                               FAR int32_t *usock_result,
+                               FAR uint32_t *usock_xid,
+                               FAR struct usock_ackinfo_s *ackinfo,
+                               unsigned long arg)
+{
+  int ret = REP_SEND_ACK;
+
+  dbg_alt1250("%s start\n", __func__);
+
+  /* resp[0]: ret code
+   * resp[1]: error code
+   */
+
+  *usock_xid = USOCKET_XID(usock);
+  *usock_result = -EBADFD;
+
+  USOCKET_SET_STATE(usock, SOCKET_STATE_PREALLOC);
+  usocket_commitstate(dev);
+
+  return ret;
+}
+
+/****************************************************************************
+ * name: send_close_command
+ ****************************************************************************/
+
+static int send_close_command(FAR struct alt1250_s *dev,
+                              FAR struct alt_container_s *container,
+                              FAR struct usock_s *usock,
+                              int altsock,
+                              FAR int32_t *usock_result)
+{
+  int idx = 0;
+  FAR void *inparam[1];
+
+  /* This member is referenced only when sending a command and
+   * not when receiving a response, so local variable is used.
+   */
+
+  inparam[0] = &altsock;
+
+  USOCKET_SET_RESPONSE(usock, idx++, USOCKET_REP_RESULT(usock));
+  USOCKET_SET_RESPONSE(usock, idx++, USOCKET_REP_ERRCODE(usock));
+
+  set_container_ids(container, USOCKET_USOCKID(usock), LTE_CMDID_CLOSE);
+  set_container_argument(container, inparam, nitems(inparam));
+  set_container_response(container, USOCKET_REP_RESPONSE(usock), idx);
+  set_container_postproc(container, postproc_socketterr, 0);
+
+  return altdevice_send_command(dev, dev->altfd, container, usock_result);
+}
 
 /****************************************************************************
  * name: send_fctl_command
@@ -133,11 +186,9 @@ static int postproc_setfl(FAR struct alt1250_s *dev,
             dbg_alt1250("allocated usockid: %d\n", *usock_result);
             break;
 
-          /* Below cases are for SOCK_STREAM type socket
-           * SOCK_STREAM type socket can not be opend on alt1250 side,
-           * because of LAPI command. It is also using SOCK_STREAM
-           * type socket to send ioctl() to communicate with daemon.
-           * So, on BSD-socket spec, aftre socket() API succeeded,
+          /* Below cases are for SOCK_STREAM and SOCK_DGRAM type socket
+           * Both type socket can not be opend on alt1250 side.
+           * So, on BSD-socket spec, after socket() API succeeded,
            * connect(), bind(), etc, can be called. And on the call,
            * socket on alt1250 side should be fixed, therefore,
            * open_altsocket() will be called on those cases.
@@ -173,6 +224,11 @@ static int postproc_setfl(FAR struct alt1250_s *dev,
                                        usock_xid, ackinfo, arg);
             break;
 
+          case USRSOCK_REQUEST_SENDTO:
+            ret = nextstep_sendto(dev, reply, usock, usock_result,
+                                  usock_xid, ackinfo, arg);
+            break;
+
           default:
             dbg_alt1250("unexpected sequence. reqid:0x%02x\n",
                         USOCKET_REQID(usock));
@@ -182,13 +238,13 @@ static int postproc_setfl(FAR struct alt1250_s *dev,
     }
   else
     {
-      USOCKET_SET_STATE(usock, SOCKET_STATE_PREALLOC);
-      if (USOCKET_TYPE(usock) == SOCK_DGRAM)
+      ret = send_close_command(dev, reply, usock, USOCKET_ALTSOCKID(usock),
+                               usock_result);
+      if (*usock_result < 0)
         {
-          usocket_free(usock);
+          USOCKET_SET_STATE(usock, SOCKET_STATE_PREALLOC);
+          usocket_commitstate(dev);
         }
-
-      usocket_commitstate(dev);
     }
 
   return ret;
@@ -230,18 +286,13 @@ static int postproc_getfl(FAR struct alt1250_s *dev,
 
   if (*usock_result < 0)
     {
-      USOCKET_SET_STATE(usock, SOCKET_STATE_PREALLOC);
-      if (USOCKET_TYPE(usock) == SOCK_DGRAM)
+      ret = send_close_command(dev, reply, usock, USOCKET_ALTSOCKID(usock),
+                               usock_result);
+      if (*usock_result < 0)
         {
-          /* In DGRAM case, it is a part of socket() API sequence.
-           * The socket() API is not returned on application layer.
-           * So, internal socket should be free here.
-           */
-
-          usocket_free(usock);
+          USOCKET_SET_STATE(usock, SOCKET_STATE_PREALLOC);
+          usocket_commitstate(dev);
         }
-
-      usocket_commitstate(dev);
     }
 
   return ret;
@@ -261,6 +312,7 @@ static int postproc_socket(FAR struct alt1250_s *dev,
 {
   int ret = REP_SEND_ACK;
   FAR void **resp = CONTAINER_RESPONSE(reply);
+  int altsockfd;
 
   /* resp[0]: altcom_sockfd
    * resp[1]: alt1250 errno
@@ -273,27 +325,40 @@ static int postproc_socket(FAR struct alt1250_s *dev,
 
   if (*usock_result >= 0)
     {
-      /* In case of success socket allocation */
+      altsockfd = *usock_result;
 
-      USOCKET_SET_ALTSOCKID(usock, *usock_result);
+      dbg_alt1250("allocate ALT1250 socket : %d\n", altsockfd);
 
-      ret = send_fctl_command(dev, reply, usock, ALTCOM_GETFL, 0,
-                              usock_result);
-    }
-
-  if (*usock_result < 0)
-    {
-      USOCKET_SET_STATE(usock, SOCKET_STATE_PREALLOC);
-      if (USOCKET_TYPE(usock) == SOCK_DGRAM)
+      if (IS_VALID_ALTSOCKID(altsockfd))
         {
-          /* In DGRAM case, it is a part of socket() API sequence.
-           * The socket() API is not returned on application layer.
-           * So, internal socket should be free here.
-           */
+          /* In case of success socket allocation */
 
-          usocket_free(usock);
+          USOCKET_SET_ALTSOCKID(usock, altsockfd);
+
+          ret = send_fctl_command(dev, reply, usock, ALTCOM_GETFL, 0,
+                                  usock_result);
+        }
+      else
+        {
+          dbg_alt1250("ALT1250 socket is not within the valid range : %d\n",
+                      altsockfd);
+          *usock_result = -EBADFD;
         }
 
+      if (*usock_result < 0)
+        {
+          ret = send_close_command(dev, reply, usock, altsockfd,
+                                   usock_result);
+          if (*usock_result < 0)
+            {
+              USOCKET_SET_STATE(usock, SOCKET_STATE_PREALLOC);
+              usocket_commitstate(dev);
+            }
+        }
+    }
+  else
+    {
+      USOCKET_SET_STATE(usock, SOCKET_STATE_PREALLOC);
       usocket_commitstate(dev);
     }
 
@@ -376,7 +441,6 @@ int usockreq_socket(FAR struct alt1250_s *dev,
 {
   FAR struct usrsock_request_socket_s *request = &req->request.sock_req;
   FAR struct usock_s *usock;
-  FAR struct alt_container_s *container;
   int ret = REP_SEND_ACK_WOFREE;
 
   dbg_alt1250("%s start type=%d\n", __func__, request->type);
@@ -411,7 +475,7 @@ int usockreq_socket(FAR struct alt1250_s *dev,
   usock = usocket_alloc(dev, request->type);
   if (usock == NULL)
     {
-      dbg_alt1250("socket alloc faild\n");
+      dbg_alt1250("All sockets on the ALT1250 daemon are in use.\n");
       *usock_result = -EBUSY;
       return REP_SEND_ACK_WOFREE;
     }
@@ -426,34 +490,22 @@ int usockreq_socket(FAR struct alt1250_s *dev,
     {
       case SOCK_STREAM:
       case SOCK_CTRL:
+      case SOCK_DGRAM:
+      case SOCK_RAW:
         dbg_alt1250("allocated usockid: %d\n", *usock_result);
+        if (request->type == SOCK_DGRAM)
+          {
+            /* It is necessary to send a USRSOCK_EVENT_SENDTO_READY event
+             * here because a DGRAM socket becomes sendable even if it is
+             * just opened.
+             */
+
+            ret = REP_SEND_ACK_TXREADY;
+          }
         break;
 
       case SOCK_SMS:
         ret = alt1250_sms_init(dev, usock, usock_result, ackinfo);
-        if (*usock_result < 0)
-          {
-            usocket_free(usock);
-          }
-        break;
-
-      case SOCK_DGRAM:
-      case SOCK_RAW:
-        dbg_alt1250("allocated usockid: %d\n", *usock_result);
-        container = container_alloc();
-        if (container == NULL)
-          {
-            dbg_alt1250("no container\n");
-            usocket_free(usock);
-            return REP_NO_CONTAINER;
-          }
-
-        ret = open_altsocket(dev, container, usock, usock_result);
-        if (IS_NEED_CONTAINER_FREE(ret))
-          {
-            container_free(container);
-          }
-
         if (*usock_result < 0)
           {
             usocket_free(usock);

@@ -73,23 +73,22 @@ int usock_reply(int ufd, int action_code, int32_t result,
       case REP_SEND_ACK_WOFREE:
       case REP_SEND_INPROG:
       case REP_SEND_TERM:
-        ret = usockif_sendack(ufd, result, xid,
+        ret = usockif_sendack(ufd, 0, result, xid,
                     (action_code == REP_SEND_INPROG));
         break;
 
       case REP_SEND_DACK:
-        ret = usockif_senddataack(ufd, result, xid, ackinfo);
+        ret = usockif_senddataack(ufd, 0, result, xid, ackinfo);
         break;
 
     case REP_SEND_ACK_TXREADY:
-        ret = usockif_sendack(ufd, result, xid, false);
-        usockif_sendevent(ufd, ackinfo->usockid, USRSOCK_EVENT_SENDTO_READY);
+        ret = usockif_sendack(ufd, USRSOCK_EVENT_SENDTO_READY, result, xid,
+                              false);
         break;
 
     case REP_SEND_DACK_RXREADY:
-        ret = usockif_senddataack(ufd, result, xid, ackinfo);
-        usockif_sendevent(ufd, ackinfo->usockid,
-                          USRSOCK_EVENT_RECVFROM_AVAIL);
+        ret = usockif_senddataack(ufd, USRSOCK_EVENT_RECVFROM_AVAIL, result,
+                                  xid, ackinfo);
         break;
     }
 

@@ -86,11 +86,12 @@ FAR struct usock_s *usocket_alloc(FAR struct alt1250_s *dev, int16_t type)
 
   for (i = base; i < base + array_num; i++, sock++)
     {
-      if (sock->state == SOCKET_STATE_CLOSED)
+      if (USOCKET_STATE(sock) == SOCKET_STATE_CLOSED)
         {
           sock->usockid = i;
-          sock->altsockid = -1;
-          sock->state = SOCKET_STATE_PREALLOC;
+          USOCKET_SET_ALTSOCKID(sock, -1);
+          USOCKET_SET_STATE(sock, SOCKET_STATE_PREALLOC);
+          USOCKET_SET_OLDSTATE(sock, SOCKET_STATE_CLOSED);
           sock->select_condition = SELECT_WRITABLE | SELECT_READABLE;
           dbg_alt1250("allocated usockid: %d, type: %d\n", i, type);
           return sock;
@@ -106,7 +107,7 @@ FAR struct usock_s *usocket_alloc(FAR struct alt1250_s *dev, int16_t type)
 
 void usocket_free(FAR struct usock_s *sock)
 {
-  sock->state = SOCKET_STATE_CLOSED;
+  USOCKET_SET_STATE(sock, SOCKET_STATE_CLOSED);
 }
 
 /****************************************************************************
@@ -131,7 +132,7 @@ void usocket_freeall(FAR struct alt1250_s *dev)
 
 void usocket_commitstate(FAR struct alt1250_s *dev)
 {
-  restart_select(dev);
+  restart_select(dev, false);
 }
 
 /****************************************************************************
@@ -147,7 +148,8 @@ int usocket_smssock_num(FAR struct alt1250_s *dev)
   for (i = 0; i < nitems(dev->sockets); i++)
     {
       sock = &dev->sockets[i];
-      if (IS_SMS_SOCKET(sock) && sock->state == SOCKET_STATE_PREALLOC)
+      if (IS_SMS_SOCKET(sock) &&
+          USOCKET_STATE(sock) == SOCKET_STATE_PREALLOC)
         {
           num++;
         }
@@ -168,7 +170,8 @@ void usocket_smssock_readready(FAR struct alt1250_s *dev)
   for (i = 0; i < nitems(dev->sockets); i++)
     {
       sock = &dev->sockets[i];
-      if (IS_SMS_SOCKET(sock) && sock->state == SOCKET_STATE_PREALLOC)
+      if (IS_SMS_SOCKET(sock) &&
+          USOCKET_STATE(sock) == SOCKET_STATE_PREALLOC)
         {
           usockif_sendrxready(dev->usockfd, USOCKET_USOCKID(sock));
         }
@@ -187,9 +190,74 @@ void usocket_smssock_abort(FAR struct alt1250_s *dev)
   for (i = 0; i < nitems(dev->sockets); i++)
     {
       sock = &dev->sockets[i];
-      if (IS_SMS_SOCKET(sock) && sock->state == SOCKET_STATE_PREALLOC)
+      if (IS_SMS_SOCKET(sock) &&
+          USOCKET_STATE(sock) == SOCKET_STATE_PREALLOC)
         {
           usockif_sendabort(dev->usockfd, USOCKET_USOCKID(sock));
         }
     }
 }
+
+#ifdef CONFIG_LTE_ALT1250_ENABLE_HIBERNATION_MODE
+
+/****************************************************************************
+ * name: usocket_active_sockets
+ ****************************************************************************/
+
+int usocket_active_sockets(FAR struct alt1250_s *dev)
+{
+  int ret = 0;
+  int i = 0;
+  FAR struct usock_s *sock;
+
+  if (!dev)
+    {
+      return ERROR;
+    }
+
+  for (i = 0; i < nitems(dev->sockets); i++)
+    {
+      sock = &dev->sockets[i];
+      if (USOCKET_STATE(sock) != SOCKET_STATE_CLOSED &&
+          USOCKET_STATE(sock) != SOCKET_STATE_SUSPEND)
+        {
+          ret++;
+        }
+    }
+
+  return ret;
+}
+
+/****************************************************************************
+ * name: usocket_search_altsockid
+ ****************************************************************************/
+
+struct usock_s *usocket_search_altsockid(FAR struct alt1250_s *dev,
+                                         int altsockid,
+                                         struct usock_s *self)
+{
+  int i = 0;
+  FAR struct usock_s *sock;
+
+  if (!dev || altsockid == -1)
+    {
+      return NULL;
+    }
+
+  for (i = 0; i < nitems(dev->sockets); i++)
+    {
+      sock = &dev->sockets[i];
+      if (USOCKET_STATE(sock) != SOCKET_STATE_CLOSED &&
+          USOCKET_STATE(sock) != SOCKET_STATE_PREALLOC)
+        {
+          if (USOCKET_USOCKID(self) != USOCKET_USOCKID(sock) &&
+              USOCKET_ALTSOCKID(sock) == altsockid)
+            {
+              return sock;
+            }
+        }
+    }
+
+  return NULL;
+}
+#endif

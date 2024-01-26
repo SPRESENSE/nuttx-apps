@@ -67,16 +67,17 @@ static int write_to_usock(int fd, FAR void *buf, size_t sz)
  * name: send_dataack
  ****************************************************************************/
 
-static int send_dataack(int fd, uint32_t ackxid, int32_t ackresult,
-                        uint16_t valuelen, uint16_t valuelen_nontrunc,
-                        FAR uint8_t *value_ptr, FAR uint8_t *buf_ptr)
+static int send_dataack(int fd, uint16_t events, uint32_t ackxid,
+                        int32_t ackresult, uint16_t valuelen,
+                        uint16_t valuelen_nontrunc, FAR uint8_t *value_ptr,
+                        FAR uint8_t *buf_ptr)
 {
   int ret;
   struct usrsock_message_datareq_ack_s dataack;
 
   dataack.reqack.head.msgid = USRSOCK_MESSAGE_RESPONSE_DATA_ACK;
   dataack.reqack.head.flags = 0;
-  dataack.reqack.head.events = 0;
+  dataack.reqack.head.events = events;
   dataack.reqack.xid = ackxid;
   dataack.reqack.result = ackresult;
 
@@ -279,6 +280,10 @@ int usockif_readreqioctl(int fd, FAR struct usrsock_request_buff_s *buf)
       case SIOCSMSSSCA:
         rsize = sizeof(struct lte_smsreq_s);
         break;
+      case SIOCGETCONTEXT:
+      case SIOCSETCONTEXT:
+        rsize = sizeof(struct socket_context_s);
+        break;
       default:
         dbg_alt1250("Unsupported command:0x%08lx\n", req->cmd);
         return -ENOTTY;
@@ -353,14 +358,14 @@ void usockif_discard(int fd, size_t sz)
  * name: usockif_sendack
  ****************************************************************************/
 
-int usockif_sendack(int fd, int32_t usock_result, uint32_t usock_xid,
-                    bool inprogress)
+int usockif_sendack(int fd, uint16_t events, int32_t usock_result,
+                    uint32_t usock_xid, bool inprogress)
 {
   struct usrsock_message_req_ack_s ack;
 
   ack.head.msgid = USRSOCK_MESSAGE_RESPONSE_ACK;
   ack.head.flags = inprogress ? USRSOCK_MESSAGE_FLAG_REQ_IN_PROGRESS : 0;
-  ack.head.events = 0;
+  ack.head.events = events;
   ack.xid = usock_xid;
   ack.result = usock_result;
 
@@ -371,10 +376,11 @@ int usockif_sendack(int fd, int32_t usock_result, uint32_t usock_xid,
  * name: usockif_senddataack
  ****************************************************************************/
 
-int usockif_senddataack(int fd, int32_t usock_result, uint32_t usock_xid,
+int usockif_senddataack(int fd, uint16_t events, int32_t usock_result,
+                        uint32_t usock_xid,
                         FAR struct usock_ackinfo_s *ackinfo)
 {
-  return send_dataack(fd, usock_xid, usock_result, ackinfo->valuelen,
+  return send_dataack(fd, events, usock_xid, usock_result, ackinfo->valuelen,
                       ackinfo->valuelen_nontrunc, ackinfo->value_ptr,
                       ackinfo->buf_ptr);
 }

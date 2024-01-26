@@ -96,4 +96,11 @@ int usockreq_ioctl_lwm2m(FAR struct alt1250_s *dev,
                          FAR uint32_t *usock_xid,
                          FAR struct usock_ackinfo_s *ackinfo);
 
+#ifdef CONFIG_LTE_ALT1250_ENABLE_HIBERNATION_MODE
+int usockreq_ioctl_sockctx(FAR struct alt1250_s *dev,
+                           FAR struct usrsock_request_buff_s *req,
+                           FAR int32_t *usock_result,
+                           FAR uint32_t *usock_xid,
+                           FAR struct usock_ackinfo_s *ackinfo);
+#endif
 #endif  /* __APPS_LTE_ALT1250_USOCK_HANDLERS_ALT1250_IOCTL_SUBHDLR_H */

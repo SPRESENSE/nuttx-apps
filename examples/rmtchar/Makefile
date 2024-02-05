@@ -1,5 +1,5 @@
 ############################################################################
-# apps/examples/hello_zig/Makefile
+# apps/examples/rmtchar/Makefile
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -20,15 +20,22 @@
 
 include $(APPDIR)/Make.defs
 
-# Hello, Zig! Example
+# rmt character driver test
 
-MAINSRC = hello_zig.zig
+ifeq ($(CONFIG_EXAMPLES_RMTCHAR_TX),y)
+CSRCS += rmtchar_transmitter.c
+endif
+ifeq ($(CONFIG_EXAMPLES_RMTCHAR_RX),y)
+CSRCS += rmtchar_receiver.c
+endif
+CSRCS += rmtchar_common.c
+MAINSRC = rmtchar_main.c
 
-# Hello, Zig! built-in application info
+# Touchscreen built-in application info
 
-PROGNAME  = $(CONFIG_EXAMPLES_HELLO_ZIG_PROGNAME)
-PRIORITY  = $(CONFIG_EXAMPLES_HELLO_ZIG_PRIORITY)
-STACKSIZE = $(CONFIG_EXAMPLES_HELLO_ZIG_STACKSIZE)
-MODULE    = $(CONFIG_EXAMPLES_HELLO_ZIG)
+PROGNAME = rmtchar
+PRIORITY = SCHED_PRIORITY_DEFAULT
+STACKSIZE = $(CONFIG_DEFAULT_TASK_STACKSIZE)
+MODULE = $(CONFIG_EXAMPLES_RMTCHAR)
 
 include $(APPDIR)/Application.mk

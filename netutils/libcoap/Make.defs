@@ -1,5 +1,5 @@
 ############################################################################
-# apps/examples/hello_zig/Makefile
+# apps/netutils/libcoap/Make.defs
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -18,17 +18,7 @@
 #
 ############################################################################
 
-include $(APPDIR)/Make.defs
-
-# Hello, Zig! Example
-
-MAINSRC = hello_zig.zig
-
-# Hello, Zig! built-in application info
-
-PROGNAME  = $(CONFIG_EXAMPLES_HELLO_ZIG_PROGNAME)
-PRIORITY  = $(CONFIG_EXAMPLES_HELLO_ZIG_PRIORITY)
-STACKSIZE = $(CONFIG_EXAMPLES_HELLO_ZIG_STACKSIZE)
-MODULE    = $(CONFIG_EXAMPLES_HELLO_ZIG)
-
-include $(APPDIR)/Application.mk
+ifneq ($(CONFIG_NETUTILS_LIBCOAP),)
+CONFIGURED_APPS += $(APPDIR)/netutils/libcoap
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)$(DELIM)netutils$(DELIM)libcoap$(DELIM)libcoap$(DELIM)include
+endif

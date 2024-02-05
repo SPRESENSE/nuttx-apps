@@ -105,8 +105,7 @@ static int dd_write(FAR struct dd_s *dd)
       if (nbytes < 0)
         {
           FAR struct nsh_vtbl_s *vtbl = dd->vtbl;
-          nsh_error(vtbl, g_fmtcmdfailed, g_dd, "write",
-                    NSH_ERRNO_OF(-nbytes));
+          nsh_error(vtbl, g_fmtcmdfailed, g_dd, "write", NSH_ERRNO);
           return ERROR;
         }
 
@@ -134,8 +133,7 @@ static int dd_read(FAR struct dd_s *dd)
       if (nbytes < 0)
         {
           FAR struct nsh_vtbl_s *vtbl = dd->vtbl;
-          nsh_error(vtbl, g_fmtcmdfailed, g_dd, "read",
-                    NSH_ERRNO_OF(-nbytes));
+          nsh_error(vtbl, g_fmtcmdfailed, g_dd, "read", NSH_ERRNO);
           return ERROR;
         }
 
@@ -186,6 +184,7 @@ static inline int dd_outfopen(FAR const char *name, FAR struct dd_s *dd)
 static int dd_verify(FAR const char *infile, FAR const char *outfile,
                      FAR struct dd_s *dd)
 {
+  FAR struct nsh_vtbl_s *vtbl = dd->vtbl;
   FAR uint8_t *buffer;
   unsigned sector = 0;
   int ret = OK;
@@ -196,7 +195,7 @@ static int dd_verify(FAR const char *infile, FAR const char *outfile,
   ret = lseek(dd->infd, dd->skip ? dd->skip * dd->sectsize : 0, SEEK_SET);
   if (ret < 0)
     {
-      nsh_error(dd->vtbl, g_fmtcmdfailed, g_dd, "lseek", NSH_ERRNO);
+      nsh_error(vtbl, g_fmtcmdfailed, g_dd, "lseek", NSH_ERRNO);
       return ret;
     }
 
@@ -204,7 +203,7 @@ static int dd_verify(FAR const char *infile, FAR const char *outfile,
   ret = lseek(dd->outfd, 0, SEEK_SET);
   if (ret < 0)
     {
-      nsh_error(dd->vtbl, g_fmtcmdfailed, g_dd, "lseek", NSH_ERRNO);
+      nsh_error(vtbl, g_fmtcmdfailed, g_dd, "lseek", NSH_ERRNO);
       return ret;
     }
 
@@ -225,7 +224,7 @@ static int dd_verify(FAR const char *infile, FAR const char *outfile,
       ret = read(dd->outfd, buffer, dd->nbytes);
       if (ret != dd->nbytes)
         {
-          nsh_error(dd->vtbl, g_fmtcmdfailed, g_dd, "read", NSH_ERRNO);
+          nsh_error(vtbl, g_fmtcmdfailed, g_dd, "read", NSH_ERRNO);
           break;
         }
 
@@ -233,10 +232,10 @@ static int dd_verify(FAR const char *infile, FAR const char *outfile,
         {
           char msg[32];
           snprintf(msg, sizeof(msg), "infile sector %d", sector);
-          nsh_dumpbuffer(dd->vtbl, msg, dd->buffer, dd->nbytes);
+          nsh_dumpbuffer(vtbl, msg, dd->buffer, dd->nbytes);
           snprintf(msg, sizeof(msg), "\noutfile sector %d", sector);
-          nsh_dumpbuffer(dd->vtbl, msg, buffer, dd->nbytes);
-          nsh_output(dd->vtbl, "\n");
+          nsh_dumpbuffer(vtbl, msg, buffer, dd->nbytes);
+          nsh_output(vtbl, "\n");
           ret = ERROR;
           break;
         }
@@ -246,7 +245,7 @@ static int dd_verify(FAR const char *infile, FAR const char *outfile,
 
   if (ret < 0)
     {
-      nsh_error(dd->vtbl, g_fmtcmdfailed, g_dd, "dd_verify", ret);
+      nsh_error(vtbl, g_fmtcmdfailed, g_dd, "dd_verify", ret);
     }
 
   free(buffer);

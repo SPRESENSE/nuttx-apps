@@ -102,7 +102,7 @@ static int postproc_smsinit(FAR struct alt1250_s *dev,
                             FAR struct alt_container_s *reply,
                             FAR struct usock_s *usock,
                             FAR int32_t *usock_result,
-                            FAR uint64_t *usock_xid,
+                            FAR uint32_t *usock_xid,
                             FAR struct usock_ackinfo_s *ackinfo,
                             unsigned long arg);
 
@@ -110,7 +110,7 @@ static int postproc_smsinit_reopen(FAR struct alt1250_s *dev,
                                    FAR struct alt_container_s *reply,
                                    FAR struct usock_s *usock,
                                    FAR int32_t *usock_result,
-                                   FAR uint64_t *usock_xid,
+                                   FAR uint32_t *usock_xid,
                                    FAR struct usock_ackinfo_s *ackinfo,
                                    unsigned long arg);
 
@@ -118,7 +118,7 @@ static int postproc_smsfin(FAR struct alt1250_s *dev,
                            FAR struct alt_container_s *reply,
                            FAR struct usock_s *usock,
                            FAR int32_t *usock_result,
-                           FAR uint64_t *usock_xid,
+                           FAR uint32_t *usock_xid,
                            FAR struct usock_ackinfo_s *ackinfo,
                            unsigned long arg);
 
@@ -126,7 +126,7 @@ static int postproc_smsfin_reopen(FAR struct alt1250_s *dev,
                                   FAR struct alt_container_s *reply,
                                   FAR struct usock_s *usock,
                                   FAR int32_t *usock_result,
-                                  FAR uint64_t *usock_xid,
+                                  FAR uint32_t *usock_xid,
                                   FAR struct usock_ackinfo_s *ackinfo,
                                   unsigned long arg);
 
@@ -134,7 +134,7 @@ static int postproc_smssend(FAR struct alt1250_s *dev,
                             FAR struct alt_container_s *reply,
                             FAR struct usock_s *usock,
                             FAR int32_t *usock_result,
-                            FAR uint64_t *usock_xid,
+                            FAR uint32_t *usock_xid,
                             FAR struct usock_ackinfo_s *ackinfo,
                             unsigned long arg);
 
@@ -142,7 +142,7 @@ static int postproc_smsdelete(FAR struct alt1250_s *dev,
                               FAR struct alt_container_s *reply,
                               FAR struct usock_s *usock,
                               FAR int32_t *usock_result,
-                              FAR uint64_t *usock_xid,
+                              FAR uint32_t *usock_xid,
                               FAR struct usock_ackinfo_s *ackinfo,
                               unsigned long arg);
 
@@ -172,7 +172,7 @@ static int send_smsinit_command(FAR struct alt1250_s *dev,
   set_container_response(container, &dummy_output, 1);
   set_container_postproc(container, func, 0);
 
-  return altdevice_send_command(dev->altfd, container, usock_result);
+  return altdevice_send_command(dev, dev->altfd, container, usock_result);
 }
 
 /****************************************************************************
@@ -197,7 +197,7 @@ static int send_smsfin_command(FAR struct alt1250_s *dev,
   set_container_response(container, &dummy_output, 1);
   set_container_postproc(container, func, 0);
 
-  return altdevice_send_command(dev->altfd, container, usock_result);
+  return altdevice_send_command(dev, dev->altfd, container, usock_result);
 }
 
 /****************************************************************************
@@ -235,11 +235,11 @@ static int send_smssend_command(FAR struct alt1250_s *dev,
   USOCKET_SET_RESPONSE(usock, idx++, &USOCKET_REQBUFLEN(usock));
 
   set_container_ids(container, USOCKET_USOCKID(usock), LTE_CMDID_SMS_SEND);
-  set_container_argument(container, inparam, ARRAY_SZ(inparam));
+  set_container_argument(container, inparam, nitems(inparam));
   set_container_response(container, USOCKET_REP_RESPONSE(usock), idx);
   set_container_postproc(container, postproc_smssend, 0);
 
-  return altdevice_send_command(dev->altfd, container, usock_result);
+  return altdevice_send_command(dev, dev->altfd, container, usock_result);
 }
 
 /****************************************************************************
@@ -266,11 +266,11 @@ static int send_smsdelete_command(FAR struct alt1250_s *dev,
   inparam[0] = &msg_index;
 
   set_container_ids(container, USOCKET_USOCKID(usock), LTE_CMDID_SMS_DELETE);
-  set_container_argument(container, inparam, ARRAY_SZ(inparam));
+  set_container_argument(container, inparam, nitems(inparam));
   set_container_response(container, &dummy_output, 1);
   set_container_postproc(container, postproc_smsdelete, 0);
 
-  return altdevice_send_command(dev->altfd, container, usock_result);
+  return altdevice_send_command(dev, dev->altfd, container, usock_result);
 }
 
 /****************************************************************************
@@ -286,7 +286,7 @@ static int send_smsreportrecv_command(FAR struct alt1250_s *dev,
 
   set_container_ids(&container, 0, LTE_CMDID_SMS_REPORT_RECV);
 
-  return altdevice_send_command(dev->altfd, &container, usock_result);
+  return altdevice_send_command(dev, dev->altfd, &container, usock_result);
 }
 
 /****************************************************************************
@@ -466,7 +466,7 @@ static int postproc_smsinit(FAR struct alt1250_s *dev,
                             FAR struct alt_container_s *reply,
                             FAR struct usock_s *usock,
                             FAR int32_t *usock_result,
-                            FAR uint64_t *usock_xid,
+                            FAR uint32_t *usock_xid,
                             FAR struct usock_ackinfo_s *ackinfo,
                             unsigned long arg)
 {
@@ -497,7 +497,7 @@ static int postproc_smsinit_reopen(FAR struct alt1250_s *dev,
                                    FAR struct alt_container_s *reply,
                                    FAR struct usock_s *usock,
                                    FAR int32_t *usock_result,
-                                   FAR uint64_t *usock_xid,
+                                   FAR uint32_t *usock_xid,
                                    FAR struct usock_ackinfo_s *ackinfo,
                                    unsigned long arg)
 {
@@ -524,7 +524,7 @@ static int postproc_smsfin(FAR struct alt1250_s *dev,
                            FAR struct alt_container_s *reply,
                            FAR struct usock_s *usock,
                            FAR int32_t *usock_result,
-                           FAR uint64_t *usock_xid,
+                           FAR uint32_t *usock_xid,
                            FAR struct usock_ackinfo_s *ackinfo,
                            unsigned long arg)
 {
@@ -546,7 +546,7 @@ static int postproc_smsfin_reopen(FAR struct alt1250_s *dev,
                                   FAR struct alt_container_s *reply,
                                   FAR struct usock_s *usock,
                                   FAR int32_t *usock_result,
-                                  FAR uint64_t *usock_xid,
+                                  FAR uint32_t *usock_xid,
                                   FAR struct usock_ackinfo_s *ackinfo,
                                   unsigned long arg)
 {
@@ -577,7 +577,7 @@ static int postproc_smssend(FAR struct alt1250_s *dev,
                             FAR struct alt_container_s *reply,
                             FAR struct usock_s *usock,
                             FAR int32_t *usock_result,
-                            FAR uint64_t *usock_xid,
+                            FAR uint32_t *usock_xid,
                             FAR struct usock_ackinfo_s *ackinfo,
                             unsigned long arg)
 {
@@ -611,7 +611,7 @@ static int postproc_smsdelete(FAR struct alt1250_s *dev,
                               FAR struct alt_container_s *reply,
                               FAR struct usock_s *usock,
                               FAR int32_t *usock_result,
-                              FAR uint64_t *usock_xid,
+                              FAR uint32_t *usock_xid,
                               FAR struct usock_ackinfo_s *ackinfo,
                               unsigned long arg)
 {
@@ -728,7 +728,7 @@ int alt1250_sms_init(FAR struct alt1250_s *dev, FAR struct usock_s *usock,
   if (IS_SMS_UNAVAIL_FWVERSION(dev))
     {
       dbg_alt1250("This ALT1250 FW version does not support SMS.\n");
-      *usock_result = -ENOTSUP;
+      *usock_result = -EAFNOSUPPORT;
       return REP_SEND_ACK_WOFREE;
     }
 
@@ -950,7 +950,7 @@ int alt1250_sms_recv(FAR struct alt1250_s *dev,
 int usockreq_ioctl_sms(FAR struct alt1250_s *dev,
                        FAR struct usrsock_request_buff_s *req,
                        FAR int32_t *usock_result,
-                       FAR uint64_t *usock_xid,
+                       FAR uint32_t *usock_xid,
                        FAR struct usock_ackinfo_s *ackinfo)
 {
   FAR struct usrsock_request_ioctl_s *request = &req->request.ioctl_req;

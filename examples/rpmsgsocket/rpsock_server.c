@@ -24,16 +24,16 @@
 
 #include <nuttx/config.h>
 
-#include <sys/socket.h>
+#include <assert.h>
+#include <errno.h>
 #include <netpacket/rpmsg.h>
-
+#include <pthread.h>
+#include <poll.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <poll.h>
-#include <assert.h>
-#include <errno.h>
+#include <sys/socket.h>
 
 /****************************************************************************
  * Private types
@@ -102,7 +102,7 @@ static void *rpsock_thread(pthread_addr_t pvarg)
         }
       else if (ret < 0)
         {
-          printf("server recv data failed ret %d, errno %d\n", ret, errno);
+          printf("server recv data failed ret %zd, errno %d\n", ret, errno);
           break;
         }
 
@@ -147,7 +147,7 @@ static void *rpsock_thread(pthread_addr_t pvarg)
         }
     }
 
-  printf("server Complete ret %d, errno %d\n", ret, errno);
+  printf("server Complete ret %zd, errno %d\n", ret, errno);
   free(args);
   return NULL;
 }
@@ -187,10 +187,10 @@ static int rpsock_stream_server(int argc, char *argv[])
   /* Bind the socket to a local address */
 
   myaddr.rp_family = AF_RPMSG;
-  strncpy(myaddr.rp_name, argv[3], RPMSG_SOCKET_NAME_SIZE);
+  strlcpy(myaddr.rp_name, argv[3], RPMSG_SOCKET_NAME_SIZE);
   if (argc == 5)
     {
-      strncpy(myaddr.rp_cpu, argv[4], RPMSG_SOCKET_CPU_SIZE);
+      strlcpy(myaddr.rp_cpu, argv[4], RPMSG_SOCKET_CPU_SIZE);
     }
   else
     {
@@ -300,10 +300,10 @@ static int rpsock_dgram_server(int argc, char *argv[])
   /* Bind the socket to a local address */
 
   myaddr.rp_family = AF_RPMSG;
-  strncpy(myaddr.rp_name, argv[3], RPMSG_SOCKET_NAME_SIZE);
+  strlcpy(myaddr.rp_name, argv[3], RPMSG_SOCKET_NAME_SIZE);
   if (argc == 5)
     {
-      strncpy(myaddr.rp_cpu, argv[4], RPMSG_SOCKET_CPU_SIZE);
+      strlcpy(myaddr.rp_cpu, argv[4], RPMSG_SOCKET_CPU_SIZE);
     }
   else
     {

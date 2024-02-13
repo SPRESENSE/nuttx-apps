@@ -26,12 +26,11 @@
 
 #include <stdint.h>
 #include <errno.h>
+#include <sys/param.h>
 #include <nuttx/wireless/lte/lte_ioctl.h>
 
 #include "lte/lte_api.h"
 #include "lte/lapi.h"
-
-#include "lapi_util.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -66,7 +65,7 @@ static int lte_get_siminfo_inparam_check(uint32_t option)
 
 /* Synchronous APIs */
 
-int lte_get_siminfo_sync(uint32_t option, lte_siminfo_t *siminfo)
+int lte_get_siminfo_sync(uint32_t option, FAR lte_siminfo_t *siminfo)
 {
   int ret;
   int result;
@@ -86,8 +85,8 @@ int lte_get_siminfo_sync(uint32_t option, lte_siminfo_t *siminfo)
     }
 
   ret = lapi_req(LTE_CMDID_GETSIMINFO,
-                 (FAR void *)inarg, ARRAY_SZ(inarg),
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)inarg, nitems(inarg),
+                 (FAR void *)outarg, nitems(outarg),
                  NULL);
   if (ret == 0)
     {
@@ -97,7 +96,7 @@ int lte_get_siminfo_sync(uint32_t option, lte_siminfo_t *siminfo)
   return ret;
 }
 
-int lte_get_imscap_sync(bool *imscap)
+int lte_get_imscap_sync(FAR bool *imscap)
 {
   int ret;
   int result;
@@ -113,7 +112,7 @@ int lte_get_imscap_sync(bool *imscap)
 
   ret = lapi_req(LTE_CMDID_IMSCAP,
                  NULL, 0,
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)outarg, nitems(outarg),
                  NULL);
   if (ret == 0)
     {
@@ -124,9 +123,9 @@ int lte_get_imscap_sync(bool *imscap)
 }
 
 #ifdef CONFIG_LTE_LAPI_KEEP_COMPATIBILITY
-int lte_get_imsi_sync(char *imsi)
+int lte_get_imsi_sync(FAR char *imsi)
 #else
-int lte_get_imsi_sync(char *imsi, size_t len)
+int lte_get_imsi_sync(FAR char *imsi, size_t len)
 #endif
 {
   int ret;
@@ -148,7 +147,7 @@ int lte_get_imsi_sync(char *imsi, size_t len)
 
   ret = lapi_req(LTE_CMDID_GETIMSI,
                  NULL, 0,
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)outarg, nitems(outarg),
                  NULL);
   if (ret == 0)
     {
@@ -159,9 +158,9 @@ int lte_get_imsi_sync(char *imsi, size_t len)
 }
 
 #ifdef CONFIG_LTE_LAPI_KEEP_COMPATIBILITY
-int lte_get_imei_sync(char *imei)
+int lte_get_imei_sync(FAR char *imei)
 #else
-int lte_get_imei_sync(char *imei, size_t len)
+int lte_get_imei_sync(FAR char *imei, size_t len)
 #endif
 {
   int ret;
@@ -182,7 +181,7 @@ int lte_get_imei_sync(char *imei, size_t len)
 
   ret = lapi_req(LTE_CMDID_GETIMEI,
                  NULL, 0,
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)outarg, nitems(outarg),
                  NULL);
   if (ret == 0)
     {
@@ -193,9 +192,9 @@ int lte_get_imei_sync(char *imei, size_t len)
 }
 
 #ifdef CONFIG_LTE_LAPI_KEEP_COMPATIBILITY
-int lte_get_phoneno_sync(char *phoneno)
+int lte_get_phoneno_sync(FAR char *phoneno)
 #else
-int lte_get_phoneno_sync(char *phoneno, size_t len)
+int lte_get_phoneno_sync(FAR char *phoneno, size_t len)
 #endif
 {
   int ret;
@@ -217,7 +216,7 @@ int lte_get_phoneno_sync(char *phoneno, size_t len)
 
   ret = lapi_req(LTE_CMDID_GETPHONE,
                  NULL, 0,
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)outarg, nitems(outarg),
                  NULL);
   if (ret == 0)
     {
@@ -243,8 +242,8 @@ int lte_set_report_simstat(simstat_report_cb_t callback)
     };
 
   ret = lapi_req(LTE_CMDID_REPSIMSTAT,
-                 (FAR void *)inarg, ARRAY_SZ(inarg),
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)inarg, nitems(inarg),
+                 (FAR void *)outarg, nitems(outarg),
                  callback);
   if (ret == 0)
     {
@@ -276,7 +275,7 @@ int lte_get_siminfo(uint32_t option, get_siminfo_cb_t callback)
     }
 
   return lapi_req(LTE_CMDID_GETSIMINFO | LTE_CMDOPT_ASYNC_BIT,
-                  (FAR void *)inarg, ARRAY_SZ(inarg),
+                  (FAR void *)inarg, nitems(inarg),
                   NULL, 0, callback);
 }
 

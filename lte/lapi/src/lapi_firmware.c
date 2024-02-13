@@ -28,22 +28,26 @@
 #include <stdint.h>
 #include <string.h>
 #include <errno.h>
+#include <sys/param.h>
 #include <nuttx/wireless/lte/lte_ioctl.h>
 
 #include "lte/lapi.h"
 #include "lte/lte_api.h"
 #include "lte/lte_fwupdate.h"
 
-#include "lapi_util.h"
 #include "lapi_dbg.h"
 
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
 
-static int fw_inject_internal(const char *data, int len, bool init)
+static int fw_inject_internal(FAR const char *data, int len, bool init)
 {
-  FAR void *inarg[3] = { (void *)data, &len, &init };
+  FAR void *inarg[3] =
+    {
+      (FAR void *)data, &len, &init
+    };
+
   int dummy_arg; /* Dummy for blocking API call */
 
   if (data == NULL || len < 0)
@@ -52,7 +56,7 @@ static int fw_inject_internal(const char *data, int len, bool init)
     }
 
   return lapi_req(LTE_CMDID_INJECTIMAGE,
-                 (FAR void *)inarg, ARRAY_SZ(inarg),
+                 (FAR void *)inarg, nitems(inarg),
                  (FAR void *)&dummy_arg, 0, NULL);
 }
 
@@ -69,7 +73,7 @@ static int fw_generic_request(int cmdid)
 
 /* Synchronous APIs */
 
-int lte_get_version_sync(lte_version_t *version)
+int lte_get_version_sync(FAR lte_version_t *version)
 {
   int ret;
   int result;
@@ -85,17 +89,17 @@ int lte_get_version_sync(lte_version_t *version)
 
   ret = lapi_req(LTE_CMDID_GETVER,
                  NULL, 0,
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)outarg, nitems(outarg),
                  NULL);
   return (ret == 0) ? result : ret;
 }
 
-int ltefwupdate_initialize(const char *initial_data, int len)
+int ltefwupdate_initialize(FAR const char *initial_data, int len)
 {
   return fw_inject_internal(initial_data, len, true);
 }
 
-int ltefwupdate_injectrest(const char *rest_data, int len)
+int ltefwupdate_injectrest(FAR const char *rest_data, int len)
 {
   return fw_inject_internal(rest_data, len, false);
 }
@@ -144,7 +148,7 @@ int lte_factory_reset_sync(void)
 
   ret = lapi_req(LTE_CMDID_FACTORY_RESET,
                  NULL, 0,
-                 (FAR void *)outarg, ARRAY_SZ(outarg),
+                 (FAR void *)outarg, nitems(outarg),
                  NULL);
 
   return ret;

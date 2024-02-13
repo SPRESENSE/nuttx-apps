@@ -29,6 +29,8 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <sys/param.h>
 
 #include "utility.h"
 
@@ -88,7 +90,7 @@ static int pubsubtest_thread_entry(int argc, FAR char *argv[])
 
       /* wait for up to 500ms for data */
 
-      pret = poll(&fds[0], (sizeof(fds) / sizeof(fds[0])), 500);
+      pret = poll(&fds[0], nitems(fds), 500);
       if (fds[0].revents & POLLIN)
         {
           unsigned elt;
@@ -127,8 +129,8 @@ static int pubsubtest_thread_entry(int argc, FAR char *argv[])
       char fname[32];
       FAR FILE *f;
 
-      sprintf(fname, CONFIG_UORB_SRORAGE_DIR"/uorb_timings%u.txt",
-              timingsgroup);
+      snprintf(fname, sizeof(fname),
+               CONFIG_UORB_SRORAGE_DIR"/uorb_timings%u.txt", timingsgroup);
 
       f = fopen(fname, "w");
       if (f == NULL)
@@ -180,7 +182,6 @@ static int pubsubtest_thread_entry(int argc, FAR char *argv[])
 
 static int latency_test(bool print)
 {
-  FAR char *const args[1];
   struct orb_test_medium_s sample;
   int pubsub_task;
   int instance = 0;
@@ -201,18 +202,11 @@ static int latency_test(bool print)
   g_pubsubtest_print  = print;
   g_pubsubtest_passed = false;
 
-  /* test pub / sub latency
-   * Can't pass a pointer in args, must be a null terminated
-   * array of strings because the strings are copied to
-   * prevent access if the caller data goes out of scope
-   */
-
-  args[0] = NULL;
   pubsub_task = task_create("uorb_latency",
                             SCHED_PRIORITY_DEFAULT,
                             CONFIG_UORB_STACKSIZE,
                             pubsubtest_thread_entry,
-                            args);
+                            NULL);
 
   /* give the test task some data */
 
@@ -665,7 +659,6 @@ static int test_multi2(void)
   int orb_data_fd[num_instances];
   int orb_data_next     = 0;
   orb_abstime last_time = 0;
-  FAR char *const args[1];
   int pubsub_task;
   int i;
 
@@ -682,12 +675,11 @@ static int test_multi2(void)
 
   /* launch the publisher thread */
 
-  args[0] = NULL;
   pubsub_task = task_create("uorb_test_multi",
                             SCHED_PRIORITY_MAX - 5,
                             CONFIG_UORB_STACKSIZE,
-                            (main_t)&pub_test_multi2_entry,
-                            args);
+                            pub_test_multi2_entry,
+                            NULL);
   if (pubsub_task < 0)
     {
       return test_fail("failed launching task");
@@ -710,7 +702,12 @@ static int test_multi2(void)
               0, 0
             };
 
-          orb_copy(ORB_ID(orb_test_medium_multi), orb_data_cur_fd, &msg);
+          if (OK != orb_copy(ORB_ID(orb_test_medium_multi),
+                             orb_data_cur_fd, &msg))
+            {
+              return test_fail("copy failed: %d", errno);
+            }
+
           if (last_time >= msg.timestamp && last_time != 0)
             {
               return test_fail("Timestamp not increasing! (%" PRIu64
@@ -924,7 +921,6 @@ static int pub_test_queue_entry(int argc, char *argv[])
 
 static int test_queue_poll_notify(void)
 {
-  FAR char *const args[1];
   struct pollfd fds[1];
   struct orb_test_medium_s t;
   bool updated;
@@ -955,12 +951,11 @@ static int test_queue_poll_notify(void)
 
   g_thread_should_exit = false;
 
-  args[0] = NULL;
   pubsub_task = task_create("uorb_test_queue",
                             SCHED_PRIORITY_MIN + 5,
                             CONFIG_UORB_STACKSIZE,
-                            (main_t)&pub_test_queue_entry,
-                            args);
+                            pub_test_queue_entry,
+                            NULL);
 
   if (pubsub_task < 0)
     {

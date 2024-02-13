@@ -53,7 +53,7 @@ static int send_eventnotice_command(FAR struct alt1250_s *dev,
   set_container_response(container, ltecmd->outparam, ltecmd->outparamlen);
   set_container_postproc(container, NULL, 0);
 
-  return altdevice_send_command(dev->altfd, container, usock_result);
+  return altdevice_send_command(dev, dev->altfd, container, usock_result);
 }
 
 /****************************************************************************
@@ -67,7 +67,7 @@ static int send_eventnotice_command(FAR struct alt1250_s *dev,
 int usockreq_ioctl_event(FAR struct alt1250_s *dev,
                          FAR struct usrsock_request_buff_s *req,
                          FAR int32_t *usock_result,
-                         FAR uint64_t *usock_xid,
+                         FAR uint32_t *usock_xid,
                          FAR struct usock_ackinfo_s *ackinfo)
 {
   FAR struct usrsock_request_ioctl_s *request = &req->request.ioctl_req;

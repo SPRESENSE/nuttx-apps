@@ -9,16 +9,27 @@ config INTERPRETERS_QUICKJS
 
 if INTERPRETERS_QUICKJS
 
+choice
+	prompt "QuickJS command line interpreter"
+	default INTERPRETERS_QUICKJS_NONE
+
+config INTERPRETERS_QUICKJS_NONE
+	bool "distable quickjs interpreter"
+
 config INTERPRETERS_QUICKJS_MINI
-	bool "Minimal interpreter"
-	default n
+	bool "Minimal quickjs interpreter"
+
+config INTERPRETERS_QUICKJS_FULL
+	bool "normal quickjs interpreter"
+
+endchoice # QuickJS command line interpreter
 
 config INTERPRETERS_QUICKJS_BIGNUM
 	bool "Bignum support"
 	default n
 	---help---
-	It's depend on libatomic,
-	Not all platform support it.
+		It's depend on libatomic,
+		Not all platform support it.
 
 config INTERPRETERS_QUICKJS_PRIORITY
 	int "QuickJS interpreter priority"
@@ -36,4 +47,4 @@ config INTERPRETERS_QUICKJS_EXT_HOOK
 		Since minimal interpreter only support 'console.log',
 		you can export custom module by implement init/destory hook.
 
-endif
+endif # INTERPRETERS_QUICKJS

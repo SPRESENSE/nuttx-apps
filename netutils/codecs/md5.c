@@ -64,6 +64,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <fcntl.h>
 
 #include "netutils/md5.h"
 
@@ -84,7 +85,11 @@
 /* This is the central step in the MD5 algorithm. */
 
 #  define MD5STEP(f, w, x, y, z, data, s) \
-        ( w += f(x, y, z) + data,  w = w<<s | w>>(32-s),  w += x )
+        (w += f(x, y, z) + data,  w = w<<s | w>>(32-s),  w += x)
+
+/* Encoding Memory Block Size */
+
+#define MD5_BUFSIZE 1024
 
 /****************************************************************************
  * Private Functions
@@ -183,7 +188,7 @@ void md5_update(struct md5_context_s *ctx, unsigned char const *buf,
 
       memcpy(p, buf, t);
       byte_reverse(ctx->in, 16);
-      md5_transform(ctx->buf, (uint32_t *) ctx->in);
+      md5_transform(ctx->buf, (uint32_t *)ctx->in);
       buf += t;
       len -= t;
     }
@@ -194,7 +199,7 @@ void md5_update(struct md5_context_s *ctx, unsigned char const *buf,
     {
       memcpy(ctx->in, buf, 64);
       byte_reverse(ctx->in, 16);
-      md5_transform(ctx->buf, (uint32_t *) ctx->in);
+      md5_transform(ctx->buf, (uint32_t *)ctx->in);
       buf += 64;
       len -= 64;
     }
@@ -241,7 +246,7 @@ void md5_final(unsigned char digest[16], struct md5_context_s *ctx)
 
       memset(p, 0, count);
       byte_reverse(ctx->in, 16);
-      md5_transform(ctx->buf, (uint32_t *) ctx->in);
+      md5_transform(ctx->buf, (uint32_t *)ctx->in);
 
       /* Now fill the next block with 56 bytes */
 
@@ -261,7 +266,7 @@ void md5_final(unsigned char digest[16], struct md5_context_s *ctx)
   ((uint32_t *)ctx->in)[14] = ctx->bits[0];
   ((uint32_t *)ctx->in)[15] = ctx->bits[1];
 
-  md5_transform(ctx->buf, (uint32_t *) ctx->in);
+  md5_transform(ctx->buf, (uint32_t *)ctx->in);
   byte_reverse((unsigned char *)ctx->buf, 4);
   memcpy(digest, ctx->buf, 16);
   memset(ctx, 0, sizeof(struct md5_context_s));  /* In case it's sensitive */
@@ -399,11 +404,66 @@ char *md5_hash(const uint8_t * addr, const size_t len)
   md5_sum(addr, len, digest);
   for (i = 0; i < 16; i++)
     {
-      sprintf(&hash[i * 2], "%02x", digest[i]);
+      snprintf(&hash[i * 2], 33 - i * 2, "%02x", digest[i]);
     }
 
   hash[32] = 0;
   return hash;
+}
+
+/****************************************************************************
+ * Name: md5_file
+ *
+ * Description:
+ *   MD5 hash for a file
+ *
+ * Input Parameters:
+ *   path: File Path
+ *   mac : Buffer for the hash
+ *
+ ****************************************************************************/
+
+int md5_file(const char *path, uint8_t *mac)
+{
+  int fd;
+  int ret;
+  unsigned char *buf;
+  MD5_CTX ctx;
+
+  fd = open(path, O_RDONLY);
+  if (fd < 0)
+    {
+      return -errno;
+    }
+
+  buf = malloc(MD5_BUFSIZE);
+  if (buf == NULL)
+    {
+      ret = -ENOMEM;
+      goto out;
+    }
+
+  md5_init(&ctx);
+
+  while (1)
+    {
+      /* Block calculation md5 */
+
+      ret = read(fd, buf, MD5_BUFSIZE);
+      if (ret <= 0)
+        {
+          ret = ret < 0 ? -errno : 0;
+          break;
+        }
+
+      md5_update(&ctx, buf, ret);
+    }
+
+  md5_final(mac, &ctx);
+  free(buf);
+out:
+  close(fd);
+  return ret;
 }
 
 #endif /* CONFIG_CODECS_HASH_MD5 */

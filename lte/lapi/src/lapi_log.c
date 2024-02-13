@@ -25,11 +25,11 @@
 #include <nuttx/config.h>
 
 #include <errno.h>
+#include <sys/param.h>
 #include <nuttx/wireless/lte/lte_ioctl.h>
 
 #include "lte/lapi.h"
 #include "lte/lte_log.h"
-#include "lapi_util.h"
 
 /****************************************************************************
  * Public Functions
@@ -39,7 +39,7 @@
  * Name: lte_log_collect
  ****************************************************************************/
 
-int lte_log_collect(char output_fname[], size_t len)
+int lte_log_collect(FAR char *output_fname, size_t len)
 {
   FAR void *inarg[] =
     {
@@ -59,8 +59,8 @@ int lte_log_collect(char output_fname[], size_t len)
   len = LTE_LOG_NAME_LEN;
 
   return lapi_req(LTE_CMDID_SAVE_LOG,
-                 inarg, ARRAY_SZ(inarg),
-                 outarg, ARRAY_SZ(outarg),
+                 inarg, nitems(inarg),
+                 outarg, nitems(outarg),
                  NULL);
 }
 
@@ -92,8 +92,8 @@ int lte_log_getlist(size_t listsize, size_t fnamelen,
     }
 
   return lapi_req(LTE_CMDID_GET_LOGLIST,
-                 inarg, ARRAY_SZ(inarg),
-                 outarg, ARRAY_SZ(outarg),
+                 inarg, nitems(inarg),
+                 outarg, nitems(outarg),
                  NULL);
 }
 
@@ -103,7 +103,7 @@ int lte_log_getlist(size_t listsize, size_t fnamelen,
  * Name: lte_log_open
  ****************************************************************************/
 
-int lte_log_open(const char *filename)
+int lte_log_open(FAR const char *filename)
 {
   int dummy_arg; /* Dummy for blocking API call */
   FAR void *inarg[] =
@@ -117,7 +117,7 @@ int lte_log_open(const char *filename)
     }
 
   return lapi_req(LTE_CMDID_LOGOPEN,
-                  inarg, ARRAY_SZ(inarg),
+                  inarg, nitems(inarg),
                   (FAR void *)&dummy_arg, 0,
                   NULL);
 }
@@ -135,7 +135,7 @@ int lte_log_close(int fd)
     };
 
   return lapi_req(LTE_CMDID_LOGCLOSE,
-                  inarg, ARRAY_SZ(inarg),
+                  inarg, nitems(inarg),
                   (FAR void *)&dummy_arg, 0,
                   NULL);
 }
@@ -144,7 +144,7 @@ int lte_log_close(int fd)
  * Name: lte_log_read
  ****************************************************************************/
 
-ssize_t lte_log_read(int fd, void *buf, size_t len)
+ssize_t lte_log_read(int fd, FAR void *buf, size_t len)
 {
   FAR void *inarg[] =
     {
@@ -162,8 +162,8 @@ ssize_t lte_log_read(int fd, void *buf, size_t len)
     }
 
   return lapi_req(LTE_CMDID_LOGREAD,
-                  inarg, ARRAY_SZ(inarg),
-                  outarg, ARRAY_SZ(outarg),
+                  inarg, nitems(inarg),
+                  outarg, nitems(outarg),
                   NULL);
 }
 
@@ -180,7 +180,7 @@ int lte_log_lseek(int fd, off_t offset, int whence)
     };
 
   return lapi_req(LTE_CMDID_LOGLSEEK,
-                  inarg, ARRAY_SZ(inarg),
+                  inarg, nitems(inarg),
                   (FAR void *)&dummy_arg, 0,
                   NULL);
 }
@@ -189,7 +189,7 @@ int lte_log_lseek(int fd, off_t offset, int whence)
  * Name: lte_log_remove
  ****************************************************************************/
 
-int lte_log_remove(const char *filename)
+int lte_log_remove(FAR const char *filename)
 {
   int dummy_arg; /* Dummy for blocking API call */
   FAR void *inarg[] =
@@ -203,7 +203,7 @@ int lte_log_remove(const char *filename)
     }
 
   return lapi_req(LTE_CMDID_LOGREMOVE,
-                  inarg, ARRAY_SZ(inarg),
+                  inarg, nitems(inarg),
                   (FAR void *)&dummy_arg, 0,
                   NULL);
 }

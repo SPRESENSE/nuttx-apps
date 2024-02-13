@@ -60,7 +60,7 @@ Example Configuration:
 - `CONFIG_EXAMPLES_AJOYSTICK_DEVNAME` – Joystick device name. Default
   `/dev/adjoy0`.
 - `CONFIG_EXAMPLES_AJOYSTICK_SIGNO` – Signal used to signal the test
-  application. Default `13`.
+  application. Default `32`.
 
 ## `alarm` RTC Alarm
 
@@ -278,7 +278,7 @@ Example Configuration:
 - `CONFIG_EXAMPLES_DJOYSTICK_DEVNAME` – Joystick device name. Default
   `/dev/djoy0`.
 - `CONFIG_EXAMPLES_DJOYSTICK_SIGNO` – Signal used to signal the test
-  application. Default `13`.
+  application. Default `32`.
 
 ## `elf` ELF loader
 
@@ -642,6 +642,21 @@ maintaining duplicate logic in the NuttX repository.
 This is a simple test of the board LED driver at
 `nuttx/drivers/leds/userled_*.c`.
 
+## `libtest` Static Library Test
+
+This example illustrates how you may create a static library. It does the following:
+
+It creates a static library called libtest.a that contains an object that provides the symbol library_test().
+
+At adds the library as an EXTRA_LIB in the build
+
+EXTRA_LIBS += -ltest
+E XTRA_LIBPATHS += -L$(APPDIR)/examples/libtest
+
+And optionally, it can be configured to:
+
+Generate a built-in command that can be executed by NSH. This command logic links with the symbol library_test() that will provided by the libtest.a static library.
+
 ## `luamod_hello` Hello World Lua module
 
 A Lua C module showing how to add built-in modules to the Lua interpreter.
@@ -668,6 +683,19 @@ A simple reader example for the `LSM303` acc-mag sensor.
 ## `lsm6dsl_reader` `LSM6DSL` Accelerometer/Gyroscope
 
 A simple reader example for the `LSM6DSL` acc-gyro sensor.
+
+## `lvglterm` LVGL Terminal for NuttShell (NSH)
+
+LVGL application that executes NuttShell (NSH) commands entered with a
+Touchscreen Keyboard and displays the NSH output. Prerequisite configuration
+settings:
+
+- `CONFIG_NSH_ARCHINIT=n` – NSH architecture initialization must be disabled.
+- `CONFIG_NSH_CONSOLE=y` – NSH must be configured to use a console.
+- `CONFIG_LIBC_EXECFUNCS=y` – posix_spawn() must be enabled.
+- `CONFIG_PIPES=y` – Pipes must be enabled.
+- `CONFIG_GRAPHICS_LVGL=y` – LVGL graphics must be enabled.
+- `CONFIG_LV_FONT_UNSCII_16=y` – LVGL font UNSCII 16 must be enabled.
 
 ## `media`
 
@@ -927,8 +955,6 @@ This directory contains a simple test of a subset of the NX APIs defined in
 - `CONFIG_EXAMPLES_NX_SERVERPRIO` – The server priority. Default: `120`
 - `CONFIG_EXAMPLES_NX_LISTENERPRIO` – The priority of the event listener thread.
   Default `80`.
-- `CONFIG_EXAMPLES_NX_NOTIFYSIGNO` – The signal number to use with
-  `nx_eventnotify()`. Default: `4`.
 
 The example also has the following settings and will generate an error if they
 are not as expected:
@@ -985,8 +1011,6 @@ The following configuration options can be selected to customize the test:
 - `CONFIG_EXAMPLES_NXTERM_SERVERPRIO` – The server priority. Default: `120`.
 - `CONFIG_EXAMPLES_NXTERM_LISTENERPRIO` – The priority of the event listener
   thread. Default: `80`.
-- `CONFIG_EXAMPLES_NXTERM_NOTIFYSIGNO` – The signal number to use with
-  `nx_eventnotify()`. Default: `4`.
 
 ## `nxflat` NXFLAT Binary
 
@@ -1130,7 +1154,7 @@ The following configuration options can be selected:
 - `CONFIG_EXAMPLES_NXTEXT_LISTENERPRIO` – The priority of the event listener
   thread. Default: `80`.
 - `CONFIG_EXAMPLES_NXTEXT_NOTIFYSIGNO` – The signal number to use with
-  `nx_eventnotify()`. Default: `4`.
+  `nx_eventnotify()`. Default: `32`.
 
 The example also expects the following settings and will generate an error if
 they are not as expected:
@@ -1753,7 +1777,7 @@ Example configuration:
   Default: `1000000`.
 - `EXAMPLES_TIMER_GPIO_SIGNO` – This is the signal number that is used to
     notify that a timer interrupt occurred.
-  Default: `17`.
+  Default: `32`.
 - `EXAMPLES_TIMER_GPIO_STACKSIZE` – This is the stack size allocated when the
     timer task runs.
   Default: `2048`.
@@ -1990,7 +2014,7 @@ The watcher is a task that will monitor other tasks that subscribe to be watched
 If a watched task doesn't signal the watcher during the watchdog time period,
 the watchdog timer will expire and the watcher will print the tasks that did
 not signal and the ones that signaled. The tasks that did not signal will be printed
-as the tasks that starved the dog and the tasks that signaled will be printed as 
+as the tasks that starved the dog and the tasks that signaled will be printed as
 the tasks that fed the dog.
 The watcher task will only feed the watchdog timer when all subscribed tasks have
 asked to feed dog.
@@ -2000,16 +2024,16 @@ To start the watcher, just run:
 `watcher`
 
 The watched example is not required to use the watcher. The watched example is simply
-a task that creates 4 tasks that will subscribe to be watched. The first and fourth 
+a task that creates 4 tasks that will subscribe to be watched. The first and fourth
 will not feed the dog to expose the functionality. This example will show the user
-how to subscribe, to feed the dog and to unsubscribe. 
+how to subscribe, to feed the dog and to unsubscribe.
 
 To start the watched, just run:
 
-`watched` 
+`watched`
 
 P.S: This example will only be supported by the chips that support interrupt on
-timeout, i.e., which have the \"capture\" command implemented. 
+timeout, i.e., which have the \"capture\" command implemented.
 
 This test depends on these specific configurations settings (your
 specific watchdog hardware settings might require additional settings).
@@ -2018,10 +2042,10 @@ specific watchdog hardware settings might require additional settings).
 - `CONFIG_WATCHDOG` – Enables watchdog timer support.
 - `CONFIG_NSH_BUILTIN_APPS` – Build this example an NSH built-in
   function.
-- `CONFIG_DRIVER_NOTE` and `CONFIG_SCHED_INSTRUMENTATION` – Allows the watcher
-  to get the tasks' names.   
+- `CONFIG_DRIVERS_NOTE` and `CONFIG_SCHED_INSTRUMENTATION` – Allows the watcher
+  to get the tasks' names.
 - `CONFIG_FS_FAT` – Allows the creation of a FAT filesystem on the ramdisk
-  to create a file with all the necessary info for the watched tasks. 
+  to create a file with all the necessary info for the watched tasks.
 
 Specific configuration options for the `watcher` example include:
 
@@ -2031,7 +2055,7 @@ Specific configuration options for the `watcher` example include:
   the Watcher. Default: `/dev/watchdog0`.
 - `CONFIG_EXAMPLES_WATCHER_TIMEOUT` – The watchdog timeout value in
   milliseconds.
-- `CONFIG_EXAMPLES_WATCHER_SIGNAL` – This is the Signal Number used for 
+- `CONFIG_EXAMPLES_WATCHER_SIGNAL` – This is the Signal Number used for
   communication between the watcher task and the watched tasks.
 
 Specific configuration options for the `watched` example include:

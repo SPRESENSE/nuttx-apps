@@ -61,6 +61,7 @@
 #include <nuttx/config.h>
 
 #include <sys/types.h>
+#include <sys/param.h>
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -77,8 +78,6 @@
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
-
-#define ARRAYSIZE(a) (sizeof (a) / sizeof (a)[0])
 
 /****************************************************************************
  * Private Types
@@ -1126,7 +1125,7 @@ int main(int argc, FAR char *argv[])
                 {
                   fscanf(fp, "%s", s2);
                   fscanf(fp, "%2c", s3);
-                  sprintf(s1, "%s%s", s2, s3);
+                  snprintf(s1, sizeof(s1), "%s%s", s2, s3);
 
                   if (strcmp(s1, teststring) != 0)
                     {
@@ -1152,7 +1151,7 @@ int main(int argc, FAR char *argv[])
              "assignments...\n",
              i ? 'f' : 's');
 
-      for (t = 0; t < ARRAYSIZE(test_data); ++t)
+      for (t = 0; t < nitems(test_data); ++t)
         {
           /* Prefill the arguments with zeroes. */
 
@@ -1329,7 +1328,7 @@ int main(int argc, FAR char *argv[])
   /* Test the char, short, and long specification-modifiers. */
 
   printf("\nTesting scanf()'s type-modifiers...\n");
-  for (t = 0; t < ARRAYSIZE(type_data); ++t)
+  for (t = 0; t < nitems(type_data); ++t)
     {
       unsigned char hhu;
       unsigned short hu;

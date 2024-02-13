@@ -52,7 +52,7 @@ static int postproc_getsockopt(FAR struct alt1250_s *dev,
                                FAR struct alt_container_s *reply,
                                FAR struct usock_s *usock,
                                FAR int32_t *usock_result,
-                               FAR uint64_t *usock_xid,
+                               FAR uint32_t *usock_xid,
                                FAR struct usock_ackinfo_s *ackinfo,
                                unsigned long arg)
 {
@@ -68,11 +68,11 @@ static int postproc_getsockopt(FAR struct alt1250_s *dev,
    */
 
   *usock_xid = USOCKET_XID(usock);
-  *usock_result = COMBINE_ERRCODE(*(int *)resp[0], *(int *)resp[1]);
+  *usock_result = COMBINE_ERRCODE(*(FAR int *)resp[0], *(FAR int *)resp[1]);
 
   if (*usock_result >= 0)
     {
-      *usock_result = *(int32_t *)(resp[3]);
+      *usock_result = *(FAR int32_t *)(resp[3]);
       *usock_xid = USOCKET_XID(usock);
 
       dbg_alt1250("connect result = %d\n", *usock_result);
@@ -96,6 +96,7 @@ static int postproc_getsockopt(FAR struct alt1250_s *dev,
       USOCKET_SET_STATE(usock, SOCKET_STATE_OPENED);
     }
 
+  USOCKET_SET_SELECTABLE(usock, SELECT_WRITABLE);
   usocket_commitstate(dev);
 
   return ret;
@@ -109,7 +110,7 @@ static int postproc_connect(FAR struct alt1250_s *dev,
                             FAR struct alt_container_s *reply,
                             FAR struct usock_s *usock,
                             FAR int32_t *usock_result,
-                            FAR uint64_t *usock_xid,
+                            FAR uint32_t *usock_xid,
                             FAR struct usock_ackinfo_s *ackinfo,
                             unsigned long arg)
 {
@@ -123,7 +124,9 @@ static int postproc_connect(FAR struct alt1250_s *dev,
    */
 
   *usock_xid = USOCKET_XID(usock);
-  *usock_result = COMBINE_ERRCODE(*(int *)resp[0], *(int *)resp[1]);
+  *usock_result = COMBINE_ERRCODE(*(FAR int *)resp[0], *(FAR int *)resp[1]);
+
+  dbg_alt1250("%s connect result:%d\n", __func__, *usock_result);
 
   if (*usock_result >= 0)
     {
@@ -168,11 +171,11 @@ static int send_connect_command(FAR struct alt1250_s *dev,
   USOCKET_SET_RESPONSE(usock, idx++, USOCKET_REP_ERRCODE(usock));
 
   set_container_ids(container, USOCKET_USOCKID(usock), LTE_CMDID_CONNECT);
-  set_container_argument(container, inparam, ARRAY_SZ(inparam));
+  set_container_argument(container, inparam, nitems(inparam));
   set_container_response(container, USOCKET_REP_RESPONSE(usock), idx);
   set_container_postproc(container, postproc_connect, 0);
 
-  return altdevice_send_command(dev->altfd, container, usock_result);
+  return altdevice_send_command(dev, dev->altfd, container, usock_result);
 }
 
 /****************************************************************************
@@ -188,7 +191,7 @@ int nextstep_check_connectres(FAR struct alt1250_s *dev,
 {
   int ret = REP_NO_CONTAINER;
   int32_t usock_result;
-  struct alt_container_s *container;
+  FAR struct alt_container_s *container;
 
   dbg_alt1250("%s start\n", __func__);
 
@@ -225,7 +228,7 @@ int nextstep_connect(FAR struct alt1250_s *dev,
                      FAR struct alt_container_s *reply,
                      FAR struct usock_s *usock,
                      FAR int32_t *usock_result,
-                     FAR uint64_t *usock_xid,
+                     FAR uint32_t *usock_xid,
                      FAR struct usock_ackinfo_s *ackinfo,
                      unsigned long arg)
 {
@@ -251,7 +254,7 @@ int nextstep_connect(FAR struct alt1250_s *dev,
 int usockreq_connect(FAR struct alt1250_s *dev,
                      FAR struct usrsock_request_buff_s *req,
                      FAR int32_t *usock_result,
-                     FAR uint64_t *usock_xid,
+                     FAR uint32_t *usock_xid,
                      FAR struct usock_ackinfo_s *ackinfo)
 {
   FAR struct usrsock_request_connect_s *request = &req->request.conn_req;
@@ -282,6 +285,12 @@ int usockreq_connect(FAR struct alt1250_s *dev,
       case SOCKET_STATE_CLOSING:
         dbg_alt1250("Unexpected state: %d\n", USOCKET_STATE(usock));
         *usock_result = -EBADFD;
+        ret = REP_SEND_ACK_WOFREE;
+        break;
+
+      case SOCKET_STATE_SUSPEND:
+        dbg_alt1250("This socket has suspended: %u\n", request->usockid);
+        *usock_result = -EOPNOTSUPP;
         ret = REP_SEND_ACK_WOFREE;
         break;
 

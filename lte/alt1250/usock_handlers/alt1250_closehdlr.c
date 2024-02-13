@@ -59,11 +59,11 @@ static int send_close_command(FAR struct alt1250_s *dev,
   USOCKET_SET_RESPONSE(usock, idx++, USOCKET_REP_ERRCODE(usock));
 
   set_container_ids(container, USOCKET_USOCKID(usock), LTE_CMDID_CLOSE);
-  set_container_argument(container, inparam, ARRAY_SZ(inparam));
+  set_container_argument(container, inparam, nitems(inparam));
   set_container_response(container, USOCKET_REP_RESPONSE(usock), idx);
   set_container_postproc(container, postproc_sockcommon, 0);
 
-  return altdevice_send_command(dev->altfd, container, usock_result);
+  return altdevice_send_command(dev, dev->altfd, container, usock_result);
 }
 
 /****************************************************************************
@@ -78,7 +78,7 @@ int postproc_sockcommon(FAR struct alt1250_s *dev,
                         FAR struct alt_container_s *reply,
                         FAR struct usock_s *usock,
                         FAR int32_t *usock_result,
-                        FAR uint64_t *usock_xid,
+                        FAR uint32_t *usock_xid,
                         FAR struct usock_ackinfo_s *ackinfo,
                         unsigned long arg)
 {
@@ -92,13 +92,20 @@ int postproc_sockcommon(FAR struct alt1250_s *dev,
    */
 
   *usock_xid = USOCKET_XID(usock);
-  *usock_result = COMBINE_ERRCODE(*(int *)resp[0], *(int *)resp[1]);
+  *usock_result = COMBINE_ERRCODE(*(FAR int *)resp[0], *(FAR int *)resp[1]);
 
   switch (USOCKET_REQID(usock))
     {
       case USRSOCK_REQUEST_SENDTO:
         {
           USOCKET_SET_SELECTABLE(usock, SELECT_WRITABLE);
+          usocket_commitstate(dev);
+        }
+        break;
+
+      case USRSOCK_REQUEST_LISTEN:
+        {
+          USOCKET_SET_STATE(usock, SOCKET_STATE_LISTENED);
           usocket_commitstate(dev);
         }
         break;
@@ -123,7 +130,7 @@ int postproc_sockcommon(FAR struct alt1250_s *dev,
 int usockreq_close(FAR struct alt1250_s *dev,
                    FAR struct usrsock_request_buff_s *req,
                    FAR int32_t *usock_result,
-                   FAR uint64_t *usock_xid,
+                   FAR uint32_t *usock_xid,
                    FAR struct usock_ackinfo_s *ackinfo)
 {
   FAR struct usrsock_request_close_s *request =
@@ -141,7 +148,7 @@ int usockreq_close(FAR struct alt1250_s *dev,
   if (usock == NULL)
     {
       dbg_alt1250("Failed to get socket context: %u\n",
-                     request->usockid);
+                  request->usockid);
       *usock_result = -EBADFD;
       return REP_SEND_ACK_WOFREE;
     }

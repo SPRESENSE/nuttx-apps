@@ -18,8 +18,8 @@
  *
  ****************************************************************************/
 
-#ifndef __LTE_ALT1250_USOCK_HANDLERS_ALT1250_FWUPDATE_H__
-#define __LTE_ALT1250_USOCK_HANDLERS_ALT1250_FWUPDATE_H__
+#ifndef __APPS_LTE_ALT1250_USOCK_HANDLERS_ALT1250_FWUPDATE_H
+#define __APPS_LTE_ALT1250_USOCK_HANDLERS_ALT1250_FWUPDATE_H
 
 /****************************************************************************
  * Included Files
@@ -56,4 +56,4 @@ struct update_info_s
   char img_pert[LTE_IMAGE_PERT_SIZE];
 };
 
-#endif  /* __LTE_ALT1250_USOCK_HANDLERS_ALT1250_FWUPDATE_H__ */
+#endif  /* __APPS_LTE_ALT1250_USOCK_HANDLERS_ALT1250_FWUPDATE_H */

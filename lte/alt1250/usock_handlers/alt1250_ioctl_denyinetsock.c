@@ -45,7 +45,7 @@
 int usockreq_ioctl_denyinetsock(FAR struct alt1250_s *dev,
                                 FAR struct usrsock_request_buff_s *req,
                                 FAR int32_t *usock_result,
-                                FAR uint64_t *usock_xid,
+                                FAR uint32_t *usock_xid,
                                 FAR struct usock_ackinfo_s *ackinfo)
 {
   uint8_t sock_type = req->req_ioctl.sock_type;

@@ -57,7 +57,6 @@
 #include <arpa/inet.h>
 
 #include <nuttx/compiler.h>
-#include <nuttx/symtab.h>
 #include "netutils/thttpd.h"
 
 #include "config.h"
@@ -129,10 +128,10 @@ static void handle_linger(struct connect_s *conn, struct timeval *tv);
 static void finish_connection(struct connect_s *conn, struct timeval *tv);
 static void clear_connection(struct connect_s *conn, struct timeval *tv);
 static void really_clear_connection(struct connect_s *conn);
-static void idle(ClientData client_data, struct timeval *nowP);
+static void idle(ClientData client_data, struct timeval *nowp);
 static void linger_clear_connection(ClientData client_data,
-                                    struct timeval *nowP);
-static void occasional(ClientData client_data, struct timeval *nowP);
+                                    struct timeval *nowp);
+static void occasional(ClientData client_data, struct timeval *nowp);
 
 /****************************************************************************
  * Private Functions
@@ -152,7 +151,7 @@ static void shut_down(void)
       if (connects[cnum].hc != NULL)
         {
           httpd_destroy_conn(connects[cnum].hc);
-          httpd_free((void *)connects[cnum].hc);
+          httpd_free(connects[cnum].hc);
           connects[cnum].hc = NULL;
         }
     }
@@ -170,7 +169,7 @@ static void shut_down(void)
     }
 
   tmr_destroy();
-  httpd_free((void *)connects);
+  httpd_free(connects);
 }
 
 static int handle_newconnect(FAR struct timeval *tv, int listen_fd)
@@ -396,7 +395,6 @@ errout_with_400:
 
 errout_with_connection:
   finish_connection(conn, tv);
-  return;
 }
 
 static inline int read_buffer(struct connect_s *conn)
@@ -490,7 +488,6 @@ static void handle_send(struct connect_s *conn, struct timeval *tv)
 errout_clear_connection:
   ninfo("Clear connection\n");
   clear_connection(conn, tv);
-  return;
 }
 
 static void handle_linger(struct connect_s *conn, struct timeval *tv)
@@ -597,7 +594,7 @@ static void really_clear_connection(struct connect_s *conn)
   free_connections  = conn;
 }
 
-static void idle(ClientData client_data, struct timeval *nowP)
+static void idle(ClientData client_data, struct timeval *nowp)
 {
   int cnum;
   struct connect_s *conn;
@@ -608,24 +605,24 @@ static void idle(ClientData client_data, struct timeval *nowP)
       switch (conn->conn_state)
         {
         case CNST_READING:
-          if (nowP->tv_sec - conn->active_at >=
+          if (nowp->tv_sec - conn->active_at >=
               CONFIG_THTTPD_IDLE_READ_LIMIT_SEC)
             {
               nerr("ERROR: %s connection timed out reading\n",
                    httpd_ntoa(&conn->hc->client_addr));
               httpd_send_err(conn->hc, 408, httpd_err408title, "",
                              httpd_err408form, "");
-              finish_connection(conn, nowP);
+              finish_connection(conn, nowp);
             }
           break;
 
         case CNST_SENDING:
-          if (nowP->tv_sec - conn->active_at >=
+          if (nowp->tv_sec - conn->active_at >=
               CONFIG_THTTPD_IDLE_SEND_LIMIT_SEC)
             {
               nerr("ERROR: %s connection timed out sending\n",
                    httpd_ntoa(&conn->hc->client_addr));
-              clear_connection(conn, nowP);
+              clear_connection(conn, nowp);
             }
           break;
         }
@@ -633,17 +630,17 @@ static void idle(ClientData client_data, struct timeval *nowP)
 }
 
 static void linger_clear_connection(ClientData client_data,
-                                    struct timeval *nowP)
+                                    struct timeval *nowp)
 {
   struct connect_s *conn;
 
   ninfo("Clear connection\n");
-  conn = (struct connect_s *) client_data.p;
+  conn = (struct connect_s *)client_data.p;
   conn->linger_timer = NULL;
   really_clear_connection(conn);
 }
 
-static void occasional(ClientData client_data, struct timeval *nowP)
+static void occasional(ClientData client_data, struct timeval *nowp)
 {
   tmr_cleanup();
 }

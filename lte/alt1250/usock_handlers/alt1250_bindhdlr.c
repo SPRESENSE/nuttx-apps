@@ -61,11 +61,11 @@ static int send_bind_command(FAR struct alt1250_s *dev,
   USOCKET_SET_RESPONSE(usock, idx++, USOCKET_REP_ERRCODE(usock));
 
   set_container_ids(container, USOCKET_USOCKID(usock), LTE_CMDID_BIND);
-  set_container_argument(container, inparam, ARRAY_SZ(inparam));
+  set_container_argument(container, inparam, nitems(inparam));
   set_container_response(container, USOCKET_REP_RESPONSE(usock), idx);
   set_container_postproc(container, postproc_sockcommon, 0);
 
-  return altdevice_send_command(dev->altfd, container, usock_result);
+  return altdevice_send_command(dev, dev->altfd, container, usock_result);
 }
 
 /****************************************************************************
@@ -80,7 +80,7 @@ int nextstep_bind(FAR struct alt1250_s *dev,
                   FAR struct alt_container_s *reply,
                   FAR struct usock_s *usock,
                   FAR int32_t *usock_result,
-                  FAR uint64_t *usock_xid,
+                  FAR uint32_t *usock_xid,
                   FAR struct usock_ackinfo_s *ackinfo,
                   unsigned long arg)
 {
@@ -96,7 +96,7 @@ int nextstep_bind(FAR struct alt1250_s *dev,
 int usockreq_bind(FAR struct alt1250_s *dev,
                   FAR struct usrsock_request_buff_s *req,
                   FAR int32_t *usock_result,
-                  FAR uint64_t *usock_xid,
+                  FAR uint32_t *usock_xid,
                   FAR struct usock_ackinfo_s *ackinfo)
 {
   FAR struct usrsock_request_bind_s *request = &req->request.bind_req;
@@ -127,6 +127,12 @@ int usockreq_bind(FAR struct alt1250_s *dev,
       case SOCKET_STATE_CLOSING:
         dbg_alt1250("Unexpected state: %d\n", USOCKET_STATE(usock));
         *usock_result = -EBADFD;
+        ret = REP_SEND_ACK_WOFREE;
+        break;
+
+      case SOCKET_STATE_SUSPEND:
+        dbg_alt1250("This socket has suspended: %u\n", request->usockid);
+        *usock_result = -EOPNOTSUPP;
         ret = REP_SEND_ACK_WOFREE;
         break;
 

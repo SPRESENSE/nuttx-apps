@@ -79,7 +79,7 @@ extern "C"
  *
  */
 
-int lte_log_collect(char output_fname[], size_t len);
+int lte_log_collect(FAR char *output_fname, size_t len);
 
 /**
  * Get a list of logs stored in the LTE modem storage.
@@ -119,7 +119,7 @@ int lte_log_getlist(size_t listsize, size_t fnamelen,
  *
  */
 
-int lte_log_open(const char *filename);
+int lte_log_open(FAR const char *filename);
 
 /**
  * Close a log file descriptor.
@@ -153,7 +153,7 @@ int lte_log_close(int fd);
  *
  */
 
-ssize_t lte_log_read(int fd, void *buf, size_t len);
+ssize_t lte_log_read(int fd, FAR void *buf, size_t len);
 
 /**
  * Remove a file on LTE modem.
@@ -169,7 +169,7 @@ ssize_t lte_log_read(int fd, void *buf, size_t len);
  *
  */
 
-int lte_log_remove(const char *filename);
+int lte_log_remove(FAR const char *filename);
 
 /**
  * Set the file read offset.

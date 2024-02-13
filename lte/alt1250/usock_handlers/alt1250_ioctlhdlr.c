@@ -44,7 +44,7 @@
 int usockreq_ioctl(FAR struct alt1250_s *dev,
                    FAR struct usrsock_request_buff_s *req,
                    FAR int32_t *usock_result,
-                   FAR uint64_t *usock_xid,
+                   FAR uint32_t *usock_xid,
                    FAR struct usock_ackinfo_s *ackinfo)
 {
   FAR struct usrsock_request_ioctl_s *request =
@@ -61,9 +61,13 @@ int usockreq_ioctl(FAR struct alt1250_s *dev,
   usock = usocket_search(dev, request->usockid);
   if (usock)
     {
+      USOCKET_SET_REQUEST(usock, request->head.reqid, request->head.xid);
+
       switch (request->cmd)
         {
           case FIONBIO:
+          case SIOCGIFFLAGS:
+
             /* ALT1250 doesn't use this command. Only return OK. */
 
             *usock_result = OK;
@@ -81,6 +85,15 @@ int usockreq_ioctl(FAR struct alt1250_s *dev,
           case SIOCSMSGREFID:
           case SIOCSMSSSCA:
             ioctl_subhdlr = usockreq_ioctl_sms;
+            break;
+          case SIOCGETCONTEXT:
+          case SIOCSETCONTEXT:
+#ifdef CONFIG_LTE_ALT1250_ENABLE_HIBERNATION_MODE
+            ioctl_subhdlr = usockreq_ioctl_sockctx;
+#else
+            *usock_result = -ENOTTY;
+#endif
+            break;
           default:
             *usock_result = -EINVAL;
             break;

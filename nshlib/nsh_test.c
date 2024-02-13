@@ -74,9 +74,12 @@
  * Name: binaryexpression
  ****************************************************************************/
 
-static inline int binaryexpression(FAR struct nsh_vtbl_s *vtbl, char **argv)
+static inline int binaryexpression(FAR struct nsh_vtbl_s *vtbl,
+                                   FAR char **argv)
 {
-  char *endptr;
+  UNUSED(vtbl);
+
+  FAR char *endptr;
   long integer1;
   long integer2;
 
@@ -173,11 +176,12 @@ static inline int binaryexpression(FAR struct nsh_vtbl_s *vtbl, char **argv)
  * Name: unaryexpression
  ****************************************************************************/
 
-static inline int unaryexpression(FAR struct nsh_vtbl_s *vtbl, char **argv)
+static inline int unaryexpression(FAR struct nsh_vtbl_s *vtbl,
+                                  FAR char **argv)
 {
   struct stat buf;
-  char *fullpath;
-  int   ret;
+  FAR char *fullpath;
+  int ret = TEST_ERROR;
 
   /* -n STRING */
 
@@ -202,21 +206,18 @@ static inline int unaryexpression(FAR struct nsh_vtbl_s *vtbl, char **argv)
    */
 
   fullpath = nsh_getfullpath(vtbl, argv[1]);
-  if (!fullpath)
+  if (fullpath)
     {
-      return TEST_FALSE;
+      ret = stat(fullpath, &buf);
+      nsh_freefullpath(fullpath);
     }
-
-  ret = stat(fullpath, &buf);
-  nsh_freefullpath(fullpath);
 
   if (ret != 0)
     {
-      /* The file does not exist (or another error occurred) -- return
-       * FALSE.
+      /* The file does not exist (or another error occurred)
        */
 
-      return TEST_FALSE;
+      memset(&buf, 0, sizeof(struct stat));
     }
 
   /* -b FILE */
@@ -252,7 +253,7 @@ static inline int unaryexpression(FAR struct nsh_vtbl_s *vtbl, char **argv)
     {
       /* Return true if the file exists */
 
-      return TEST_TRUE;
+      return ret == 0 ? TEST_TRUE : TEST_FALSE;
     }
 
   /* -f FILE */
@@ -302,7 +303,7 @@ static inline int unaryexpression(FAR struct nsh_vtbl_s *vtbl, char **argv)
  * Name: expression
  ****************************************************************************/
 
-static int expression(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
+static int expression(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv)
 {
   int value;
   int i = 0;
@@ -329,14 +330,20 @@ static int expression(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
           goto errout_syntax;
         }
 
-      i += 2;
       value = unaryexpression(vtbl, argv);
+      if (value == TEST_ERROR)
+        {
+          goto do_binary;
+        }
+
+      i += 2;
     }
 
   /* Check for binary operations on simple, typed arguments */
 
   else
     {
+do_binary:
       if (argc < 3)
         {
           goto errout_syntax;
@@ -407,7 +414,7 @@ errout_syntax:
  * Name: cmd_test
  ****************************************************************************/
 
-int cmd_test(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
+int cmd_test(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv)
 {
   return expression(vtbl, argc - 1, &argv[1]);
 }
@@ -416,7 +423,7 @@ int cmd_test(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
  * Name: cmd_lbracket
  ****************************************************************************/
 
-int cmd_lbracket(FAR struct nsh_vtbl_s *vtbl, int argc, char **argv)
+int cmd_lbracket(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv)
 {
   /* Verify that the closing right bracket is the last thing on the command
    * line.

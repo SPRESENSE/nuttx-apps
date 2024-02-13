@@ -56,7 +56,7 @@ static int postproc_recvfrom(FAR struct alt1250_s *dev,
                              FAR struct alt_container_s *reply,
                              FAR struct usock_s *usock,
                              FAR int32_t *usock_result,
-                             FAR uint64_t *usock_xid,
+                             FAR uint32_t *usock_xid,
                              FAR struct usock_ackinfo_s *ackinfo,
                              unsigned long arg)
 {
@@ -138,11 +138,11 @@ static int send_recvfrom_command(FAR struct alt1250_s *dev,
   USOCKET_SET_RESPONSE(usock, idx++, dev->rx_buff);
 
   set_container_ids(container, USOCKET_USOCKID(usock), LTE_CMDID_RECVFROM);
-  set_container_argument(container, inparam, ARRAY_SZ(inparam));
+  set_container_argument(container, inparam, nitems(inparam));
   set_container_response(container, USOCKET_REP_RESPONSE(usock), idx++);
   set_container_postproc(container, postproc_recvfrom, 0);
 
-  return altdevice_send_command(dev->altfd, container, usock_result);
+  return altdevice_send_command(dev, dev->altfd, container, usock_result);
 }
 
 /****************************************************************************
@@ -156,7 +156,7 @@ static int send_recvfrom_command(FAR struct alt1250_s *dev,
 int usockreq_recvfrom(FAR struct alt1250_s *dev,
                           FAR struct usrsock_request_buff_s *req,
                           FAR int32_t *usock_result,
-                          FAR uint64_t *usock_xid,
+                          FAR uint32_t *usock_xid,
                           FAR struct usock_ackinfo_s *ackinfo)
 {
   FAR struct usrsock_request_recvfrom_s *request = &req->request.recv_req;
@@ -189,6 +189,14 @@ int usockreq_recvfrom(FAR struct alt1250_s *dev,
     }
   else
     {
+      if (USOCKET_STATE(usock) == SOCKET_STATE_SUSPEND)
+        {
+          dbg_alt1250("This socket has suspended: %u\n",
+                      request->usockid);
+          *usock_result = -EOPNOTSUPP;
+          return REP_SEND_ACK_WOFREE;
+        }
+
       /* Check if this socket is connected. */
 
       if ((SOCK_STREAM == USOCKET_TYPE(usock)) &&

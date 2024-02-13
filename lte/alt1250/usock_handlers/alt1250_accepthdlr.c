@@ -45,7 +45,7 @@ static int postproc_accepterr(FAR struct alt1250_s *dev,
                               FAR struct alt_container_s *reply,
                               FAR struct usock_s *usock,
                               FAR int32_t *usock_result,
-                              FAR uint64_t *usock_xid,
+                              FAR uint32_t *usock_xid,
                               FAR struct usock_ackinfo_s *ackinfo,
                               unsigned long arg)
 {
@@ -86,11 +86,11 @@ static int send_close_command(FAR struct alt1250_s *dev,
   USOCKET_SET_RESPONSE(usock, idx++, USOCKET_REP_ERRCODE(usock));
 
   set_container_ids(container, USOCKET_USOCKID(usock), LTE_CMDID_CLOSE);
-  set_container_argument(container, inparam, ARRAY_SZ(inparam));
+  set_container_argument(container, inparam, nitems(inparam));
   set_container_response(container, USOCKET_REP_RESPONSE(usock), idx);
   set_container_postproc(container, postproc_accepterr, 0);
 
-  return altdevice_send_command(dev->altfd, container, usock_result);
+  return altdevice_send_command(dev, dev->altfd, container, usock_result);
 }
 
 /****************************************************************************
@@ -101,7 +101,7 @@ static int postproc_accept(FAR struct alt1250_s *dev,
                            FAR struct alt_container_s *reply,
                            FAR struct usock_s *usock,
                            FAR int32_t *usock_result,
-                           FAR uint64_t *usock_xid,
+                           FAR uint32_t *usock_xid,
                            FAR struct usock_ackinfo_s *ackinfo,
                            unsigned long arg)
 {
@@ -118,33 +118,51 @@ static int postproc_accept(FAR struct alt1250_s *dev,
    * resp[3]: accepted address
    */
 
+  *usock_xid = USOCKET_XID(usock);
+
   altsock_res = COMBINE_ERRCODE(*(int *)(resp[0]), *(int *)(resp[1]));
   if (altsock_res >= 0)
     {
       USOCKET_SET_SELECTABLE(usock, SELECT_READABLE);
 
-      accept_sock = usocket_alloc(dev, USOCKET_TYPE(usock));
-      if (!accept_sock)
+      dbg_alt1250("allocate ALT1250 socket : %d\n", altsock_res);
+
+      if (IS_VALID_ALTSOCKID(altsock_res))
         {
-          ret = send_close_command(dev, reply, usock, altsock_res,
-                                   usock_result);
-          *usock_xid = USOCKET_XID(usock);
+          accept_sock = usocket_alloc(dev, USOCKET_TYPE(usock));
+          if (accept_sock)
+            {
+              USOCKET_SET_ALTSOCKID(accept_sock, altsock_res);
+              USOCKET_SET_STATE(accept_sock, SOCKET_STATE_CONNECTED);
+
+              *usock_result = sizeof(uint16_t);
+
+              ackinfo->valuelen = MIN(USOCKET_REQADDRLEN(usock),
+                                      *(uint16_t *)(resp[2]));
+              ackinfo->valuelen_nontrunc = *(uint16_t *)(resp[2]);
+              ackinfo->value_ptr = resp[3];
+              ackinfo->buf_ptr =
+                (FAR uint8_t *)&USOCKET_USOCKID(accept_sock);
+
+              ret = REP_SEND_DACK;
+            }
+          else
+            {
+              dbg_alt1250("All sockets on the ALT1250 daemon are in use.\n");
+              *usock_result = -EBUSY;
+            }
         }
       else
         {
-          USOCKET_SET_ALTSOCKID(accept_sock, altsock_res);
-          USOCKET_SET_STATE(accept_sock, SOCKET_STATE_CONNECTED);
+          dbg_alt1250("ALT1250 socket is not within the valid range : %d\n",
+                      altsock_res);
+          *usock_result = -EBADFD;
+        }
 
-          *usock_result = sizeof(uint16_t);
-          *usock_xid = USOCKET_XID(usock);
-
-          ackinfo->valuelen = MIN(USOCKET_REQADDRLEN(usock),
-                                  *(uint16_t *)(resp[2]));
-          ackinfo->valuelen_nontrunc = *(uint16_t *)(resp[2]);
-          ackinfo->value_ptr = resp[3];
-          ackinfo->buf_ptr = (FAR uint8_t *)&USOCKET_USOCKID(accept_sock);
-
-          ret = REP_SEND_DACK;
+      if (*usock_result < 0)
+        {
+          ret = send_close_command(dev, reply, usock, altsock_res,
+                                   usock_result);
         }
 
       usocket_commitstate(dev);
@@ -152,7 +170,6 @@ static int postproc_accept(FAR struct alt1250_s *dev,
   else
     {
       *usock_result = altsock_res;
-      *usock_xid = USOCKET_XID(usock);
     }
 
   return ret;
@@ -184,11 +201,11 @@ static int send_accept_command(FAR struct alt1250_s *dev,
   USOCKET_SET_RESPONSE(usock, idx++, USOCKET_REP_ADDR(usock));
 
   set_container_ids(container, USOCKET_USOCKID(usock), LTE_CMDID_ACCEPT);
-  set_container_argument(container, inparam, ARRAY_SZ(inparam));
+  set_container_argument(container, inparam, nitems(inparam));
   set_container_response(container, USOCKET_REP_RESPONSE(usock), idx);
   set_container_postproc(container, postproc_accept, 0);
 
-  return altdevice_send_command(dev->altfd, container, usock_result);
+  return altdevice_send_command(dev, dev->altfd, container, usock_result);
 }
 
 /****************************************************************************
@@ -202,7 +219,7 @@ static int send_accept_command(FAR struct alt1250_s *dev,
 int usockreq_accept(FAR struct alt1250_s *dev,
                     FAR struct usrsock_request_buff_s *req,
                     FAR int32_t *usock_result,
-                    FAR uint64_t *usock_xid,
+                    FAR uint32_t *usock_xid,
                     FAR struct usock_ackinfo_s *ackinfo)
 {
   FAR struct usrsock_request_accept_s *request = &req->request.accept_req;
@@ -227,6 +244,14 @@ int usockreq_accept(FAR struct alt1250_s *dev,
 
   USOCKET_SET_REQUEST(usock, request->head.reqid, request->head.xid);
   USOCKET_SET_REQADDRLEN(usock, request->max_addrlen);
+
+  if (USOCKET_STATE(usock) == SOCKET_STATE_SUSPEND)
+    {
+      dbg_alt1250("This socket has suspended: %u\n",
+                  request->usockid);
+      *usock_result = -EOPNOTSUPP;
+      return REP_SEND_ACK_WOFREE;
+    }
 
   container = container_alloc();
   if (container == NULL)

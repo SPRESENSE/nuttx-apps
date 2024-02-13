@@ -58,9 +58,9 @@
  ****************************************************************************/
 
 static int handle_replypkt(FAR struct alt1250_s *dev,
-  FAR struct alt_container_s *reply,
-  FAR int32_t *usock_result, uint64_t *usock_xid,
-  FAR struct usock_ackinfo_s *ackinfo)
+                           FAR struct alt_container_s *reply,
+                           FAR int32_t *usock_result, uint32_t *usock_xid,
+                           FAR struct usock_ackinfo_s *ackinfo)
 {
   int ret;
   FAR struct usock_s *usock;
@@ -88,11 +88,11 @@ static int handle_replypkt(FAR struct alt1250_s *dev,
  ****************************************************************************/
 
 static int perform_alt1250_reply(FAR struct alt1250_s *dev,
-    FAR struct alt_container_s *container)
+                                 FAR struct alt_container_s *container)
 {
   int ret = REP_NO_ACK;
   int32_t ack_result = OK;
-  uint64_t ack_xid = 0;
+  uint32_t ack_xid = 0;
   struct usock_ackinfo_s ackinfo;
 
   ret = handle_replypkt(dev, container, &ack_result, &ack_xid, &ackinfo);
@@ -137,7 +137,8 @@ static int handle_intentional_reset(FAR struct alt1250_s *dev)
 {
   if (dev->lwm2m_apply_xid >= 0)
     {
-      usockif_sendack(dev->usockfd, 0, (uint64_t)dev->lwm2m_apply_xid, false);
+      usockif_sendack(dev->usockfd, 0, 0, (uint32_t)dev->lwm2m_apply_xid,
+                      false);
       dev->lwm2m_apply_xid = -1;
     }
 
@@ -231,8 +232,7 @@ static void perform_alt1250_apistopevt(FAR struct alt1250_s *dev)
 
   /* When entering Suspend mode, all Sockets must be closed. */
 
-  ret = alt1250_count_opened_sockets(dev);
-
+  ret = usocket_active_sockets(dev);
   if (ret < 0)
     {
       dbg_alt1250("Failed to count opened sockets.\n");
@@ -298,14 +298,25 @@ exit:
 }
 
 /****************************************************************************
+ * Name: perform_alt1250_restartevt
+ ****************************************************************************/
+
+static void perform_alt1250_restartevt(FAR struct alt1250_s *dev)
+{
+  /* All LTE API/Socket requests must be available. */
+
+  alt1250_set_api_enable(dev, true);
+
+  altdevice_powerresponse(dev->altfd, LTE_CMDID_RESTARTAPI, OK);
+}
+
+/****************************************************************************
  * Name: perform_alt1250_suspendevt
  ****************************************************************************/
 
 static void perform_alt1250_suspendevt(FAR struct alt1250_s *dev)
 {
-  /* TODO: Register Select to be notified by ALT1250 when an event is
-   * received during Sleep for a Socket in Suspend.
-   */
+  restart_select(dev, true);
 
   /* Notify the application of the context data required for resume. */
 
@@ -396,6 +407,12 @@ int perform_alt1250events(FAR struct alt1250_s *dev)
       /* Handling API stop request */
 
       perform_alt1250_apistopevt(dev);
+    }
+  else if (bitmap & ALT1250_EVTBIT_RESTARTAPI)
+    {
+      /* Handling API restart request */
+
+      perform_alt1250_restartevt(dev);
     }
   else if (bitmap & ALT1250_EVTBIT_SUSPEND)
     {

@@ -18,8 +18,8 @@
  *
  ****************************************************************************/
 
-#ifndef __LTE_ALT1250_ALT1250_NETDEV_H__
-#define __LTE_ALT1250_ALT1250_NETDEV_H__
+#ifndef __APPS_LTE_ALT1250_ALT1250_NETDEV_H
+#define __APPS_LTE_ALT1250_ALT1250_NETDEV_H
 
 /****************************************************************************
  * Included Files
@@ -38,4 +38,4 @@ void alt1250_netdev_unregister(FAR struct alt1250_s *dev);
 void alt1250_netdev_ifdown(FAR struct alt1250_s *dev);
 void alt1250_netdev_ifup(FAR struct alt1250_s *dev, FAR lte_pdn_t *pdn);
 
-#endif  /* __LTE_ALT1250_ALT1250_NETDEV_H__ */
+#endif  /* __APPS_LTE_ALT1250_ALT1250_NETDEV_H */

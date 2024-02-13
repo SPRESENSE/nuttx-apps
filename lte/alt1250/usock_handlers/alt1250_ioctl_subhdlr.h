@@ -18,8 +18,8 @@
  *
  ****************************************************************************/
 
-#ifndef __LTE_ALT1250_USOCK_HANDLERS_ALT1250_IOCTL_SUBHDLR_H__
-#define __LTE_ALT1250_USOCK_HANDLERS_ALT1250_IOCTL_SUBHDLR_H__
+#ifndef __APPS_LTE_ALT1250_USOCK_HANDLERS_ALT1250_IOCTL_SUBHDLR_H
+#define __APPS_LTE_ALT1250_USOCK_HANDLERS_ALT1250_IOCTL_SUBHDLR_H
 
 /****************************************************************************
  * Included Files
@@ -38,49 +38,49 @@
 int usockreq_ioctl_ltecmd(FAR struct alt1250_s *dev,
                           FAR struct usrsock_request_buff_s *req,
                           FAR int32_t *usock_result,
-                          FAR uint64_t *usock_xid,
+                          FAR uint32_t *usock_xid,
                           FAR struct usock_ackinfo_s *ackinfo);
 
 int usockreq_ioctl_ifreq(FAR struct alt1250_s *dev,
                          FAR struct usrsock_request_buff_s *req,
                          FAR int32_t *usock_result,
-                         FAR uint64_t *usock_xid,
+                         FAR uint32_t *usock_xid,
                          FAR struct usock_ackinfo_s *ackinfo);
 
 int usockreq_ioctl_normal(FAR struct alt1250_s *dev,
                           FAR struct usrsock_request_buff_s *req,
                           FAR int32_t *usock_result,
-                          FAR uint64_t *usock_xid,
+                          FAR uint32_t *usock_xid,
                           FAR struct usock_ackinfo_s *ackinfo);
 
 int usockreq_ioctl_event(FAR struct alt1250_s *dev,
                          FAR struct usrsock_request_buff_s *req,
                          FAR int32_t *usock_result,
-                         FAR uint64_t *usock_xid,
+                         FAR uint32_t *usock_xid,
                          FAR struct usock_ackinfo_s *ackinfo);
 
 int usockreq_ioctl_other(FAR struct alt1250_s *dev,
                          FAR struct usrsock_request_buff_s *req,
                          FAR int32_t *usock_result,
-                         FAR uint64_t *usock_xid,
+                         FAR uint32_t *usock_xid,
                          FAR struct usock_ackinfo_s *ackinfo);
 
 int usockreq_ioctl_power(FAR struct alt1250_s *dev,
                          FAR struct usrsock_request_buff_s *req,
                          FAR int32_t *usock_result,
-                         FAR uint64_t *usock_xid,
+                         FAR uint32_t *usock_xid,
                          FAR struct usock_ackinfo_s *ackinfo);
 
 int usockreq_ioctl_fwupdate(FAR struct alt1250_s *dev,
                             FAR struct usrsock_request_buff_s *req,
                             FAR int32_t *usock_result,
-                            FAR uint64_t *usock_xid,
+                            FAR uint32_t *usock_xid,
                             FAR struct usock_ackinfo_s *ackinfo);
 
 int usockreq_ioctl_denyinetsock(FAR struct alt1250_s *dev,
                                 FAR struct usrsock_request_buff_s *req,
                                 FAR int32_t *usock_result,
-                                FAR uint64_t *usock_xid,
+                                FAR uint32_t *usock_xid,
                                 FAR struct usock_ackinfo_s *ackinfo);
 
 int send_m2mnotice_command(uint32_t cmdid,
@@ -93,7 +93,14 @@ int send_m2mnotice_command(uint32_t cmdid,
 int usockreq_ioctl_lwm2m(FAR struct alt1250_s *dev,
                          FAR struct usrsock_request_buff_s *req,
                          FAR int32_t *usock_result,
-                         FAR uint64_t *usock_xid,
+                         FAR uint32_t *usock_xid,
                          FAR struct usock_ackinfo_s *ackinfo);
 
-#endif  /* __LTE_ALT1250_USOCK_HANDLERS_ALT1250_IOCTL_SUBHDLR_H__ */
+#ifdef CONFIG_LTE_ALT1250_ENABLE_HIBERNATION_MODE
+int usockreq_ioctl_sockctx(FAR struct alt1250_s *dev,
+                           FAR struct usrsock_request_buff_s *req,
+                           FAR int32_t *usock_result,
+                           FAR uint32_t *usock_xid,
+                           FAR struct usock_ackinfo_s *ackinfo);
+#endif
+#endif  /* __APPS_LTE_ALT1250_USOCK_HANDLERS_ALT1250_IOCTL_SUBHDLR_H */

@@ -18,18 +18,21 @@
  *
  ****************************************************************************/
 
-#ifndef __LTE_ALT1250_ALT1250_USOCKIF_H__
-#define __LTE_ALT1250_ALT1250_USOCKIF_H__
+#ifndef __APPS_LTE_ALT1250_ALT1250_USOCKIF_H
+#define __APPS_LTE_ALT1250_ALT1250_USOCKIF_H
 
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
 #include <stdint.h>
+#include <net/if.h>
+
 #include <nuttx/compiler.h>
 #include <nuttx/net/usrsock.h>
 
 #include <nuttx/wireless/lte/lte_ioctl.h>
+#include <nuttx/net/net.h>
 
 #define DEV_USRSOCK  "/dev/usrsock"
 
@@ -54,6 +57,12 @@
 #define usockif_sendrxready(fff, iii)  \
           usockif_sendevent((fff), (iii), USRSOCK_EVENT_RECVFROM_AVAIL)
 
+#define usockif_sendconnected(fff, iii)  \
+          usockif_sendevent((fff), (iii), USRSOCK_EVENT_CONNECTED)
+
+#define usockif_sendlistening(fff, iii)  \
+          usockif_sendevent((fff), (iii), USRSOCK_EVENT_LISTENING)
+
 /****************************************************************************
  * Public Data Type
  ****************************************************************************/
@@ -75,6 +84,7 @@ union usrsock_requests_u
   struct usrsock_request_getsockname_s name_req;
   struct usrsock_request_getpeername_s pname_req;
   struct usrsock_request_ioctl_s       ioctl_req;
+  struct usrsock_request_shutdown_s    shutdown_req;
 };
 #define USOCK_HDR_SIZE sizeof(struct usrsock_request_common_s)
 
@@ -84,6 +94,7 @@ union usrsock_request_ioctl_u
   struct ifreq ifreq;
   uint8_t sock_type;
   struct lte_smsreq_s smsreq;
+  struct socket_context_s sctxreq;
 };
 
 struct usrsock_request_buff_s
@@ -117,10 +128,11 @@ int usockif_readreqsendbuf(int fd, FAR uint8_t *sendbuf, size_t sz);
 int usockif_readreqoption(int fd, FAR uint8_t *option, size_t sz);
 
 void usockif_discard(int fd, size_t sz);
-int usockif_sendack(int fd, int32_t usock_result, uint64_t usock_xid,
-                    bool inprogress);
-int usockif_senddataack(int fd, int32_t usock_result, uint64_t usock_xid,
+int usockif_sendack(int fd, uint16_t events, int32_t usock_result,
+                    uint32_t usock_xid, bool inprogress);
+int usockif_senddataack(int fd, uint16_t events, int32_t usock_result,
+                        uint32_t usock_xid,
                         FAR struct usock_ackinfo_s *ackinfo);
 int usockif_sendevent(int fd, int usockid, int event);
 
-#endif  /* __LTE_ALT1250_ALT1250_USOCKIF_H__ */
+#endif  /* __APPS_LTE_ALT1250_ALT1250_USOCKIF_H */

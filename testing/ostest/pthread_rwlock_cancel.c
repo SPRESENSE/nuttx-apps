@@ -22,9 +22,12 @@
  * Included Files
  ****************************************************************************/
 
-#include <pthread.h>
-#include <stdio.h>
+#include <assert.h>
 #include <errno.h>
+#include <pthread.h>
+#include <sched.h>
+#include <stdio.h>
+#include <unistd.h>
 
 /****************************************************************************
  * Private Types
@@ -40,9 +43,9 @@ struct sync_s
  * Private Functions
  ****************************************************************************/
 
-static void * timeout_thread1(FAR void * data)
+static FAR void *timeout_thread1(FAR void *data)
 {
-  FAR struct sync_s * sync = (FAR struct sync_s *) data;
+  FAR struct sync_s *sync = (FAR struct sync_s *)data;
   struct timespec time;
   int status;
 
@@ -56,15 +59,16 @@ static void * timeout_thread1(FAR void * data)
         {
           printf("pthread_rwlock_cancel: "
                  "ERROR Acquired held write_lock. Status: %d\n", status);
+          ASSERT(false);
         }
     }
 
   return NULL;
 }
 
-static void * timeout_thread2(FAR void * data)
+static FAR void *timeout_thread2(FAR void *data)
 {
-  FAR struct sync_s * sync = (FAR struct sync_s *) data;
+  FAR struct sync_s *sync = (FAR struct sync_s *)data;
   struct timespec time;
   int status;
 
@@ -77,7 +81,8 @@ static void * timeout_thread2(FAR void * data)
       if (status != 0)
         {
           printf("pthread_rwlock_cancel: "
-                 "Failed to acquire read_lock. Status: %d\n", status);
+                 "ERROR Failed to acquire read_lock. Status: %d\n", status);
+          ASSERT(false);
         }
 
       sched_yield(); /* Not a cancellation point. */
@@ -88,7 +93,9 @@ static void * timeout_thread2(FAR void * data)
           if (status != 0)
             {
               printf("pthread_rwlock_cancel: "
-                     "Failed to release read_lock. Status: %d\n", status);
+                     "ERROR Failed to release read_lock. Status: %d\n",
+                     status);
+              ASSERT(false);
             }
         }
 
@@ -101,6 +108,7 @@ static void * timeout_thread2(FAR void * data)
           printf("pthread_rwlock_cancel: "
                  "ERROR Acquired held read_lock for writing."
                  " Status: %d\n", status);
+          ASSERT(false);
         }
     }
 
@@ -122,6 +130,7 @@ static void test_timeout(void)
     {
       printf("pthread_rwlock_cancel: "
              "ERROR pthread_rwlock_init(read_lock), status=%d\n", status);
+      ASSERT(false);
     }
 
   status = pthread_rwlock_init(&write_lock, NULL);
@@ -129,6 +138,7 @@ static void test_timeout(void)
     {
       printf("pthread_rwlock_cancel: "
              "ERROR pthread_rwlock_init(write_lock), status=%d\n", status);
+      ASSERT(false);
     }
 
   status = pthread_rwlock_rdlock(&read_lock);
@@ -136,6 +146,7 @@ static void test_timeout(void)
     {
       printf("pthread_rwlock_cancel: "
              "ERROR pthread_rwlock_rdlock, status=%d\n", status);
+      ASSERT(false);
     }
 
   status = pthread_rwlock_wrlock(&write_lock);
@@ -143,6 +154,7 @@ static void test_timeout(void)
     {
       printf("pthread_rwlock_cancel: "
              "ERROR pthread_rwlock_wrlock, status=%d\n", status);
+      ASSERT(false);
     }
 
   sync.read_lock = &read_lock;
@@ -153,6 +165,7 @@ static void test_timeout(void)
     {
       printf("pthread_rwlock_cancel: "
              "ERROR pthread_create, status=%d\n", status);
+      ASSERT(false);
     }
 
   status = pthread_create(&thread2, NULL, timeout_thread2, &sync);
@@ -160,6 +173,7 @@ static void test_timeout(void)
     {
       printf("pthread_rwlock_cancel: "
              "ERROR pthread_create, status=%d\n", status);
+      ASSERT(false);
     }
 
   for (i = 0; i < 10; i++)
@@ -172,6 +186,7 @@ static void test_timeout(void)
     {
       printf("pthread_rwlock_cancel: "
              "ERROR pthread_cancel, status=%d\n", status);
+      ASSERT(false);
     }
 
   status = pthread_cancel(thread2);
@@ -179,6 +194,7 @@ static void test_timeout(void)
     {
       printf("pthread_rwlock_cancel: "
              "ERROR pthread_cancel, status=%d\n", status);
+      ASSERT(false);
     }
 
   pthread_join(thread1, NULL);
@@ -188,14 +204,14 @@ static void test_timeout(void)
    * usable state after deferred cancellation.
    */
 
-#ifdef CONFIG_PTHREAD_CLEANUP
-#ifdef CONFIG_CANCELLATION_POINTS
+#if CONFIG_PTHREAD_CLEANUP_STACKSIZE > 0 && defined(CONFIG_CANCELLATION_POINTS)
   status = pthread_rwlock_trywrlock(&write_lock);
   if (status != EBUSY)
     {
       printf("pthread_rwlock_cancel: "
              "ERROR able to acquire write lock when write lock already "
              "acquired, status=%d\n", status);
+      ASSERT(false);
     }
 
   status = pthread_rwlock_tryrdlock(&write_lock);
@@ -204,6 +220,7 @@ static void test_timeout(void)
       printf("pthread_rwlock_cancel: "
              "ERROR able to acquire read lock when write lock already "
              "acquired, status=%d\n", status);
+      ASSERT(false);
     }
 
   status = pthread_rwlock_unlock(&read_lock);
@@ -211,6 +228,7 @@ static void test_timeout(void)
     {
       printf("pthread_rwlock_cancel: "
              "ERROR pthread_rwlock_unlock, status=%d\n", status);
+      ASSERT(false);
     }
 
   status = pthread_rwlock_unlock(&write_lock);
@@ -218,6 +236,7 @@ static void test_timeout(void)
     {
       printf("pthread_rwlock_cancel: "
              "ERROR pthread_rwlock_unlock, status=%d\n", status);
+      ASSERT(false);
     }
 
   status = pthread_rwlock_rdlock(&read_lock);
@@ -225,6 +244,7 @@ static void test_timeout(void)
     {
       printf("pthread_rwlock_cancel: "
              "ERROR pthread_rwlock_rdlock, status=%d\n", status);
+      ASSERT(false);
     }
 
   status = pthread_rwlock_wrlock(&write_lock);
@@ -232,9 +252,12 @@ static void test_timeout(void)
     {
       printf("pthread_rwlock_cancel: "
              "ERROR pthread_rwlock_wrlock, status=%d\n", status);
+      ASSERT(false);
     }
-#endif /* CONFIG_CANCELLATION_POINTS */
-#endif /* CONFIG_PTHREAD_CLEANUP */
+#endif /* CONFIG_PTHREAD_CLEANUP_STACKSIZE > 0 && CONFIG_CANCELLATION_POINTS */
+
+    pthread_rwlock_destroy(&write_lock);
+    pthread_rwlock_destroy(&read_lock);
 }
 
 /****************************************************************************

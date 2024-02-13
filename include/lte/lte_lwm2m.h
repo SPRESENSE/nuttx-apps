@@ -433,7 +433,7 @@ struct lwm2mstub_serverinfo_s
  * @param [in] len: Length of the value.
  */
 typedef void (*lwm2mstub_write_cb_t)(int seq_no, int srv_id,
-              struct lwm2mstub_instance_s *inst, char *value, int len);
+              FAR struct lwm2mstub_instance_s *inst, FAR char *value, int len);
 
 /**
  * @brief Read request call back function type.
@@ -445,7 +445,7 @@ typedef void (*lwm2mstub_write_cb_t)(int seq_no, int srv_id,
  * @param [in] inst: Requested resource url.
  */
 typedef void (*lwm2mstub_read_cb_t)(int seq_no, int srv_id,
-              struct lwm2mstub_instance_s *inst);
+              FAR struct lwm2mstub_instance_s *inst);
 
 /**
  * @brief Execution request call back function type.
@@ -457,7 +457,7 @@ typedef void (*lwm2mstub_read_cb_t)(int seq_no, int srv_id,
  * @param [in] inst: Requested resource url.
  */
 typedef void (*lwm2mstub_exec_cb_t)(int seq_no, int srv_id,
-              struct lwm2mstub_instance_s *inst);
+              FAR struct lwm2mstub_instance_s *inst);
 
 /**
  * @brief Observe start request call back function type.
@@ -471,8 +471,8 @@ typedef void (*lwm2mstub_exec_cb_t)(int seq_no, int srv_id,
  * @param [in] cond: Observation condition
  */
 typedef void (*lwm2mstub_ovstart_cb_t)(int seq_no, int srv_id,
-              struct lwm2mstub_instance_s *inst, char *token,
-              struct lwm2mstub_ovcondition_s *cond);
+              FAR struct lwm2mstub_instance_s *inst, FAR char *token,
+              FAR struct lwm2mstub_ovcondition_s *cond);
 
 /**
  * @brief Observation stop request call back function type.
@@ -485,7 +485,7 @@ typedef void (*lwm2mstub_ovstart_cb_t)(int seq_no, int srv_id,
  * @param [in] token: Token ID for the observation to stop.
  */
 typedef void (*lwm2mstub_ovstop_cb_t)(int seq_no, int srv_id,
-              struct lwm2mstub_instance_s *inst, char *token);
+              FAR struct lwm2mstub_instance_s *inst, FAR char *token);
 
 /**
  * @brief Server operation call back function type.
@@ -497,7 +497,7 @@ typedef void (*lwm2mstub_ovstop_cb_t)(int seq_no, int srv_id,
  * @param [in] inst: Requested resource url.
  */
 typedef void (*lwm2mstub_operation_cb_t)(int event, int srv_id,
-              struct lwm2mstub_instance_s *inst);
+              FAR struct lwm2mstub_instance_s *inst);
 
 /**
  * @brief Firmware update call back function type.
@@ -600,7 +600,7 @@ int lte_getm2m_enabled_objectnum(void);
  * @retval >=0 Actual number of object IDs
  * @retval <0  Any error is occurred
  */
-int lte_getm2m_enabled_objects(uint16_t *objids, int objnum);
+int lte_getm2m_enabled_objects(FAR uint16_t *objids, int objnum);
 
 /**
  * @brief Enable objects
@@ -611,7 +611,7 @@ int lte_getm2m_enabled_objects(uint16_t *objids, int objnum);
  * @retval OK Operation is done successfully
  * @retval non-OK  Any error is occurred
  */
-int lte_enablem2m_objects(uint16_t *objids, int objnum);
+int lte_enablem2m_objects(FAR uint16_t *objids, int objnum);
 
 /**
  * @brief Get resource number on the object
@@ -634,7 +634,7 @@ int lte_getm2m_objresourcenum(uint16_t objid);
  * @retval non-OK  Any error is occurred
  */
 int lte_getm2m_objresourceinfo(uint16_t objids, int res_num,
-                                struct lwm2mstub_resource_s *reses);
+                               FAR struct lwm2mstub_resource_s *reses);
 
 /**
  * @brief Configure the resources of the object
@@ -647,7 +647,7 @@ int lte_getm2m_objresourceinfo(uint16_t objids, int res_num,
  * @retval non-OK  Any error is occurred
  */
 int lte_setm2m_objectdefinition(uint16_t objids, int res_num,
-                                struct lwm2mstub_resource_s *reses);
+                                FAR struct lwm2mstub_resource_s *reses);
 
 /**
  * @brief Get current Queue mode of LwM2M
@@ -786,7 +786,7 @@ int lte_set_report_m2mfwupdate(lwm2mstub_fwupstate_cb_t cb);
  */
 int lte_m2m_readresponse(int seq_no,
                          FAR struct lwm2mstub_instance_s *inst,
-                         int resp, char *readvalue, int len);
+                         int resp, FAR char *readvalue, int len);
 
 /**
  * @brief Response result of write request to the server
@@ -830,6 +830,7 @@ int lte_m2m_executeresp(int seq_no,
  */
 int lte_m2m_observeresp(int seq_no, int resp);
 
+<<<<<<< HEAD
 /**
  * @brief Update observation data to the server
  *
@@ -841,9 +842,9 @@ int lte_m2m_observeresp(int seq_no, int resp);
  * @retval OK Operation is done successfully
  * @retval non-OK  Any error is occurred
  */
-int lte_m2m_observeupdate(char *token,
+int lte_m2m_observeupdate(FAR char *token,
                           FAR struct lwm2mstub_instance_s *inst,
-                          char *value, int len);
+                          FAR char *value, int len);
 /** @} */
 /** @} */
 

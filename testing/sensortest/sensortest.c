@@ -22,22 +22,25 @@
  * Included Files
  ****************************************************************************/
 
-#include <nuttx/sensors/sensor.h>
 #include <nuttx/config.h>
-#include <sys/ioctl.h>
+
 #include <inttypes.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include <fcntl.h>
 #include <poll.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/ioctl.h>
+#include <sys/param.h>
+#include <unistd.h>
+
+#include <nuttx/sensors/sensor.h>
 
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
 
-#define ARRAYSIZE(a)       (sizeof(a) / sizeof(a)[0])
-#define DEVNAME_FMT        "/dev/sensor/sensor_%s"
+#define DEVNAME_FMT        "/dev/uorb/sensor_%s"
 #define DEVNAME_MAX        64
 
 /****************************************************************************
@@ -45,6 +48,7 @@
  ****************************************************************************/
 
 typedef void (*data_print)(FAR const char *buffer, FAR const char *name);
+
 struct sensor_info
 {
   data_print     print;
@@ -62,8 +66,11 @@ static void print_valf2(FAR const char *buffer, FAR const char *name);
 static void print_valf(FAR const char *buffer, FAR const char *name);
 static void print_valb(FAR const char *buffer, FAR const char *name);
 static void print_vali2(FAR const char *buffer, FAR const char *name);
+static void print_ecg(FAR const char *buffer, FAR const char *name);
+static void print_force(FAR const char *buffer, FAR const char *name);
 static void print_ppgd(FAR const char *buffer, FAR const char *name);
 static void print_ppgq(FAR const char *buffer, FAR const char *name);
+static void print_cap(FAR const char *buffer, FAR const char *name);
 static void print_gps(FAR const char *buffer, FAR const char *name);
 static void print_gps_satellite(FAR const char *buffer,
                                 FAR const char *name);
@@ -77,36 +84,38 @@ static bool g_should_exit = false;
 static const struct sensor_info g_sensor_info[] =
 {
   {print_vec3,  sizeof(struct sensor_accel), "accel"},
-  {print_vec3,  sizeof(struct sensor_mag),   "mag"},
-  {print_vec3,  sizeof(struct sensor_gyro),  "gyro"},
   {print_valf2, sizeof(struct sensor_baro),  "baro"},
-  {print_valf,  sizeof(struct sensor_light), "light"},
-  {print_valf,  sizeof(struct sensor_prox),  "prox"},
-  {print_valf,  sizeof(struct sensor_humi),  "humi"},
-  {print_valf,  sizeof(struct sensor_temp),  "temp"},
-  {print_valf3, sizeof(struct sensor_rgb),   "rgb"},
-  {print_valb,  sizeof(struct sensor_hall),  "hall"},
-  {print_valf,  sizeof(struct sensor_ir),    "ir"},
-  {print_gps,   sizeof(struct sensor_gps),   "gps"},
-  {print_valf,  sizeof(struct sensor_uv),    "uv"},
-  {print_valf,  sizeof(struct sensor_noise), "noise"},
-  {print_valf,  sizeof(struct sensor_pm25),  "pm25"},
-  {print_valf,  sizeof(struct sensor_pm1p0), "pm1p0"},
-  {print_valf,  sizeof(struct sensor_pm10),  "pm10"},
+  {print_cap,   sizeof(struct sensor_cap),   "cap"},
   {print_valf,  sizeof(struct sensor_co2),   "co2"},
-  {print_valf,  sizeof(struct sensor_hcho),  "hcho"},
-  {print_valf,  sizeof(struct sensor_tvoc),  "tvoc"},
-  {print_valf,  sizeof(struct sensor_ph),    "ph"},
   {print_valf,  sizeof(struct sensor_dust),  "dust"},
-  {print_valf,  sizeof(struct sensor_hrate), "hrate"},
+  {print_ecg,   sizeof(struct sensor_ecg),   "ecg"},
+  {print_force, sizeof(struct sensor_force), "force"},
+  {print_gps,   sizeof(struct sensor_gps),   "gps"},
+  {print_gps_satellite,
+        sizeof(struct sensor_gps_satellite), "gps_satellite"},
+  {print_vec3,  sizeof(struct sensor_gyro),  "gyro"},
+  {print_valb,  sizeof(struct sensor_hall),  "hall"},
   {print_valf,  sizeof(struct sensor_hbeat), "hbeat"},
-  {print_valf,  sizeof(struct sensor_ecg),   "ecg"},
+  {print_valf,  sizeof(struct sensor_hcho),  "hcho"},
+  {print_valf,  sizeof(struct sensor_hrate), "hrate"},
+  {print_valf,  sizeof(struct sensor_humi),  "humi"},
+  {print_valf2, sizeof(struct sensor_impd),  "impd"},
+  {print_valf,  sizeof(struct sensor_ir),    "ir"},
+  {print_valf,  sizeof(struct sensor_light), "light"},
+  {print_vec3,  sizeof(struct sensor_mag),   "mag"},
+  {print_valf,  sizeof(struct sensor_noise), "noise"},
+  {print_vali2, sizeof(struct sensor_ots),   "ots"},
+  {print_valf,  sizeof(struct sensor_ph),    "ph"},
+  {print_valf,  sizeof(struct sensor_pm10),  "pm10"},
+  {print_valf,  sizeof(struct sensor_pm1p0), "pm1p0"},
+  {print_valf,  sizeof(struct sensor_pm25),  "pm25"},
   {print_ppgd,  sizeof(struct sensor_ppgd),  "ppgd"},
   {print_ppgq,  sizeof(struct sensor_ppgq),  "ppgq"},
-  {print_valf2, sizeof(struct sensor_impd),  "impd"},
-  {print_vali2, sizeof(struct sensor_ots),   "ots"},
-  {print_gps_satellite,  sizeof(struct sensor_gps_satellite),
-                                              "gps_satellite"}
+  {print_valf,  sizeof(struct sensor_prox),  "prox"},
+  {print_valf3, sizeof(struct sensor_rgb),   "rgb"},
+  {print_valf,  sizeof(struct sensor_temp),  "temp"},
+  {print_valf,  sizeof(struct sensor_tvoc),  "tvoc"},
+  {print_valf,  sizeof(struct sensor_uv),    "uv"}
 };
 
 /****************************************************************************
@@ -115,7 +124,7 @@ static const struct sensor_info g_sensor_info[] =
 
 static void print_vec3(const char *buffer, const char *name)
 {
-  struct sensor_accel *event = (struct sensor_accel *)buffer;
+  FAR struct sensor_accel *event = (FAR struct sensor_accel *)buffer;
   printf("%s: timestamp:%" PRIu64 " x:%.2f y:%.2f z:%.2f, "
          "temperature:%.2f\n",
          name, event->timestamp, event->x, event->y,
@@ -124,42 +133,57 @@ static void print_vec3(const char *buffer, const char *name)
 
 static void print_valb(const char *buffer, const char *name)
 {
-  struct sensor_hall *event = (struct sensor_hall *)buffer;
-  printf("%s: timestamp:%" PRIu64 " value:%d\n",
+  FAR struct sensor_hall *event = (FAR struct sensor_hall *)buffer;
+  printf("%s: timestamp:%" PRIu64 " value:%" PRIi32 "\n",
          name, event->timestamp, event->hall);
 }
 
 static void print_vali2(const char *buffer, const char *name)
 {
-  struct sensor_ots *event = (struct sensor_ots *)buffer;
+  FAR struct sensor_ots *event = (FAR struct sensor_ots *)buffer;
   printf("%s: timestamp:%" PRIu64 " value1:% " PRIi32 " value2:% " PRIi32
          "\n", name, event->timestamp, event->x, event->y);
 }
 
 static void print_valf(const char *buffer, const char *name)
 {
-  struct sensor_prox *event = (struct sensor_prox *)buffer;
+  FAR struct sensor_prox *event = (FAR struct sensor_prox *)buffer;
   printf("%s: timestamp:%" PRIu64 " value:%.2f\n",
          name, event->timestamp, event->proximity);
 }
 
 static void print_valf2(const char *buffer, const char *name)
 {
-  struct sensor_baro *event = (struct sensor_baro *)buffer;
+  FAR struct sensor_baro *event = (FAR struct sensor_baro *)buffer;
   printf("%s: timestamp:%" PRIu64 " value1:%.2f value2:%.2f\n",
          name, event->timestamp, event->pressure, event->temperature);
 }
 
 static void print_valf3(const char *buffer, const char *name)
 {
-  struct sensor_rgb *event = (struct sensor_rgb *)buffer;
+  FAR struct sensor_rgb *event = (FAR struct sensor_rgb *)buffer;
   printf("%s: timestamp:%" PRIu64 " value1:%.2f value2:%.2f, value3:%.2f\n",
          name, event->timestamp, event->r, event->g, event->b);
 }
 
+static void print_ecg(const char *buffer, const char *name)
+{
+  struct sensor_ecg *event = (struct sensor_ecg *)buffer;
+  printf("%s: timestamp:%" PRIu64 " ecg:%.4f status:%" PRIu32,
+         name, event->timestamp, event->ecg, event->status);
+}
+
+static void print_force(const char *buffer, const char *name)
+{
+  FAR struct sensor_force *event = (FAR struct sensor_force *)buffer;
+
+  printf("%s: timestamp:%" PRIu64 " value:%.2f event:%" PRIi32 "\n",
+         name, event->timestamp, event->force, event->event);
+}
+
 static void print_ppgd(const char *buffer, const char *name)
 {
-  struct sensor_ppgd *event = (struct sensor_ppgd *)buffer;
+  FAR struct sensor_ppgd *event = (FAR struct sensor_ppgd *)buffer;
   printf("%s: timestamp:%" PRIu64 " ppg1:%" PRIu32 " ppg2:%" PRIu32 " "
          "current:%" PRIu32 " gain1:%" PRIu16 " gain2:%" PRIu16 "\n",
          name, event->timestamp, event->ppg[0], event->ppg[1],
@@ -168,7 +192,7 @@ static void print_ppgd(const char *buffer, const char *name)
 
 static void print_ppgq(const char *buffer, const char *name)
 {
-  struct sensor_ppgq *event = (struct sensor_ppgq *)buffer;
+  FAR struct sensor_ppgq *event = (FAR struct sensor_ppgq *)buffer;
   printf("%s: timestamp:%" PRIu64 " ppg1:%" PRIu32 " ppg2:%" PRIu32 " "
          "ppg3:%" PRIu32 " ppg4:%" PRIu32 " current:%" PRIu32 " "
          "gain1:%" PRIu16 " gain2:%" PRIu16 " gain3:%" PRIu16 " "
@@ -178,9 +202,19 @@ static void print_ppgq(const char *buffer, const char *name)
          event->gain[2], event->gain[3]);
 }
 
+static void print_cap(FAR const char *buffer, FAR const char *name)
+{
+  FAR struct sensor_cap *event = (FAR struct sensor_cap *)buffer;
+  printf("%s: timestamp:%" PRIu64 " status:%" PRIu32 " "
+         "rawdata0:%" PRIu32 " rawdata1:%" PRIu32 " rawdata2:%" PRIu32 " "
+         "rawdata3:%" PRIu32 "\n",
+         name, event->timestamp, event->status, event->rawdata[0],
+         event->rawdata[1], event->rawdata[2], event->rawdata[3]);
+}
+
 static void print_gps(const char *buffer, const char *name)
 {
-  struct sensor_gps *event = (struct sensor_gps *)buffer;
+  FAR struct sensor_gps *event = (FAR struct sensor_gps *)buffer;
 
   printf("%s: timestamp:%" PRIu64 " time_utc: %" PRIu64 " latitude: %f "
          "longitude: %f altitude: %f altitude_ellipsoid: %f eph: %f epv: %f "
@@ -194,8 +228,8 @@ static void print_gps(const char *buffer, const char *name)
 
 static void print_gps_satellite(FAR const char *buffer, FAR const char *name)
 {
-  FAR struct sensor_gps_satellite *event =
-        (struct sensor_gps_satellite *)buffer;
+  FAR FAR struct sensor_gps_satellite *event =
+        (FAR struct sensor_gps_satellite *)buffer;
 
   printf("%s: timestamp: %" PRIu64 " count: %" PRIu32
          " satellites: %" PRIu32 "\n",
@@ -214,7 +248,7 @@ static void usage(void)
   printf("\t            default: 0\n");
 
   printf(" Commands:\n");
-  printf("\t<sensor_node_name> ex, accel0(/dev/sensor/accel0)\n");
+  printf("\t<sensor_node_name> ex, accel0(/dev/uorb/sensor_accel0)\n");
 }
 
 static void exit_handler(int signo)
@@ -283,7 +317,7 @@ int main(int argc, FAR char *argv[])
   if (optind < argc)
     {
       name = argv[optind];
-      for (idx = 0; idx < ARRAYSIZE(g_sensor_info); idx++)
+      for (idx = 0; idx < nitems(g_sensor_info); idx++)
         {
           if (!strncmp(name, g_sensor_info[idx].name,
               strlen(g_sensor_info[idx].name)))

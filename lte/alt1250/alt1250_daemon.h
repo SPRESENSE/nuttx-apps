@@ -163,7 +163,6 @@ struct alt1250_save_ctx
 
 #ifdef CONFIG_LTE_ALT1250_ENABLE_HIBERNATION_MODE
 int alt1250_set_api_enable(FAR struct alt1250_s *dev, bool enable);
-int alt1250_count_opened_sockets(FAR struct alt1250_s *dev);
 int alt1250_is_api_in_progress(FAR struct alt1250_s *dev);
 int alt1250_set_context_save_cb(FAR struct alt1250_s *dev,
                                 context_save_cb_t context_cb);

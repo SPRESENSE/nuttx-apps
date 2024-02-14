@@ -85,6 +85,15 @@ int usockreq_ioctl(FAR struct alt1250_s *dev,
           case SIOCSMSGREFID:
           case SIOCSMSSSCA:
             ioctl_subhdlr = usockreq_ioctl_sms;
+            break;
+          case SIOCGETCONTEXT:
+          case SIOCSETCONTEXT:
+#ifdef CONFIG_LTE_ALT1250_ENABLE_HIBERNATION_MODE
+            ioctl_subhdlr = usockreq_ioctl_sockctx;
+#else
+            *usock_result = -ENOTTY;
+#endif
+            break;
           default:
             *usock_result = -EINVAL;
             break;

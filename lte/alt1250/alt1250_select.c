@@ -135,6 +135,7 @@ static void select_cancel(FAR struct alt1250_s *dev)
 
   if (dev->sid != -1)
     {
+      dbg_alt1250("send select cancel command. id:%d\n", dev->sid);
       send_select_command(dev, SELECT_MODE_BLOCKCANCEL, dev->sid,
                           dummy_maxfds, &dummy_readset, &dummy_writeset,
                           &dummy_exceptset);
@@ -146,7 +147,7 @@ static void select_cancel(FAR struct alt1250_s *dev)
  * name: select_start
  ****************************************************************************/
 
-static void select_start(FAR struct alt1250_s *dev)
+static void select_start(FAR struct alt1250_s *dev, bool is_suspend)
 {
   int32_t maxfds = -1;
   altcom_fd_set readset;
@@ -155,8 +156,6 @@ static void select_start(FAR struct alt1250_s *dev)
   FAR struct usock_s *usock;
   int i;
 
-  dev->sid = (++dev->scnt & 0x7fffffff);
-
   ALTCOM_FD_ZERO(&readset);
   ALTCOM_FD_ZERO(&writeset);
   ALTCOM_FD_ZERO(&exceptset);
@@ -164,27 +163,43 @@ static void select_start(FAR struct alt1250_s *dev)
   for (i = 0; i < SOCKET_COUNT; i++)
     {
       usock = usocket_search(dev, i);
-      if (usock && IS_STATE_SELECTABLE(usock))
+      if (is_suspend)
         {
-          if (IS_STATE_READABLE(usock))
+          if (usock && USOCKET_STATE(usock) == SOCKET_STATE_SUSPEND &&
+              USOCKET_ALTSOCKID(usock) >= 0)
             {
               ALTCOM_FD_SET(USOCKET_ALTSOCKID(usock), &readset);
             }
 
-          if (IS_STATE_WRITABLE(usock))
-            {
-              ALTCOM_FD_SET(USOCKET_ALTSOCKID(usock), &writeset);
-            }
-
-          ALTCOM_FD_SET(USOCKET_ALTSOCKID(usock), &exceptset);
-
           maxfds = ((maxfds > USOCKET_ALTSOCKID(usock)) ? maxfds :
-            USOCKET_ALTSOCKID(usock));
+                    USOCKET_ALTSOCKID(usock));
+        }
+      else
+        {
+          if (usock && IS_STATE_SELECTABLE(usock))
+            {
+              if (IS_STATE_READABLE(usock))
+                {
+                  ALTCOM_FD_SET(USOCKET_ALTSOCKID(usock), &readset);
+                }
+
+              if (IS_STATE_WRITABLE(usock))
+                {
+                  ALTCOM_FD_SET(USOCKET_ALTSOCKID(usock), &writeset);
+                }
+
+              ALTCOM_FD_SET(USOCKET_ALTSOCKID(usock), &exceptset);
+
+              maxfds = ((maxfds > USOCKET_ALTSOCKID(usock)) ? maxfds :
+                USOCKET_ALTSOCKID(usock));
+            }
         }
     }
 
   if (maxfds != -1)
     {
+      dev->sid = (++dev->scnt & 0x7fffffff);
+      dbg_alt1250("send select command. id:%d\n", dev->sid);
       send_select_command(dev, SELECT_MODE_BLOCK, dev->sid,
                           maxfds + 1, &readset, &writeset, &exceptset);
     }
@@ -266,11 +281,13 @@ static void handle_selectevt(FAR struct alt1250_s *dev,
   int i;
   FAR struct usock_s *usock;
 
-  dbg_alt1250("select reply. ret=%ld modem_errno=%ld\n",
-              altcom_resp, modem_errno);
+  dbg_alt1250("select reply. id=%ld ret=%ld modem_errno=%ld\n",
+              selectreq_id, altcom_resp, modem_errno);
 
   if (selectreq_id == dev->sid)
     {
+      dev->sid = -1;
+
       altcom_resp = COMBINE_ERRCODE(altcom_resp, modem_errno);
       if (altcom_resp >= 0)
         {
@@ -361,8 +378,8 @@ void init_selectcontainer(FAR struct alt1250_s *dev)
  * name: restart_select
  ****************************************************************************/
 
-void restart_select(FAR struct alt1250_s *dev)
+void restart_select(FAR struct alt1250_s *dev, bool is_suspend)
 {
   select_cancel(dev);
-  select_start(dev);
+  select_start(dev, is_suspend);
 }

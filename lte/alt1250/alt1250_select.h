@@ -35,6 +35,6 @@
 
 void init_selectcontainer(FAR struct alt1250_s *dev);
 uint64_t perform_select_event(FAR struct alt1250_s *dev, uint64_t bitmap);
-void restart_select(FAR struct alt1250_s *dev);
+void restart_select(FAR struct alt1250_s *dev, bool is_suspend);
 
 #endif  /* __APPS_LTE_ALT1250_ALT1250_SELECT_H */

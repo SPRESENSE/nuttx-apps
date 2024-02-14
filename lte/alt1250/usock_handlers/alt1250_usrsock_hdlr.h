@@ -186,6 +186,14 @@ int nextstep_getsockname(FAR struct alt1250_s *dev,
                          FAR struct usock_ackinfo_s *ackinfo,
                          unsigned long arg);
 
+int nextstep_sendto(FAR struct alt1250_s *dev,
+                    FAR struct alt_container_s *reply,
+                    FAR struct usock_s *usock,
+                    FAR int32_t *usock_result,
+                    FAR uint32_t *usock_xid,
+                    FAR struct usock_ackinfo_s *ackinfo,
+                    unsigned long arg);
+
 int postproc_sockcommon(FAR struct alt1250_s *dev,
                         FAR struct alt_container_s *reply,
                         FAR struct usock_s *usock,

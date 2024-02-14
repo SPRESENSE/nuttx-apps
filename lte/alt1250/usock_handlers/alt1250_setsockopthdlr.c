@@ -139,6 +139,12 @@ int usockreq_setsockopt(FAR struct alt1250_s *dev,
         ret = REP_SEND_ACK_WOFREE;
         break;
 
+      case SOCKET_STATE_SUSPEND:
+        dbg_alt1250("This socket has suspended: %u\n", request->usockid);
+        *usock_result = -EOPNOTSUPP;
+        ret = REP_SEND_ACK_WOFREE;
+        break;
+
       case SOCKET_STATE_PREALLOC:
         container = container_alloc();
         if (container == NULL)

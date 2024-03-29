@@ -502,10 +502,7 @@ static inline int wget_parsestatus(struct webclient_context *ctx,
         }
       else
         {
-           if (ndx < CONFIG_WEBCLIENT_MAXHTTPLINE - 1)
-             {
-                ndx++;
-              }
+          ndx++;
         }
     }
 
@@ -780,10 +777,7 @@ static inline int wget_parseheaders(struct webclient_context *ctx,
         }
       else
         {
-           if (ndx < CONFIG_WEBCLIENT_MAXHTTPLINE - 1)
-             {
-                ndx++;
-              }
+          ndx++;
         }
     }
 

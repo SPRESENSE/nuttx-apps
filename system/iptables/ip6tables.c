@@ -1,5 +1,5 @@
 /****************************************************************************
- * apps/system/iptables/iptables.c
+ * apps/system/iptables/ip6tables.c
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -26,7 +26,8 @@
 
 #include <arpa/inet.h>
 
-#include <nuttx/net/netfilter/ip_tables.h>
+#include <nuttx/net/ip.h>
+#include <nuttx/net/netfilter/ip6_tables.h>
 
 #include "iptables.h"
 #include "netutils/netlib.h"
@@ -36,27 +37,29 @@
  ****************************************************************************/
 
 typedef CODE int
-  (*iptables_command_func_t)(FAR const struct iptables_args_s *args);
+  (*ip6tables_command_func_t)(FAR const struct iptables_args_s *args);
 
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Name: iptables_addr2str
+ * Name: ip6tables_addr2str
  *
  * Description:
  *   Format address and mask to ip/preflen string.
  *
  ****************************************************************************/
 
-static FAR char *iptables_addr2str(struct in_addr addr, struct in_addr msk,
-                                   FAR char *buf, size_t bufflen)
+static FAR char *ip6tables_addr2str(net_ipv6addr_t addr, net_ipv6addr_t msk,
+                                    FAR char *buf, size_t bufflen)
 {
-  unsigned int preflen = popcount(msk.s_addr);
+  unsigned int preflen = netlib_ipv6netmask2prefix(msk);
   if (preflen != 0)
     {
-      snprintf(buf, bufflen, "%s/%d", inet_ntoa(addr), preflen);
+      char ipbuf[INET6_ADDRSTRLEN];
+      inet_ntop(AF_INET6, addr, ipbuf, INET6_ADDRSTRLEN);
+      snprintf(buf, bufflen, "%s/%d", ipbuf, preflen);
     }
   else
     {
@@ -67,23 +70,23 @@ static FAR char *iptables_addr2str(struct in_addr addr, struct in_addr msk,
 }
 
 /****************************************************************************
- * Name: iptables_print_chain
+ * Name: ip6tables_print_chain
  *
  * Description:
  *   Print all rules in a chain
  *
  ****************************************************************************/
 
-static void iptables_print_chain(FAR const struct ipt_replace *repl,
-                                 enum nf_inet_hooks hook)
+static void ip6tables_print_chain(FAR const struct ip6t_replace *repl,
+                                  enum nf_inet_hooks hook)
 {
   /* Format:         target !prot   !idev   !odev   !saddr   !daddr  match */
 
   const char fmt[] = "%-12s %1s%-4s %1s%-4s %1s%-4s %1s%-18s %1s%-18s %s\n";
-  char src[INET_ADDRSTRLEN + 3]; /* Format: 123.123.123.123/24 */
-  char dst[INET_ADDRSTRLEN + 3];
+  char src[INET6_ADDRSTRLEN + 4]; /* Format: fc00::1/128 */
+  char dst[INET6_ADDRSTRLEN + 4];
 
-  FAR struct ipt_entry *entry;
+  FAR struct ip6t_entry *entry;
   FAR struct xt_entry_match *match;
   FAR struct xt_entry_target *target;
   FAR uint8_t *head = (FAR uint8_t *)repl->entries + repl->hook_entry[hook];
@@ -91,30 +94,32 @@ static void iptables_print_chain(FAR const struct ipt_replace *repl,
 
   /* The underflow entry contains the default rule. */
 
-  entry  = (FAR struct ipt_entry *)(head + size);
-  target = IPT_TARGET(entry);
+  entry  = (FAR struct ip6t_entry *)(head + size);
+  target = IP6T_TARGET(entry);
 
   printf("Chain %s (policy %s)\n",
          iptables_hook2str(hook), iptables_target2str(target));
   printf(fmt, "target", "", "prot", "", "idev", "", "odev",
                         "", "source", "", "destination", "");
 
-  ipt_entry_for_every(entry, head, size)
+  ip6t_entry_for_every(entry, head, size)
     {
-      target = IPT_TARGET(entry);
+      target = IP6T_TARGET(entry);
       match  = entry->target_offset >= sizeof(struct xt_entry_match) ?
-                                                    IPT_MATCH(entry) : NULL;
+                                                    IP6T_MATCH(entry) : NULL;
       printf(fmt, iptables_target2str(target),
-          INV_FLAG_STR(entry->ip.invflags & IPT_INV_PROTO),
-          iptables_proto2str(entry->ip.proto),
-          INV_FLAG_STR(entry->ip.invflags & IPT_INV_VIA_IN),
-          iptables_iface2str(entry->ip.iniface),
-          INV_FLAG_STR(entry->ip.invflags & IPT_INV_VIA_OUT),
-          iptables_iface2str(entry->ip.outiface),
-          INV_FLAG_STR(entry->ip.invflags & IPT_INV_SRCIP),
-          iptables_addr2str(entry->ip.src, entry->ip.smsk, src, sizeof(src)),
-          INV_FLAG_STR(entry->ip.invflags & IPT_INV_DSTIP),
-          iptables_addr2str(entry->ip.dst, entry->ip.dmsk, dst, sizeof(dst)),
+          INV_FLAG_STR(entry->ipv6.invflags & IP6T_INV_PROTO),
+          iptables_proto2str(entry->ipv6.proto),
+          INV_FLAG_STR(entry->ipv6.invflags & IP6T_INV_VIA_IN),
+          iptables_iface2str(entry->ipv6.iniface),
+          INV_FLAG_STR(entry->ipv6.invflags & IP6T_INV_VIA_OUT),
+          iptables_iface2str(entry->ipv6.outiface),
+          INV_FLAG_STR(entry->ipv6.invflags & IP6T_INV_SRCIP),
+          ip6tables_addr2str(entry->ipv6.src.s6_addr16,
+                             entry->ipv6.smsk.s6_addr16, src, sizeof(src)),
+          INV_FLAG_STR(entry->ipv6.invflags & IP6T_INV_DSTIP),
+          ip6tables_addr2str(entry->ipv6.dst.s6_addr16,
+                             entry->ipv6.dmsk.s6_addr16, dst, sizeof(dst)),
           iptables_match2str(match));
     }
 
@@ -122,16 +127,16 @@ static void iptables_print_chain(FAR const struct ipt_replace *repl,
 }
 
 /****************************************************************************
- * Name: iptables_list
+ * Name: ip6tables_list
  *
  * Description:
  *   List all rules in a table
  *
  ****************************************************************************/
 
-static int iptables_list(FAR const char *table, enum nf_inet_hooks hook)
+static int ip6tables_list(FAR const char *table, enum nf_inet_hooks hook)
 {
-  FAR struct ipt_replace *repl = netlib_ipt_prepare(table);
+  FAR struct ip6t_replace *repl = netlib_ip6t_prepare(table);
   unsigned int cur_hook;
 
   if (repl == NULL)
@@ -145,7 +150,7 @@ static int iptables_list(FAR const char *table, enum nf_inet_hooks hook)
       if ((repl->valid_hooks & (1 << cur_hook)) != 0 &&
           (hook == NF_INET_NUMHOOKS || hook == cur_hook))
         {
-          iptables_print_chain(repl, cur_hook);
+          ip6tables_print_chain(repl, cur_hook);
         }
     }
 
@@ -154,31 +159,31 @@ static int iptables_list(FAR const char *table, enum nf_inet_hooks hook)
 }
 
 /****************************************************************************
- * Name: iptables_finish_command
+ * Name: ip6tables_finish_command
  *
  * Description:
  *   Do a command and commit it
  *
  ****************************************************************************/
 
-static int iptables_finish_command(FAR const struct iptables_args_s *args,
-                                   FAR struct ipt_replace **repl,
-                                   FAR struct ipt_entry *entry)
+static int ip6tables_finish_command(FAR const struct iptables_args_s *args,
+                                    FAR struct ip6t_replace **repl,
+                                    FAR struct ip6t_entry *entry)
 {
   int ret;
 
   switch (args->cmd)
     {
       case COMMAND_APPEND:
-        ret = netlib_ipt_append(repl, entry, args->hook);
+        ret = netlib_ip6t_append(repl, entry, args->hook);
         break;
 
       case COMMAND_INSERT:
-        ret = netlib_ipt_insert(repl, entry, args->hook, args->rulenum);
+        ret = netlib_ip6t_insert(repl, entry, args->hook, args->rulenum);
         break;
 
       case COMMAND_DELETE:
-        ret = netlib_ipt_delete(*repl, entry, args->hook, args->rulenum);
+        ret = netlib_ip6t_delete(*repl, entry, args->hook, args->rulenum);
         break;
 
       default: /* Other commands should not call into this function. */
@@ -188,23 +193,23 @@ static int iptables_finish_command(FAR const struct iptables_args_s *args,
 
   if (ret == OK)
     {
-      ret = netlib_ipt_commit(*repl);
+      ret = netlib_ip6t_commit(*repl);
     }
 
   return ret;
 }
 
 /****************************************************************************
- * Name: iptables_finish_directly
+ * Name: ip6tables_finish_directly
  *
  * Description:
  *   Finish command directly without preparing any entry
  *
  ****************************************************************************/
 
-static int iptables_finish_directly(FAR const struct iptables_args_s *args)
+static int ip6tables_finish_directly(FAR const struct iptables_args_s *args)
 {
-  FAR struct ipt_replace *repl = netlib_ipt_prepare(args->table);
+  FAR struct ip6t_replace *repl = netlib_ip6t_prepare(args->table);
   int ret;
 
   if (repl == NULL)
@@ -213,67 +218,14 @@ static int iptables_finish_directly(FAR const struct iptables_args_s *args)
       return -EIO;
     }
 
-  ret = iptables_finish_command(args, &repl, NULL);
+  ret = ip6tables_finish_command(args, &repl, NULL);
 
   free(repl);
   return ret;
 }
 
 /****************************************************************************
- * Name: iptables_nat_command
- *
- * Description:
- *   Do a NAT command
- *
- ****************************************************************************/
-
-#ifdef CONFIG_NET_NAT
-static int iptables_nat_command(FAR const struct iptables_args_s *args)
-{
-  FAR struct ipt_replace *repl;
-  FAR struct ipt_entry *entry = NULL;
-  int ret;
-
-  if (args->outifname == NULL || args->outifname[0] == '\0')
-    {
-      printf("Table '" TABLE_NAME_NAT "' needs an out interface!\n");
-      return -EINVAL;
-    }
-
-  if (args->target != NULL &&
-      strcmp(args->target, XT_MASQUERADE_TARGET))
-    {
-      printf("Only target '" XT_MASQUERADE_TARGET
-             "' is supported for table '" TABLE_NAME_NAT "'!\n");
-      return -EINVAL;
-    }
-
-  repl = netlib_ipt_prepare(TABLE_NAME_NAT);
-  if (repl == NULL)
-    {
-      printf("Failed to read table '" TABLE_NAME_NAT "' from kernel!\n");
-      return -EIO;
-    }
-
-  entry = netlib_ipt_masquerade_entry(args->outifname);
-  if (entry == NULL)
-    {
-      printf("Failed to prepare entry for dev %s!\n", args->outifname);
-      ret = -ENOMEM;
-      goto errout_with_repl;
-    }
-
-  ret = iptables_finish_command(args, &repl, entry);
-
-  free(entry);
-errout_with_repl:
-  free(repl);
-  return ret;
-}
-#endif
-
-/****************************************************************************
- * Name: iptables_filter_command
+ * Name: ip6tables_filter_command
  *
  * Description:
  *   Do a FILTER command
@@ -281,11 +233,11 @@ errout_with_repl:
  ****************************************************************************/
 
 #ifdef CONFIG_NET_IPFILTER
-static int iptables_filter_command(FAR const struct iptables_args_s *args)
+static int ip6tables_filter_command(FAR const struct iptables_args_s *args)
 {
   FAR struct xt_entry_match *match;
-  FAR struct ipt_replace *repl = netlib_ipt_prepare(XT_TABLE_NAME_FILTER);
-  FAR struct ipt_entry *entry  = NULL;
+  FAR struct ip6t_replace *repl = netlib_ip6t_prepare(XT_TABLE_NAME_FILTER);
+  FAR struct ip6t_entry *entry  = NULL;
   int ret;
 
   if (repl == NULL)
@@ -308,14 +260,14 @@ static int iptables_filter_command(FAR const struct iptables_args_s *args)
           goto errout;
         }
 
-      entry = netlib_ipt_filter_entry(args->target, args->verdict,
-                                      args->protocol);
+      entry = netlib_ip6t_filter_entry(args->target, args->verdict,
+                                       args->protocol);
       if (entry == NULL)
         {
           goto errout_prepare_entry;
         }
 
-      match  = IPT_MATCH(entry);
+      match  = IP6T_MATCH(entry);
       tcpudp = (FAR struct xt_udp *)(match + 1);
 
       switch (args->protocol)
@@ -345,24 +297,24 @@ static int iptables_filter_command(FAR const struct iptables_args_s *args)
     }
   else if (args->icmp_type != NULL)
     {
-      FAR struct ipt_icmp *icmp;
+      FAR struct ip6t_icmp *icmp6;
 
-      if (args->protocol != IPPROTO_ICMP)
+      if (args->protocol != IPPROTO_ICMP6)
         {
-          printf("ICMP type is only supported for ICMP protocol!\n");
+          printf("ICMPv6 type is only supported for ICMPv6 protocol!\n");
           ret = -EINVAL;
           goto errout;
         }
 
-      entry = netlib_ipt_filter_entry(args->target, args->verdict,
-                                      args->protocol);
+      entry = netlib_ip6t_filter_entry(args->target, args->verdict,
+                                       args->protocol);
       if (entry == NULL)
         {
           goto errout_prepare_entry;
         }
 
-      match = IPT_MATCH(entry);
-      icmp  = (FAR struct ipt_icmp *)(match + 1);
+      match = IP6T_MATCH(entry);
+      icmp6 = (FAR struct ip6t_icmp *)(match + 1);
 
       ret = iptables_parse_icmp(args->icmp_type);
       if (ret < 0)
@@ -371,12 +323,12 @@ static int iptables_filter_command(FAR const struct iptables_args_s *args)
           goto errout;
         }
 
-      icmp->type = ret;
-      icmp->invflags = args->icmpinv;
+      icmp6->type = ret;
+      icmp6->invflags = args->icmpinv;
     }
   else
     {
-      entry = netlib_ipt_filter_entry(args->target, args->verdict, 0);
+      entry = netlib_ip6t_filter_entry(args->target, args->verdict, 0);
       if (entry == NULL)
         {
           goto errout_prepare_entry;
@@ -385,7 +337,7 @@ static int iptables_filter_command(FAR const struct iptables_args_s *args)
 
   /* Fill in common details. */
 
-  ret = netlib_ipt_fillifname(entry, args->inifname, args->outifname);
+  ret = netlib_ip6t_fillifname(entry, args->inifname, args->outifname);
   if (ret < 0)
     {
       printf("Failed to fill in interface names!\n");
@@ -394,8 +346,8 @@ static int iptables_filter_command(FAR const struct iptables_args_s *args)
 
   if (args->saddr != NULL)
     {
-      ret = iptables_parse_ip(args->saddr, &entry->ip.src, &entry->ip.smsk,
-                              AF_INET);
+      ret = iptables_parse_ip(args->saddr, &entry->ipv6.src,
+                              &entry->ipv6.smsk, AF_INET6);
       if (ret < 0)
         {
           printf("Failed to parse source address %s!\n", args->saddr);
@@ -405,8 +357,8 @@ static int iptables_filter_command(FAR const struct iptables_args_s *args)
 
   if (args->daddr != NULL)
     {
-      ret = iptables_parse_ip(args->daddr, &entry->ip.dst, &entry->ip.dmsk,
-                              AF_INET);
+      ret = iptables_parse_ip(args->daddr, &entry->ipv6.dst,
+                              &entry->ipv6.dmsk, AF_INET6);
       if (ret < 0)
         {
           printf("Failed to parse destination address %s!\n", args->daddr);
@@ -414,12 +366,12 @@ static int iptables_filter_command(FAR const struct iptables_args_s *args)
         }
     }
 
-  entry->ip.proto    = args->protocol;
-  entry->ip.invflags = args->ipinv;
+  entry->ipv6.proto    = args->protocol;
+  entry->ipv6.invflags = args->ipinv;
 
   /* Finish command. */
 
-  ret = iptables_finish_command(args, &repl, entry);
+  ret = ip6tables_finish_command(args, &repl, entry);
 
 errout:
   free(entry);
@@ -434,26 +386,26 @@ errout_prepare_entry:
 #endif
 
 /****************************************************************************
- * Name: iptables_apply
+ * Name: ip6tables_apply
  *
  * Description:
  *   Apply rules for corresponding table
  *
  ****************************************************************************/
 
-static int iptables_apply(FAR const struct iptables_args_s *args,
-                          iptables_command_func_t command_func)
+static int ip6tables_apply(FAR const struct iptables_args_s *args,
+                           ip6tables_command_func_t command_func)
 {
   switch (args->cmd)
     {
       case COMMAND_FLUSH:
-        return netlib_ipt_flush(args->table, args->hook);
+        return netlib_ip6t_flush(args->table, args->hook);
 
       case COMMAND_LIST:
-        return iptables_list(args->table, args->hook);
+        return ip6tables_list(args->table, args->hook);
 
       case COMMAND_POLICY:
-        return netlib_ipt_policy(args->table, args->hook, args->verdict);
+        return netlib_ip6t_policy(args->table, args->hook, args->verdict);
 
       case COMMAND_DELETE:
 
@@ -461,7 +413,7 @@ static int iptables_apply(FAR const struct iptables_args_s *args,
 
         if (args->rulenum > 0)
           {
-            return iptables_finish_directly(args);
+            return ip6tables_finish_directly(args);
           }
 
         /* Fall through. */
@@ -495,21 +447,10 @@ int main(int argc, FAR char *argv[])
   if (args.table == NULL || strcmp(args.table, XT_TABLE_NAME_FILTER) == 0)
     {
       args.table = XT_TABLE_NAME_FILTER;
-      ret = iptables_apply(&args, iptables_filter_command);
+      ret = ip6tables_apply(&args, ip6tables_filter_command);
       if (ret < 0)
         {
-          printf("iptables got error on filter: %d!\n", ret);
-        }
-    }
-  else
-#endif
-#ifdef CONFIG_NET_NAT
-  if (strcmp(args.table, TABLE_NAME_NAT) == 0)
-    {
-      ret = iptables_apply(&args, iptables_nat_command);
-      if (ret < 0)
-        {
-          printf("iptables got error on NAT: %d!\n", ret);
+          printf("ip6tables got error on filter: %d!\n", ret);
         }
     }
   else

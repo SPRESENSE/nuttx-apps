@@ -1,5 +1,5 @@
 /****************************************************************************
- * apps/netutils/netlib/netlib_iptables.c
+ * apps/netutils/netlib/netlib_ip6tables.c
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -26,8 +26,7 @@
 
 #include <sys/socket.h>
 
-#include <nuttx/net/netfilter/ip_tables.h>
-#include <nuttx/net/netfilter/nf_nat.h>
+#include <nuttx/net/netfilter/ip6_tables.h>
 
 #include "netutils/netlib.h"
 
@@ -35,7 +34,7 @@
  * Pre-processor Definitions
  ****************************************************************************/
 
-#define IPT_FILL_MATCH(e, match_name) \
+#define IP6T_FILL_MATCH(e, match_name) \
   do \
     { \
       strlcpy((e)->match.u.user.name, (match_name), \
@@ -49,50 +48,36 @@
  * Private Types
  ****************************************************************************/
 
-/* Following struct represents the layout of an entry with masquerade
- * target (without matches). Mainly used to simplify entry creation.
- */
-
-struct ipt_masquerade_entry_s
+struct ip6t_filter_entry_s
 {
-  struct ipt_entry entry;
-  struct /* compatible with IPT_FILL_ENTRY and standard/error target */
-    {
-      struct xt_entry_target target;
-      struct nf_nat_ipv4_multi_range_compat cfg;
-    } target;
-};
-
-struct ipt_filter_entry_s
-{
-  struct ipt_entry entry;
+  struct ip6t_entry entry;
 
   /* Compatible with ACCEPT/DROP/REJECT target. */
 
   struct xt_standard_target target;
 };
 
-struct ipt_filter_tcp_entry_s
+struct ip6t_filter_tcp_entry_s
 {
-  struct ipt_entry entry;
+  struct ip6t_entry entry;
   struct xt_entry_match match;
   struct xt_tcp tcp;
   struct xt_standard_target target;
 };
 
-struct ipt_filter_udp_entry_s
+struct ip6t_filter_udp_entry_s
 {
-  struct ipt_entry entry;
+  struct ip6t_entry entry;
   struct xt_entry_match match;
   struct xt_udp udp;
   struct xt_standard_target target;
 };
 
-struct ipt_filter_icmp_entry_s
+struct ip6t_filter_icmp_entry_s
 {
-  struct ipt_entry entry;
+  struct ip6t_entry entry;
   struct xt_entry_match match;
-  struct ipt_icmp icmp;
+  struct ip6t_icmp icmp;
   struct xt_standard_target target;
 };
 
@@ -101,7 +86,7 @@ struct ipt_filter_icmp_entry_s
  ****************************************************************************/
 
 /****************************************************************************
- * Name: netlib_ipt_entry_by_rulenum
+ * Name: netlib_ip6t_entry_by_rulenum
  *
  * Description:
  *   Get entry in repl at rulenum (1 = first) in hook.
@@ -115,16 +100,16 @@ struct ipt_filter_icmp_entry_s
  *
  ****************************************************************************/
 
-static FAR struct ipt_entry *
-netlib_ipt_entry_by_rulenum(FAR struct ipt_replace *repl,
-                            enum nf_inet_hooks hook, int rulenum,
-                            bool allow_last)
+static FAR struct ip6t_entry *
+netlib_ip6t_entry_by_rulenum(FAR struct ip6t_replace *repl,
+                             enum nf_inet_hooks hook, int rulenum,
+                             bool allow_last)
 {
-  FAR struct ipt_entry *e;
+  FAR struct ip6t_entry *e;
   FAR uint8_t *head = (FAR uint8_t *)repl->entries + repl->hook_entry[hook];
   int size = repl->underflow[hook] - repl->hook_entry[hook];
 
-  ipt_entry_for_every(e, head, size)
+  ip6t_entry_for_every(e, head, size)
     {
       if (--rulenum <= 0)
         {
@@ -136,7 +121,7 @@ netlib_ipt_entry_by_rulenum(FAR struct ipt_replace *repl,
 }
 
 /****************************************************************************
- * Name: netlib_ipt_insert_internal
+ * Name: netlib_ip6t_insert_internal
  *
  * Description:
  *   Insert an entry into config at insert_point.
@@ -149,12 +134,12 @@ netlib_ipt_entry_by_rulenum(FAR struct ipt_replace *repl,
  *
  ****************************************************************************/
 
-static int netlib_ipt_insert_internal(FAR struct ipt_replace **replace,
-                                      FAR const struct ipt_entry *entry,
-                                      enum nf_inet_hooks hook,
-                                      unsigned int insert_point)
+static int netlib_ip6t_insert_internal(FAR struct ip6t_replace **replace,
+                                       FAR const struct ip6t_entry *entry,
+                                       enum nf_inet_hooks hook,
+                                       unsigned int insert_point)
 {
-  FAR struct ipt_replace *repl = *replace;
+  FAR struct ip6t_replace *repl = *replace;
   FAR uint8_t *base;
   size_t new_size;
 
@@ -194,7 +179,7 @@ static int netlib_ipt_insert_internal(FAR struct ipt_replace **replace,
 }
 
 /****************************************************************************
- * Name: netlib_ipt_delete_internal
+ * Name: netlib_ip6t_delete_internal
  *
  * Description:
  *   Delete an entry from config.
@@ -206,9 +191,9 @@ static int netlib_ipt_insert_internal(FAR struct ipt_replace **replace,
  *
  ****************************************************************************/
 
-static void netlib_ipt_delete_internal(FAR struct ipt_replace *repl,
-                                       FAR struct ipt_entry *entry,
-                                       enum nf_inet_hooks hook)
+static void netlib_ip6t_delete_internal(FAR struct ip6t_replace *repl,
+                                        FAR struct ip6t_entry *entry,
+                                        enum nf_inet_hooks hook)
 {
   unsigned int delete_len = entry->next_offset;
 
@@ -240,7 +225,7 @@ static void netlib_ipt_delete_internal(FAR struct ipt_replace *repl,
  ****************************************************************************/
 
 /****************************************************************************
- * Name: netlib_ipt_prepare
+ * Name: netlib_ip6t_prepare
  *
  * Description:
  *   Read current config from kernel space.
@@ -254,11 +239,11 @@ static void netlib_ipt_delete_internal(FAR struct ipt_replace *repl,
  *
  ****************************************************************************/
 
-FAR struct ipt_replace *netlib_ipt_prepare(FAR const char *table)
+FAR struct ip6t_replace *netlib_ip6t_prepare(FAR const char *table)
 {
-  struct ipt_getinfo info;
-  FAR struct ipt_get_entries *entries;
-  FAR struct ipt_replace *repl = NULL;
+  struct ip6t_getinfo info;
+  FAR struct ip6t_get_entries *entries;
+  FAR struct ip6t_replace *repl = NULL;
   socklen_t len;
   int sockfd;
 
@@ -277,7 +262,7 @@ FAR struct ipt_replace *netlib_ipt_prepare(FAR const char *table)
   strlcpy(info.name, table, sizeof(info.name));
   len = sizeof(info);
 
-  if (getsockopt(sockfd, IPPROTO_IP, IPT_SO_GET_INFO, &info, &len) < 0)
+  if (getsockopt(sockfd, IPPROTO_IPV6, IP6T_SO_GET_INFO, &info, &len) < 0)
     {
       fprintf(stderr, "Failed to get info for table %s %d!\n", table, errno);
       goto errout;
@@ -292,7 +277,8 @@ FAR struct ipt_replace *netlib_ipt_prepare(FAR const char *table)
 
   strlcpy(entries->name, table, sizeof(entries->name));
   entries->size = info.size;
-  if (getsockopt(sockfd, IPPROTO_IP, IPT_SO_GET_ENTRIES, entries, &len) < 0)
+  if (getsockopt(sockfd, IPPROTO_IPV6, IP6T_SO_GET_ENTRIES, entries, &len)
+      < 0)
     {
       fprintf(stderr, "Failed to get entries for table %s %d!\n",
               table, errno);
@@ -326,7 +312,7 @@ errout:
 }
 
 /****************************************************************************
- * Name: netlib_ipt_commit
+ * Name: netlib_ip6t_commit
  *
  * Description:
  *   Set config into kernel space.
@@ -336,7 +322,7 @@ errout:
  *
  ****************************************************************************/
 
-int netlib_ipt_commit(FAR const struct ipt_replace *repl)
+int netlib_ip6t_commit(FAR const struct ip6t_replace *repl)
 {
   int ret;
   int sockfd;
@@ -353,7 +339,7 @@ int netlib_ipt_commit(FAR const struct ipt_replace *repl)
       return -errno;
     }
 
-  ret = setsockopt(sockfd, IPPROTO_IP, IPT_SO_SET_REPLACE, repl,
+  ret = setsockopt(sockfd, IPPROTO_IPV6, IP6T_SO_SET_REPLACE, repl,
                    sizeof(*repl) + repl->size);
   if (ret < 0)
     {
@@ -366,7 +352,7 @@ int netlib_ipt_commit(FAR const struct ipt_replace *repl)
 }
 
 /****************************************************************************
- * Name: netlib_ipt_flush
+ * Name: netlib_ip6t_flush
  *
  * Description:
  *   Flush all config in the table.
@@ -377,9 +363,9 @@ int netlib_ipt_commit(FAR const struct ipt_replace *repl)
  *
  ****************************************************************************/
 
-int netlib_ipt_flush(FAR const char *table, enum nf_inet_hooks hook)
+int netlib_ip6t_flush(FAR const char *table, enum nf_inet_hooks hook)
 {
-  FAR struct ipt_replace *repl = netlib_ipt_prepare(table);
+  FAR struct ip6t_replace *repl = netlib_ip6t_prepare(table);
   unsigned int cur_hook;
   int ret;
 
@@ -405,7 +391,7 @@ int netlib_ipt_flush(FAR const char *table, enum nf_inet_hooks hook)
 
           while (repl->underflow[cur_hook] > repl->hook_entry[cur_hook])
             {
-              ret = netlib_ipt_delete(repl, NULL, cur_hook, 1);
+              ret = netlib_ip6t_delete(repl, NULL, cur_hook, 1);
               if (ret < 0)
                 {
                   goto errout;
@@ -414,7 +400,7 @@ int netlib_ipt_flush(FAR const char *table, enum nf_inet_hooks hook)
         }
     }
 
-  ret = netlib_ipt_commit(repl);
+  ret = netlib_ip6t_commit(repl);
 
 errout:
   free(repl);
@@ -422,7 +408,7 @@ errout:
 }
 
 /****************************************************************************
- * Name: netlib_ipt_policy
+ * Name: netlib_ip6t_policy
  *
  * Description:
  *   Set policy for the table.  It's a common operation, but may only take
@@ -435,11 +421,11 @@ errout:
  *
  ****************************************************************************/
 
-int netlib_ipt_policy(FAR const char *table, enum nf_inet_hooks hook,
-                      int verdict)
+int netlib_ip6t_policy(FAR const char *table, enum nf_inet_hooks hook,
+                       int verdict)
 {
-  FAR struct ipt_replace *repl = netlib_ipt_prepare(table);
-  FAR struct ipt_entry *entry;
+  FAR struct ip6t_replace *repl = netlib_ip6t_prepare(table);
+  FAR struct ip6t_entry *entry;
   FAR struct xt_standard_target *target;
   int ret;
 
@@ -458,9 +444,9 @@ int netlib_ipt_policy(FAR const char *table, enum nf_inet_hooks hook,
 
   /* The underflow entry is the default policy of the chain. */
 
-  entry  = (FAR struct ipt_entry *)((uintptr_t)repl->entries +
-                                               repl->underflow[hook]);
-  target = (FAR struct xt_standard_target *)IPT_TARGET(entry);
+  entry  = (FAR struct ip6t_entry *)((uintptr_t)repl->entries +
+                                                repl->underflow[hook]);
+  target = (FAR struct xt_standard_target *)IP6T_TARGET(entry);
   if (strcmp(target->target.u.user.name, XT_STANDARD_TARGET) != 0)
     {
       fprintf(stderr, "Wrong target %s!\n", target->target.u.user.name);
@@ -470,7 +456,7 @@ int netlib_ipt_policy(FAR const char *table, enum nf_inet_hooks hook,
 
   target->verdict = verdict;
 
-  ret = netlib_ipt_commit(repl);
+  ret = netlib_ip6t_commit(repl);
 
 errout:
   free(repl);
@@ -478,7 +464,7 @@ errout:
 }
 
 /****************************************************************************
- * Name: netlib_ipt_append
+ * Name: netlib_ip6t_append
  *
  * Description:
  *   Append an entry into config, will be put to as last config of the chain
@@ -491,9 +477,9 @@ errout:
  *
  ****************************************************************************/
 
-int netlib_ipt_append(FAR struct ipt_replace **repl,
-                      FAR const struct ipt_entry *entry,
-                      enum nf_inet_hooks hook)
+int netlib_ip6t_append(FAR struct ip6t_replace **repl,
+                       FAR const struct ip6t_entry *entry,
+                       enum nf_inet_hooks hook)
 {
   if (repl == NULL || *repl == NULL || entry == NULL)
     {
@@ -506,12 +492,12 @@ int netlib_ipt_append(FAR struct ipt_replace **repl,
       return -EINVAL;
     }
 
-  return netlib_ipt_insert_internal(repl, entry, hook,
-                                    (*repl)->underflow[hook]);
+  return netlib_ip6t_insert_internal(repl, entry, hook,
+                                     (*repl)->underflow[hook]);
 }
 
 /****************************************************************************
- * Name: netlib_ipt_insert
+ * Name: netlib_ip6t_insert
  *
  * Description:
  *   Insert an entry into config, will be put to as first config of the chain
@@ -525,11 +511,11 @@ int netlib_ipt_append(FAR struct ipt_replace **repl,
  *
  ****************************************************************************/
 
-int netlib_ipt_insert(FAR struct ipt_replace **repl,
-                      FAR const struct ipt_entry *entry,
-                      enum nf_inet_hooks hook, int rulenum)
+int netlib_ip6t_insert(FAR struct ip6t_replace **repl,
+                       FAR const struct ip6t_entry *entry,
+                       enum nf_inet_hooks hook, int rulenum)
 {
-  FAR struct ipt_entry *e;
+  FAR struct ip6t_entry *e;
 
   if (repl == NULL || *repl == NULL || entry == NULL || rulenum <= 0)
     {
@@ -544,19 +530,19 @@ int netlib_ipt_insert(FAR struct ipt_replace **repl,
       return -EINVAL;
     }
 
-  e = netlib_ipt_entry_by_rulenum(*repl, hook, rulenum, true);
+  e = netlib_ip6t_entry_by_rulenum(*repl, hook, rulenum, true);
   if (e == NULL)
     {
       fprintf(stderr, "Rulenum %d too big!\n", rulenum);
       return -EINVAL;
     }
 
-  return netlib_ipt_insert_internal(repl, entry, hook,
+  return netlib_ip6t_insert_internal(repl, entry, hook,
                                 (uintptr_t)e - (uintptr_t)(*repl)->entries);
 }
 
 /****************************************************************************
- * Name: netlib_ipt_delete
+ * Name: netlib_ip6t_delete
  *
  * Description:
  *   Delete an entry from config.
@@ -569,11 +555,11 @@ int netlib_ipt_insert(FAR struct ipt_replace **repl,
  *
  ****************************************************************************/
 
-int netlib_ipt_delete(FAR struct ipt_replace *repl,
-                      FAR const struct ipt_entry *entry,
-                      enum nf_inet_hooks hook, int rulenum)
+int netlib_ip6t_delete(FAR struct ip6t_replace *repl,
+                       FAR const struct ip6t_entry *entry,
+                       enum nf_inet_hooks hook, int rulenum)
 {
-  FAR struct ipt_entry *e;
+  FAR struct ip6t_entry *e;
   FAR uint8_t *head;
   int size;
 
@@ -592,28 +578,28 @@ int netlib_ipt_delete(FAR struct ipt_replace *repl,
 
   if (entry == NULL) /* Use rulenum instead. */
     {
-      e = netlib_ipt_entry_by_rulenum(repl, hook, rulenum, false);
+      e = netlib_ip6t_entry_by_rulenum(repl, hook, rulenum, false);
       if (e == NULL)
         {
           fprintf(stderr, "Rulenum %d too big!\n", rulenum);
           return -EINVAL;
         }
 
-      netlib_ipt_delete_internal(repl, e, hook);
+      netlib_ip6t_delete_internal(repl, e, hook);
       return OK;
     }
 
   head = (FAR uint8_t *)repl->entries + repl->hook_entry[hook];
   size = repl->underflow[hook] - repl->hook_entry[hook];
-  ipt_entry_for_every(e, head, size)
+  ip6t_entry_for_every(e, head, size)
     {
       if (e->next_offset == entry->next_offset &&
           e->target_offset == entry->target_offset &&
-          memcmp(&e->ip, &entry->ip, sizeof(struct ipt_ip)) == 0 &&
+          memcmp(&e->ipv6, &entry->ipv6, sizeof(struct ip6t_ip6)) == 0 &&
           memcmp(&e->elems, &entry->elems,
-                 e->next_offset - offsetof(struct ipt_entry, elems)) == 0)
+                 e->next_offset - offsetof(struct ip6t_entry, elems)) == 0)
         {
-          netlib_ipt_delete_internal(repl, e, hook);
+          netlib_ip6t_delete_internal(repl, e, hook);
           return OK;
         }
     }
@@ -622,7 +608,7 @@ int netlib_ipt_delete(FAR struct ipt_replace *repl,
 }
 
 /****************************************************************************
- * Name: netlib_ipt_fillifname
+ * Name: netlib_ip6t_fillifname
  *
  * Description:
  *   Fill inifname and outifname into entry.
@@ -634,9 +620,9 @@ int netlib_ipt_delete(FAR struct ipt_replace *repl,
  *
  ****************************************************************************/
 
-int netlib_ipt_fillifname(FAR struct ipt_entry *entry,
-                          FAR const char *inifname,
-                          FAR const char *outifname)
+int netlib_ip6t_fillifname(FAR struct ip6t_entry *entry,
+                           FAR const char *inifname,
+                           FAR const char *outifname)
 {
   size_t len;
 
@@ -654,8 +640,8 @@ int netlib_ipt_fillifname(FAR struct ipt_entry *entry,
           return -EINVAL;
         }
 
-      strlcpy(entry->ip.iniface, inifname, sizeof(entry->ip.iniface));
-      memset(entry->ip.iniface_mask, 0xff, len + 1);
+      strlcpy(entry->ipv6.iniface, inifname, sizeof(entry->ipv6.iniface));
+      memset(entry->ipv6.iniface_mask, 0xff, len + 1);
     }
 
   if (outifname != NULL)
@@ -667,53 +653,15 @@ int netlib_ipt_fillifname(FAR struct ipt_entry *entry,
           return -EINVAL;
         }
 
-      strlcpy(entry->ip.outiface, outifname, sizeof(entry->ip.outiface));
-      memset(entry->ip.outiface_mask, 0xff, len + 1);
+      strlcpy(entry->ipv6.outiface, outifname, sizeof(entry->ipv6.outiface));
+      memset(entry->ipv6.outiface_mask, 0xff, len + 1);
     }
 
   return OK;
 }
 
 /****************************************************************************
- * Name: netlib_ipt_masquerade_entry
- *
- * Description:
- *   Alloc an entry with masquerade target and config to apply on ifname.
- *
- * Input Parameters:
- *   ifname - The device name to apply NAT on.
- *
- * Returned Value:
- *   The pointer to the entry, or NULL if failed.
- *   Caller must free it after use.
- *
- ****************************************************************************/
-
-#ifdef CONFIG_NET_NAT
-FAR struct ipt_entry *netlib_ipt_masquerade_entry(FAR const char *ifname)
-{
-  FAR struct ipt_masquerade_entry_s *entry;
-
-  entry = zalloc(sizeof(*entry));
-  if (entry == NULL)
-    {
-      return NULL;
-    }
-
-  IPT_FILL_ENTRY(entry, XT_MASQUERADE_TARGET);
-
-  if (netlib_ipt_fillifname(&entry->entry, NULL, ifname) < 0)
-    {
-      free(entry);
-      return NULL;
-    }
-
-  return &entry->entry;
-}
-#endif
-
-/****************************************************************************
- * Name: netlib_ipt_filter_entry
+ * Name: netlib_ip6t_filter_entry
  *
  * Description:
  *   Alloc an entry with filter target.
@@ -730,9 +678,9 @@ FAR struct ipt_entry *netlib_ipt_masquerade_entry(FAR const char *ifname)
  ****************************************************************************/
 
 #ifdef CONFIG_NET_IPFILTER
-FAR struct ipt_entry *netlib_ipt_filter_entry(FAR const char *target,
-                                              int verdict,
-                                              uint8_t match_proto)
+FAR struct ip6t_entry *netlib_ip6t_filter_entry(FAR const char *target,
+                                                int verdict,
+                                                uint8_t match_proto)
 {
   if (target == NULL)
     {
@@ -744,55 +692,56 @@ FAR struct ipt_entry *netlib_ipt_filter_entry(FAR const char *target,
     {
       case 0:
         {
-          FAR struct ipt_filter_entry_s *entry = zalloc(sizeof(*entry));
+          FAR struct ip6t_filter_entry_s *entry = zalloc(sizeof(*entry));
           if (entry == NULL)
             {
               return NULL;
             }
 
-          IPT_FILL_ENTRY(entry, target);
+          IP6T_FILL_ENTRY(entry, target);
           entry->target.verdict = verdict;
           return &entry->entry;
         }
 
       case IPPROTO_TCP:
         {
-          FAR struct ipt_filter_tcp_entry_s *entry = zalloc(sizeof(*entry));
+          FAR struct ip6t_filter_tcp_entry_s *entry = zalloc(sizeof(*entry));
           if (entry == NULL)
             {
               return NULL;
             }
 
-          IPT_FILL_ENTRY(entry, target);
-          IPT_FILL_MATCH(entry, XT_MATCH_NAME_TCP);
+          IP6T_FILL_ENTRY(entry, target);
+          IP6T_FILL_MATCH(entry, XT_MATCH_NAME_TCP);
           entry->target.verdict = verdict;
           return &entry->entry;
         }
 
       case IPPROTO_UDP:
         {
-          FAR struct ipt_filter_udp_entry_s *entry = zalloc(sizeof(*entry));
+          FAR struct ip6t_filter_udp_entry_s *entry = zalloc(sizeof(*entry));
           if (entry == NULL)
             {
               return NULL;
             }
 
-          IPT_FILL_ENTRY(entry, target);
-          IPT_FILL_MATCH(entry, XT_MATCH_NAME_UDP);
+          IP6T_FILL_ENTRY(entry, target);
+          IP6T_FILL_MATCH(entry, XT_MATCH_NAME_UDP);
           entry->target.verdict = verdict;
           return &entry->entry;
         }
 
-      case IPPROTO_ICMP:
+      case IPPROTO_ICMP6:
         {
-          FAR struct ipt_filter_icmp_entry_s *entry = zalloc(sizeof(*entry));
+          FAR struct ip6t_filter_icmp_entry_s *entry =
+                                                      zalloc(sizeof(*entry));
           if (entry == NULL)
             {
               return NULL;
             }
 
-          IPT_FILL_ENTRY(entry, target);
-          IPT_FILL_MATCH(entry, XT_MATCH_NAME_ICMP);
+          IP6T_FILL_ENTRY(entry, target);
+          IP6T_FILL_MATCH(entry, XT_MATCH_NAME_ICMP6);
           entry->target.verdict = verdict;
           return &entry->entry;
         }

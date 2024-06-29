@@ -21,9 +21,8 @@
 if(CONFIG_LTE_ALT1250)
 
   set(INCDIR
-    ${CMAKE_CURRENT_LIST_DIR}
-    ${CMAKE_CURRENT_LIST_DIR}/callback_handlers
-    ${CMAKE_CURRENT_LIST_DIR}/usock_handlers)
+      ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_CURRENT_LIST_DIR}/callback_handlers
+      ${CMAKE_CURRENT_LIST_DIR}/usock_handlers)
 
   # Application info
 
@@ -40,54 +39,46 @@ if(CONFIG_LTE_ALT1250)
     ${INCDIR})
 
   set(CSRCS
-    # Framework source files
-
-    alt1250_container.c
-    alt1250_devevent.c
-    alt1250_devif.c
-    alt1250_select.c
-    alt1250_socket.c
-    alt1250_usockevent.c
-    alt1250_usockif.c
-    alt1250_netdev.c
-    alt1250_util.c
-    alt1250_reset_seq.c
-    alt1250_atcmd.c
-
-    # Callback task sources
-
-    callback_handlers/alt1250_evt.c
-
-    # Usersock request handling source files
-
-    usock_handlers/alt1250_sockethdlr.c
-    usock_handlers/alt1250_closehdlr.c
-    usock_handlers/alt1250_connecthdlr.c
-    usock_handlers/alt1250_sendtohdlr.c
-    usock_handlers/alt1250_recvfromhdlr.c
-    usock_handlers/alt1250_setsockopthdlr.c
-    usock_handlers/alt1250_getsockopthdlr.c
-    usock_handlers/alt1250_getsocknamehdlr.c
-    usock_handlers/alt1250_getpeernamehdlr.c
-    usock_handlers/alt1250_bindhdlr.c
-    usock_handlers/alt1250_listenhdlr.c
-    usock_handlers/alt1250_accepthdlr.c
-    usock_handlers/alt1250_ioctlhdlr.c
-    usock_handlers/alt1250_shutdownhdlr.c
-    usock_handlers/alt1250_sms.c
-
-    # Usersock ioctl LAPI command handling source files
-
-    usock_handlers/alt1250_ioctl_ltecmd.c
-    usock_handlers/alt1250_ioctl_ifreq.c
-    usock_handlers/alt1250_ioctl_normal.c
-    usock_handlers/alt1250_ioctl_event.c
-    usock_handlers/alt1250_ioctl_other.c
-    usock_handlers/alt1250_ioctl_power.c
-    usock_handlers/alt1250_ioctl_fwupdate.c
-    usock_handlers/alt1250_ioctl_denyinetsock.c
-    usock_handlers/alt1250_ioctl_lwm2m.c
-    usock_handlers/alt1250_ioctl_sockctx.c)
+      # Framework source files
+      alt1250_container.c
+      alt1250_devevent.c
+      alt1250_devif.c
+      alt1250_select.c
+      alt1250_socket.c
+      alt1250_usockevent.c
+      alt1250_usockif.c
+      alt1250_netdev.c
+      alt1250_util.c
+      alt1250_reset_seq.c
+      alt1250_atcmd.c
+      # Callback task sources
+      callback_handlers/alt1250_evt.c
+      # Usersock request handling source files
+      usock_handlers/alt1250_sockethdlr.c
+      usock_handlers/alt1250_closehdlr.c
+      usock_handlers/alt1250_connecthdlr.c
+      usock_handlers/alt1250_sendtohdlr.c
+      usock_handlers/alt1250_recvfromhdlr.c
+      usock_handlers/alt1250_setsockopthdlr.c
+      usock_handlers/alt1250_getsockopthdlr.c
+      usock_handlers/alt1250_getsocknamehdlr.c
+      usock_handlers/alt1250_getpeernamehdlr.c
+      usock_handlers/alt1250_bindhdlr.c
+      usock_handlers/alt1250_listenhdlr.c
+      usock_handlers/alt1250_accepthdlr.c
+      usock_handlers/alt1250_ioctlhdlr.c
+      usock_handlers/alt1250_shutdownhdlr.c
+      usock_handlers/alt1250_sms.c
+      # Usersock ioctl LAPI command handling source files
+      usock_handlers/alt1250_ioctl_ltecmd.c
+      usock_handlers/alt1250_ioctl_ifreq.c
+      usock_handlers/alt1250_ioctl_normal.c
+      usock_handlers/alt1250_ioctl_event.c
+      usock_handlers/alt1250_ioctl_other.c
+      usock_handlers/alt1250_ioctl_power.c
+      usock_handlers/alt1250_ioctl_fwupdate.c
+      usock_handlers/alt1250_ioctl_denyinetsock.c
+      usock_handlers/alt1250_ioctl_lwm2m.c)
 
   nuttx_add_library(alt1250)
   target_sources(alt1250 PRIVATE ${CSRCS})

@@ -1,5 +1,5 @@
 ############################################################################
-# apps/benchmarks/dhrystone/Makefile
+# apps/testing/cachetest/Makefile
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -20,33 +20,13 @@
 
 include $(APPDIR)/Make.defs
 
-#dhrystone
+# Cache test
 
-PROGNAME  = $(CONFIG_BENCHMARK_DHRYSTONE_PROGNAME)
-PRIORITY  = $(CONFIG_BENCHMARK_DHRYSTONE_PRIORITY)
-STACKSIZE = $(CONFIG_BENCHMARK_DHRYSTONE_STACKSIZE)
-MODULE    = $(CONFIG_BENCHMARK_DHRYSTONE)
+PROGNAME = $(CONFIG_TESTING_CACHETEST_PROGNAME)
+PRIORITY = $(CONFIG_TESTING_CACHETEST_PRIORITY)
+STACKSIZE = $(CONFIG_TESTING_CACHETEST_STACKSIZE)
+MODULE = $(CONFIG_TESTING_CACHETEST)
 
-CFLAGS   += -DMSC_CLOCK -Wno-implicit-int -Wno-strict-prototypes
-CFLAGS   += -Wno-implicit-function-declaration -Wno-return-type
-
-CSRCS    += dhrystone/v2.1/dhry_2.c
-MAINSRC   = dhrystone/v2.2/dry.c
-
-ifeq ($(wildcard dhrystone/.git),)
-VERSION ?= master
-dhrystone.zip:
-	$(Q) curl -L https://github.com/Keith-S-Thompson/dhrystone/archive/refs/heads/master.zip -o dhrystone.zip
-	$(Q) unzip -o dhrystone.zip
-	$(Q) mv dhrystone-$(VERSION) dhrystone
-	$(Q) patch -p0 < 0001-dry2.2-Fix-malloc-type-mismatch.patch
-	$(Q) patch -p0 < 0002-dhrystone-fix-redefine-warning.patch
-
-context:: dhrystone.zip
-
-distclean::
-	$(call DELDIR, dhrystone)
-	$(call DELFILE, dhrystone.zip)
-endif
+MAINSRC = cachetest_main.c
 
 include $(APPDIR)/Application.mk

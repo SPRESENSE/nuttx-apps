@@ -1,5 +1,5 @@
 ############################################################################
-# apps/examples/telnetd/Makefile
+# apps/testing/stressapptest/Makefile
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -20,15 +20,22 @@
 
 include $(APPDIR)/Make.defs
 
-# Telnetd Example
+VPATH   += stressapptest
+VPATH   += stressapptest/src
+DEPPATH += --dep-path stressapptest
+DEPPATH += --dep-path stressapptest/src
 
-MAINSRC = telnetd.c
+CXXEXT   := .cc
+CXXFLAGS += -DHAVE_CONFIG_H -fpermissive
 
-# Buttons built-in application info
+CXXSRCS += adler32memcpy.cc disk_blocks.cc error_diag.cc finelock_queue.cc logger.cc
+CXXSRCS += os.cc os_factory.cc pattern.cc queue.cc sat.cc sat_factory.cc worker.cc
 
-PROGNAME = example_telnetd
-PRIORITY = $(CONFIG_EXAMPLES_TELNETD_DAEMONPRIO)
-STACKSIZE = $(CONFIG_EXAMPLES_TELNETD_DAEMONSTACKSIZE)
-MODULE = $(CONFIG_EXAMPLES_TELNETD)
+MAINSRC  += main.cc
+PROGNAME += stressapptest
+
+PRIORITY  = $(CONFIG_TESTING_STRESSAPPTEST_PRIORITY)
+STACKSIZE = $(CONFIG_TESTING_STRESSAPPTEST_STACKSIZE)
+MODULE    = $(CONFIG_TESTING_STRESSAPPTEST)
 
 include $(APPDIR)/Application.mk

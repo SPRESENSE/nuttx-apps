@@ -1,5 +1,5 @@
 ############################################################################
-# apps/examples/telnetd/Makefile
+# apps/audioutils/libmad/Makefile
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -20,15 +20,24 @@
 
 include $(APPDIR)/Make.defs
 
-# Telnetd Example
+CSRCS += $(wildcard libmad/*.c)
+CFLAGS += -DFPM_DEFAULT -DSIZEOF_INT=4
+CFLAGS += -Wno-shadow -Wno-stringop-overflow
 
-MAINSRC = telnetd.c
+# Download and unpack libmad if no git repo found
+ifeq ($(wildcard libmad/.git),)
+VERSION ?= master
+libmad.zip:
+	$(Q) curl -L https://github.com/markjeee/libmad/archive/refs/heads/master.zip -o libmad.zip
+	$(Q) unzip -o libmad.zip
+	$(Q) mv libmad-$(VERSION) libmad
 
-# Buttons built-in application info
+context:: libmad.zip
 
-PROGNAME = example_telnetd
-PRIORITY = $(CONFIG_EXAMPLES_TELNETD_DAEMONPRIO)
-STACKSIZE = $(CONFIG_EXAMPLES_TELNETD_DAEMONSTACKSIZE)
-MODULE = $(CONFIG_EXAMPLES_TELNETD)
+distclean::
+	$(call DELDIR, libmad)
+	$(call DELFILE, libmad.zip)
+
+endif
 
 include $(APPDIR)/Application.mk

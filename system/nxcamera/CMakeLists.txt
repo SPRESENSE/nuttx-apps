@@ -1,5 +1,5 @@
 # ##############################################################################
-# apps/examples/telnetd/CMakeLists.txt
+# apps/system/nxcamera/CMakeLists.txt
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more contributor
 # license agreements.  See the NOTICE file distributed with this work for
@@ -18,16 +18,19 @@
 #
 # ##############################################################################
 
-if(CONFIG_EXAMPLES_TELNETD)
+if(CONFIG_SYSTEM_NXCAMERA)
   nuttx_add_application(
     NAME
-    example_telnetd
+    nxcamera
     PRIORITY
-    ${CONFIG_EXAMPLES_TELNETD_DAEMONPRIO}
+    ${CONFIG_SCHED_PRIORITY_DEFAULT}
     STACKSIZE
-    ${CONFIG_EXAMPLES_TELNETD_DAEMONSTACKSIZE}
+    ${CONFIG_NXCAMERA_MAINTHREAD_STACKSIZE}
     MODULE
-    ${CONFIG_EXAMPLES_TELNETD}
+    ${CONFIG_SYSTEM_NXCAMERA}
     SRCS
-    telnetd.c)
+    nxcamera_main.c)
+
+  set(CSRCS nxcamera.c)
+  target_sources(apps PRIVATE ${CSRCS})
 endif()

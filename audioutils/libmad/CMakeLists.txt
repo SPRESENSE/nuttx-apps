@@ -1,5 +1,5 @@
 # ##############################################################################
-# apps/examples/telnetd/CMakeLists.txt
+# apps/audioutils/libmad/CMakeLists.txt
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more contributor
 # license agreements.  See the NOTICE file distributed with this work for
@@ -18,16 +18,18 @@
 #
 # ##############################################################################
 
-if(CONFIG_EXAMPLES_TELNETD)
-  nuttx_add_application(
-    NAME
-    example_telnetd
-    PRIORITY
-    ${CONFIG_EXAMPLES_TELNETD_DAEMONPRIO}
-    STACKSIZE
-    ${CONFIG_EXAMPLES_TELNETD_DAEMONSTACKSIZE}
-    MODULE
-    ${CONFIG_EXAMPLES_TELNETD}
-    SRCS
-    telnetd.c)
+if(CONFIG_AUDIOUTILS_LIBMAD)
+
+  nuttx_add_library(libmad STATIC)
+
+  file(GLOB LIBMAD_SRCS libmad/*.c)
+  set(CSRCS ${LIBMAD_SRCS})
+  set(CFLAGS -Wno-shadow -Wno-stringop-overflow -DFPM_DEFAULT -DSIZEOF_INT=4)
+  set(INCDIR ${CMAKE_CURRENT_LIST_DIR}/libmad
+             ${CMAKE_CURRENT_LIST_DIR}/libmad/msvc++)
+
+  target_sources(libmad PRIVATE ${CSRCS})
+  target_include_directories(libmad PRIVATE ${INCDIR})
+  target_compile_options(libmad PRIVATE ${CFLAGS})
+
 endif()

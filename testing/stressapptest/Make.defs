@@ -1,5 +1,5 @@
 ############################################################################
-# apps/examples/telnetd/Makefile
+# apps/testing/stressapptest/Make.defs
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -18,17 +18,6 @@
 #
 ############################################################################
 
-include $(APPDIR)/Make.defs
-
-# Telnetd Example
-
-MAINSRC = telnetd.c
-
-# Buttons built-in application info
-
-PROGNAME = example_telnetd
-PRIORITY = $(CONFIG_EXAMPLES_TELNETD_DAEMONPRIO)
-STACKSIZE = $(CONFIG_EXAMPLES_TELNETD_DAEMONSTACKSIZE)
-MODULE = $(CONFIG_EXAMPLES_TELNETD)
-
-include $(APPDIR)/Application.mk
+ifneq ($(CONFIG_TESTING_STRESSAPPTEST),)
+CONFIGURED_APPS += $(APPDIR)/testing/stressapptest
+endif

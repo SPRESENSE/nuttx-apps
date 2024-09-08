@@ -1,5 +1,5 @@
 ############################################################################
-# apps/testing/debug/Make.defs
+# apps/system/debugpoint/Makefile
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -18,6 +18,17 @@
 #
 ############################################################################
 
-ifneq ($(CONFIG_TESTING_DEBUG),)
-CONFIGURED_APPS += $(APPDIR)/testing/debug
-endif
+include $(APPDIR)/Make.defs
+
+# debug built-in application info
+
+PROGNAME = $(CONFIG_SYSTEM_DEBUGPOINT_PROGNAME)
+PRIORITY = $(CONFIG_SYSTEM_DEBUGPOINT_PRIORITY)
+STACKSIZE = $(CONFIG_SYSTEM_DEBUGPOINT_STACKSIZE)
+MODULE = $(CONFIG_SYSTEM_DEBUG)
+
+# source files
+
+MAINSRC = debug.c
+
+include $(APPDIR)/Application.mk

@@ -75,24 +75,14 @@ static int send_sendto_command(FAR struct alt1250_s *dev,
 }
 
 /****************************************************************************
- * Public Functions
+ * name: read_payload
  ****************************************************************************/
 
-/****************************************************************************
- * name: nextstep_sendto
- ****************************************************************************/
-
-int nextstep_sendto(FAR struct alt1250_s *dev,
-                    FAR struct alt_container_s *reply,
-                    FAR struct usock_s *usock,
-                    FAR int32_t *usock_result,
-                    FAR uint32_t *usock_xid,
-                    FAR struct usock_ackinfo_s *ackinfo,
-                    unsigned long arg)
+static int read_payload(FAR struct alt1250_s *dev,
+                        FAR struct usock_s *usock,
+                        FAR int32_t *usock_result)
 {
   size_t sendlen;
-
-  dbg_alt1250("%s start\n", __func__);
 
   if (USOCKET_REQADDRLEN(usock) > 0)
     {
@@ -130,6 +120,27 @@ int nextstep_sendto(FAR struct alt1250_s *dev,
     {
       usockif_discard(dev->usockfd, USOCKET_REQBUFLEN(usock) - sendlen);
     }
+
+  return REP_NO_ACK;
+}
+
+/****************************************************************************
+ * Public Functions
+ ****************************************************************************/
+
+/****************************************************************************
+ * name: nextstep_sendto
+ ****************************************************************************/
+
+int nextstep_sendto(FAR struct alt1250_s *dev,
+                    FAR struct alt_container_s *reply,
+                    FAR struct usock_s *usock,
+                    FAR int32_t *usock_result,
+                    FAR uint32_t *usock_xid,
+                    FAR struct usock_ackinfo_s *ackinfo,
+                    unsigned long arg)
+{
+  dbg_alt1250("%s start\n", __func__);
 
   return send_sendto_command(dev, reply, usock, USOCKET_REQFLAGS(usock),
                              USOCKET_REQADDRLEN(usock),
@@ -188,6 +199,13 @@ int usockreq_sendto(FAR struct alt1250_s *dev,
               return REP_NO_CONTAINER;
             }
 
+          ret = read_payload(dev, usock, usock_result);
+          if (ret == REP_SEND_ACK)
+            {
+              container_free(container);
+              return ret;
+            }
+
           ret = open_altsocket(dev, container, usock, usock_result);
           if (IS_NEED_CONTAINER_FREE(ret))
             {
@@ -218,6 +236,13 @@ int usockreq_sendto(FAR struct alt1250_s *dev,
             {
               dbg_alt1250("no container\n");
               return REP_NO_CONTAINER;
+            }
+
+          ret = read_payload(dev, usock, usock_result);
+          if (ret == REP_SEND_ACK)
+            {
+              container_free(container);
+              return ret;
             }
 
           ret = nextstep_sendto(dev, container, usock, usock_result,

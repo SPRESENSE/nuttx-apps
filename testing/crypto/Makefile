@@ -51,6 +51,31 @@ PROGNAME += hash
 MAINSRC +=  hash.c
 endif
 
+ifeq ($(CONFIG_TESTING_CRYPTO_CRC32),y)
+PROGNAME += crc32
+MAINSRC +=  crc32.c
+endif
+
+ifeq ($(CONFIG_TESTING_CRYPTO_AES_CMAC),y)
+PROGNAME += aescmac
+MAINSRC +=  aescmac.c
+endif
+
+ifeq ($(CONFIG_TESTING_CRYPTO_ECDSA),y)
+PROGNAME += ecdsa
+MAINSRC +=  ecdsa.c
+endif
+
+ifeq ($(CONFIG_TESTING_CRYPTO_ECDH),y)
+PROGNAME += dhm
+MAINSRC +=  dhm.c
+endif
+
+ifeq ($(CONFIG_TESTING_CRYPTO_RSA),y)
+PROGNAME += rsa
+MAINSRC +=  rsa.c
+endif
+
 PRIORITY = $(CONFIG_TESTING_CRYPTO_PRIORITY)
 STACKSIZE = $(CONFIG_TESTING_CRYPTO_STACKSIZE)
 MODULE = $(CONFIG_TESTING_CRYPTO)

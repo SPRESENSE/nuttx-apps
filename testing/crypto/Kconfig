@@ -30,6 +30,26 @@ config TESTING_CRYPTO_HASH
 	bool "hash crypto test"
 	default n
 
+config TESTING_CRYPTO_CRC32
+	bool "crc32 crypto test"
+	default n
+
+config TESTING_CRYPTO_AES_CMAC
+	bool "aes-cmac crypto test"
+	default n
+
+config TESTING_CRYPTO_ECDSA
+	bool "ecdsa crypto test"
+	default n
+
+config TESTING_CRYPTO_ECDH
+	bool "ecdh crypto test"
+	default n
+
+config TESTING_CRYPTO_RSA
+	bool "rsa crypto test"
+	default n
+
 config TESTING_CRYPTO_PRIORITY
 	int "crypto test task priority"
 	default 100

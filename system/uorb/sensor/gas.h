@@ -1,5 +1,5 @@
 /****************************************************************************
- * apps/system/uorb/sensor/rgb.c
+ * apps/system/uorb/sensor/gas.h
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,23 +18,21 @@
  *
  ****************************************************************************/
 
+#ifndef __APPS_SYSTEM_UORB_SENSOR_GAS_H
+#define __APPS_SYSTEM_UORB_SENSOR_GAS_H
+
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
-#include <sensor/rgb.h>
-
-/****************************************************************************
- * Private Functions
- ****************************************************************************/
-
-#ifdef CONFIG_DEBUG_UORB
-static const char sensor_rgb_format[] =
-  "timestamp:%" PRIu64 ",r:%hf,g:%hf,b:%hf";
-#endif
+#include <uORB/uORB.h>
 
 /****************************************************************************
  * Public Data
  ****************************************************************************/
 
-ORB_DEFINE(sensor_rgb, struct sensor_rgb, sensor_rgb_format);
+/* register this as object request broker structure */
+
+ORB_DECLARE(sensor_gas);
+
+#endif

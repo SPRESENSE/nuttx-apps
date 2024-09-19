@@ -1,5 +1,5 @@
 /****************************************************************************
- * apps/system/uorb/sensor/gps.h
+ * apps/system/uorb/sensor/gnss.h
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,8 +18,8 @@
  *
  ****************************************************************************/
 
-#ifndef __APPS_SYSTEM_UORB_SENSOR_GPS_H
-#define __APPS_SYSTEM_UORB_SENSOR_GPS_H
+#ifndef __APPS_SYSTEM_UORB_SENSOR_GNSS_H
+#define __APPS_SYSTEM_UORB_SENSOR_GNSS_H
 
 /****************************************************************************
  * Included Files
@@ -33,7 +33,10 @@
 
 /* register this as object request broker structure */
 
-ORB_DECLARE(sensor_gps);
-ORB_DECLARE(sensor_gps_satellite);
+ORB_DECLARE(sensor_gnss);
+ORB_DECLARE(sensor_gnss_clock);
+ORB_DECLARE(sensor_gnss_geofence_event);
+ORB_DECLARE(sensor_gnss_measurement);
+ORB_DECLARE(sensor_gnss_satellite);
 
 #endif

@@ -1,5 +1,5 @@
 /****************************************************************************
- * apps/system/uorb/sensor/rgb.c
+ * apps/crypto/mbedtls/include/cmac_alt.h
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,26 +15,26 @@
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
  * License for the specific language governing permissions and limitations
  * under the License.
- *
  ****************************************************************************/
+
+#ifndef __APPS_CRYPTO_MBEDTLS_INCLUDE_CMAC_ALT_H
+#define __APPS_CRYPTO_MBEDTLS_INCLUDE_CMAC_ALT_H
 
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
-#include <sensor/rgb.h>
+#include "dev_alt.h"
 
-/****************************************************************************
- * Private Functions
- ****************************************************************************/
+#define CMAC_KEY_MAX_SIZE 32
 
-#ifdef CONFIG_DEBUG_UORB
-static const char sensor_rgb_format[] =
-  "timestamp:%" PRIu64 ",r:%hf,g:%hf,b:%hf";
-#endif
+struct mbedtls_cmac_context_t
+{
+    cryptodev_context_t dev;
+    unsigned char key[CMAC_KEY_MAX_SIZE];
+    uint32_t keybits;
+    uint32_t cipher_type;
+    uint32_t mac_type;
+};
 
-/****************************************************************************
- * Public Data
- ****************************************************************************/
-
-ORB_DEFINE(sensor_rgb, struct sensor_rgb, sensor_rgb_format);
+#endif /* __APPS_CRYPTO_MBEDTLS_INCLUDE_CMAC_ALT_H */

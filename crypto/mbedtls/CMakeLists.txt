@@ -70,11 +70,20 @@ if(CONFIG_CRYPTO_MBEDTLS)
 
   file(GLOB CSRCS ${MBEDTLS_DIR}/library/*.c)
 
+  if(CONFIG_MBEDTLS_ENTROPY_HARDWARE_ALT
+     OR CONFIG_MBEDTLS_PSA_CRYPTO_EXTERNAL_RNG)
+    list(APPEND CSRCS ${CMAKE_CURRENT_LIST_DIR}/source/entropy_alt.c)
+  endif()
+
   if(CONFIG_MBEDTLS_ALT)
     list(APPEND CSRCS ${CMAKE_CURRENT_LIST_DIR}/source/dev_alt.c)
 
     if(CONFIG_MBEDTLS_AES_ALT)
       list(APPEND CSRCS ${CMAKE_CURRENT_LIST_DIR}/source/aes_alt.c)
+    endif()
+
+    if(CONFIG_MBEDTLS_CMAC_ALT)
+      list(APPEND CSRCS ${CMAKE_CURRENT_LIST_DIR}/source/cmac_alt.c)
     endif()
 
     if(CONFIG_MBEDTLS_MD5_ALT)

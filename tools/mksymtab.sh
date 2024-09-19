@@ -21,7 +21,7 @@
 
 export LC_ALL=C
 
-usage="Usage: $0 <imagedirpath> [symtabprefix]"
+usage="Usage: $0 <imagedirpath> [symtabprefix [additionalsymbolspath]]"
 
 # Check for the required directory path
 
@@ -36,6 +36,7 @@ fi
 # Get the symbol table prefix
 
 prefix=$2
+add_sym=$3
 
 # Extract all of the undefined symbols from the ELF files and create a
 # list of sorted, unique undefined variable names.
@@ -44,8 +45,31 @@ varlist=`find $dir -name *-thunk.S 2>/dev/null | xargs grep -h asciz | cut -f3 |
 if [ -z "$varlist" ]; then
   execlist=`find $dir -type f 2>/dev/null`
   if [ ! -z "$execlist" ]; then
+
+# Get all undefined symbol names
     varlist=`nm $execlist 2>/dev/null | fgrep ' U ' | sed -e "s/^[ ]*//g" | cut -d' ' -f2 | sort | uniq`
+
+# Get all defined symbol names
+    deflist=`nm $execlist 2>/dev/null | fgrep -v -e ' U ' -e ':' | sed -e "s/^[0-9a-z]* //g" | cut -d' ' -f2 | sort | uniq`
+
+# Remove the intersection between them, and the remaining symbols are found in the main image
+    common=`echo "$varlist" | tr ' ' '\n' | grep -Fxf <(echo "$deflist" | tr ' ' '\n') | tr '\n' ' '`
+    if [ "x$common" != "x" ]; then
+      varlist=`echo $varlist | sed "s/$common//g"`
+    fi
   fi
+fi
+
+if [ "x$add_sym" != "x" ]; then
+  if [ -f $add_sym ]; then
+    varlist="${varlist}\n$(cat $add_sym | grep -v "^,.*")"
+  elif [ -d $add_sym ]; then
+    varlist="${varlist}\n$(find $add_sym -type f | xargs cat | grep -v "^,.*")"
+  else
+    echo $usage
+    exit 1
+  fi
+  varlist=$(echo -e "${varlist}" | sort -u)
 fi
 
 # Now output the symbol table as a structure in a C source file.  All
@@ -59,7 +83,7 @@ echo ""
 
 for string in $varlist; do
   var=`echo $string | sed -e "s/\"//g"`
-  echo "extern void *${var};"
+  echo "extern void *${var/,*/};"
 done
 
 echo ""
@@ -78,7 +102,7 @@ echo "{"
 
 for string in $varlist; do
   var=`echo $string | sed -e "s/\"//g"`
-  echo "  {\"${var}\", &${var}},"
+  echo "  {\"${var/*,/}\", &${var/,*/}},"
 done
 
 echo "};"

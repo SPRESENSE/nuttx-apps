@@ -1,5 +1,5 @@
 /****************************************************************************
- * apps/system/uorb/sensor/gesture.c
+ * apps/system/uorb/uORB/internal.h
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,40 +18,32 @@
  *
  ****************************************************************************/
 
+#ifndef __APP_SYSTEM_UORB_UORB_INTERNAL_H
+#define __APP_SYSTEM_UORB_UORB_INTERNAL_H
+
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
-#include <sensor/gesture.h>
-
-/****************************************************************************
- * Private Functions
- ****************************************************************************/
-
-#ifdef CONFIG_DEBUG_UORB
-static const char sensor_gesture_format[] =
-  "timestamp:%" PRIu64 ",event:%" PRIu32 "";
-#endif
+#include <uORB/uORB.h>
 
 /****************************************************************************
  * Public Data
  ****************************************************************************/
 
-ORB_DEFINE(sensor_glance_gesture, struct sensor_event,
-           sensor_gesture_format);
-ORB_DEFINE(sensor_glance_gesture_uncal, struct sensor_event,
-           sensor_gesture_format);
-ORB_DEFINE(sensor_offbody_detector, struct sensor_event,
-           sensor_gesture_format);
-ORB_DEFINE(sensor_offbody_detector_uncal, struct sensor_event,
-           sensor_gesture_format);
-ORB_DEFINE(sensor_pickup_gesture, struct sensor_event,
-           sensor_gesture_format);
-ORB_DEFINE(sensor_pickup_gesture_uncal, struct sensor_event,
-           sensor_gesture_format);
-ORB_DEFINE(sensor_wrist_tilt, struct sensor_event, sensor_gesture_format);
-ORB_DEFINE(sensor_wrist_tilt_uncal, struct sensor_event,
-           sensor_gesture_format);
-ORB_DEFINE(sensor_wake_gesture, struct sensor_event, sensor_gesture_format);
-ORB_DEFINE(sensor_wake_gesture_uncal, struct sensor_event,
-           sensor_gesture_format);
+extern const struct orb_loop_ops_s g_orb_loop_epoll_ops;
+
+/****************************************************************************
+ * Public Types
+ ****************************************************************************/
+
+struct orb_loop_ops_s
+{
+  CODE int (*init)(FAR struct orb_loop_s *loop);
+  CODE int (*run)(FAR struct orb_loop_s *loop);
+  CODE int (*uninit)(FAR struct orb_loop_s *loop);
+  CODE int (*enable)(FAR struct orb_loop_s *loop,
+                     FAR struct orb_handle_s *handle, bool en);
+};
+
+#endif /* __APP_SYSTEM_UORB_UORB_INTERNAL_H */

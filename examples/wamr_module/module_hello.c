@@ -1,5 +1,5 @@
 /****************************************************************************
- * apps/system/ymodem/ymodem.h
+ * apps/examples/wamr_module/module_hello.c
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,62 +18,58 @@
  *
  ****************************************************************************/
 
-#ifndef __APPS_SYSTEM_YMODEM_YMODEM_H
-#define __APPS_SYSTEM_YMODEM_YMODEM_H
-
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
+#include <stdio.h>
 #include <stddef.h>
+#include <sys/param.h>
+
+#include "wasm_export.h"
 
 /****************************************************************************
- * Pre-processor Definitions
+ * Private Function Prototypes
  ****************************************************************************/
 
-#define YMODEM_PACKET_SIZE               128
-#define YMODEM_PACKET_1K_SIZE            1024
-
-#define YMODEM_FILENAME_PACKET           0
-#define YMODEM_DATA_PACKET               1
+static void hello_wrapper(wasm_exec_env_t env);
 
 /****************************************************************************
- * Public Types
+ * Private Data
  ****************************************************************************/
 
-struct ymodem_ctx_s
+static NativeSymbol g_hello_symbols[] =
 {
-  /* User need initialization */
-
-  int recvfd;
-  int sendfd;
-  CODE int (*packet_handler)(FAR struct ymodem_ctx_s *ctx);
-  size_t custom_size;
-  FAR void *priv;
-  uint8_t interval;
-  int retry;
-
-  /* Public data */
-
-  FAR uint8_t *data;
-  size_t packet_size;
-  int packet_type;
-  char file_name[PATH_MAX];
-  size_t file_length;
-
-  /* Private data */
-
-  FAR uint8_t *header;
-#ifdef CONFIG_SYSTEM_YMODEM_DEBUG_FILEPATH
-  int debug_fd;
-#endif
+  EXPORT_WASM_API_WITH_SIG2(hello, "()")
 };
 
 /****************************************************************************
- * Public Function Prototypes
+ * Private Functions
  ****************************************************************************/
 
-int ymodem_recv(FAR struct ymodem_ctx_s *ctx);
-int ymodem_send(FAR struct ymodem_ctx_s *ctx);
+/****************************************************************************
+ * Name: hello_wrapper
+ ****************************************************************************/
 
-#endif /* __APPS_SYSTEM_YMODEM_YMODEM_H */
+static void hello_wrapper(wasm_exec_env_t env)
+{
+  printf("Hello World from WAMR module!\n");
+}
+
+/****************************************************************************
+ * Public Functions
+ ****************************************************************************/
+
+/****************************************************************************
+ * Name: wamr_module_hello_register
+ *
+ * The function prototype for the <WAMR_MODULE_NAME> module must be:
+ *   `bool wamr_module_<WAMR_MODULE_NAME>_register(void)`
+ *
+ ****************************************************************************/
+
+bool wamr_module_hello_register(void)
+{
+  return wasm_runtime_register_natives("hello", g_hello_symbols,
+                                       nitems(g_hello_symbols));
+}

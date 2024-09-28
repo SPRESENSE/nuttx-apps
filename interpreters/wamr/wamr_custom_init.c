@@ -1,5 +1,5 @@
 /****************************************************************************
- * apps/system/ymodem/ymodem.h
+ * apps/interpreters/wamr/wamr_custom_init.c
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,62 +18,65 @@
  *
  ****************************************************************************/
 
-#ifndef __APPS_SYSTEM_YMODEM_YMODEM_H
-#define __APPS_SYSTEM_YMODEM_YMODEM_H
-
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
-#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <semaphore.h>
+#include <sys/param.h>
+#include <sys/types.h>
+#include <iconv.h>
 
-/****************************************************************************
- * Pre-processor Definitions
- ****************************************************************************/
+#include "wasm_native.h"
 
-#define YMODEM_PACKET_SIZE               128
-#define YMODEM_PACKET_1K_SIZE            1024
+#include "wamr_custom_init.h"
 
-#define YMODEM_FILENAME_PACKET           0
-#define YMODEM_DATA_PACKET               1
-
-/****************************************************************************
- * Public Types
- ****************************************************************************/
-
-struct ymodem_ctx_s
-{
-  /* User need initialization */
-
-  int recvfd;
-  int sendfd;
-  CODE int (*packet_handler)(FAR struct ymodem_ctx_s *ctx);
-  size_t custom_size;
-  FAR void *priv;
-  uint8_t interval;
-  int retry;
-
-  /* Public data */
-
-  FAR uint8_t *data;
-  size_t packet_size;
-  int packet_type;
-  char file_name[PATH_MAX];
-  size_t file_length;
-
-  /* Private data */
-
-  FAR uint8_t *header;
-#ifdef CONFIG_SYSTEM_YMODEM_DEBUG_FILEPATH
-  int debug_fd;
+#ifdef CONFIG_INTERPRETERS_WAMR_EXTERNAL_MODULE_REGISTRY
+#include "wamr_external_module_proto.h"
 #endif
-};
 
 /****************************************************************************
- * Public Function Prototypes
+ * Private Data
  ****************************************************************************/
 
-int ymodem_recv(FAR struct ymodem_ctx_s *ctx);
-int ymodem_send(FAR struct ymodem_ctx_s *ctx);
+typedef bool (*module_register_t)(void);
 
-#endif /* __APPS_SYSTEM_YMODEM_YMODEM_H */
+#ifdef CONFIG_INTERPRETERS_WAMR_EXTERNAL_MODULE_REGISTRY
+static const module_register_t g_wamr_modules[] =
+{
+#include "wamr_external_module_list.h"
+};
+#endif
+
+/****************************************************************************
+ * Public Functions
+ ****************************************************************************/
+
+bool wamr_custom_init(RuntimeInitArgs *init_args)
+{
+  bool ret = wasm_runtime_full_init(init_args);
+
+  if (!ret)
+    {
+      return ret;
+    }
+
+  /* Add extra init hook here */
+
+#ifdef CONFIG_INTERPRETERS_WAMR_EXTERNAL_MODULE_REGISTRY
+  for (int i = 0; i < nitems(g_wamr_modules); i++)
+    {
+      ret = g_wamr_modules[i]();
+      if (!ret)
+        {
+          return ret;
+        }
+    }
+#endif
+
+  return ret;
+}

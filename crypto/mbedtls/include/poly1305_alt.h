@@ -1,5 +1,5 @@
 /****************************************************************************
- * apps/crypto/mbedtls/include/aes_alt.h
+ * apps/crypto/mbedtls/include/poly1305_alt.h
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,8 +17,8 @@
  * under the License.
  ****************************************************************************/
 
-#ifndef __APPS_CRYPTO_MBEDTLS_INCLUDE_AES_ALT_H
-#define __APPS_CRYPTO_MBEDTLS_INCLUDE_AES_ALT_H
+#ifndef __APPS_CRYPTO_MBEDTLS_INCLUDE_POLY1305_ALT_H
+#define __APPS_CRYPTO_MBEDTLS_INCLUDE_POLY1305_ALT_H
 
 /****************************************************************************
  * Included Files
@@ -26,19 +26,6 @@
 
 #include "dev_alt.h"
 
-/****************************************************************************
- * Pre-processor Definitions
- ****************************************************************************/
+#define mbedtls_poly1305_context cryptodev_context_t
 
-#define MAX_KEY_SIZE      64
-
-typedef struct mbedtls_aes_context
-{
-  cryptodev_context_t dev;
-  unsigned char key[MAX_KEY_SIZE];
-}
-mbedtls_aes_context;
-
-#define mbedtls_aes_xts_context mbedtls_aes_context
-
-#endif /* __APPS_CRYPTO_MBEDTLS_INCLUDE_AES_ALT_H */
+#endif /* __APPS_CRYPTO_MBEDTLS_INCLUDE_POLY1305_ALT_H */

@@ -1,5 +1,5 @@
 /****************************************************************************
- * apps/crypto/mbedtls/include/aes_alt.h
+ * apps/crypto/mbedtls/source/ripemd160_alt.c
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,28 +17,58 @@
  * under the License.
  ****************************************************************************/
 
-#ifndef __APPS_CRYPTO_MBEDTLS_INCLUDE_AES_ALT_H
-#define __APPS_CRYPTO_MBEDTLS_INCLUDE_AES_ALT_H
-
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
-#include "dev_alt.h"
+#include "mbedtls/ripemd160.h"
 
 /****************************************************************************
- * Pre-processor Definitions
+ * Public Functions
  ****************************************************************************/
 
-#define MAX_KEY_SIZE      64
-
-typedef struct mbedtls_aes_context
+void mbedtls_ripemd160_clone(FAR mbedtls_ripemd160_context *dst,
+                             FAR const mbedtls_ripemd160_context *src)
 {
-  cryptodev_context_t dev;
-  unsigned char key[MAX_KEY_SIZE];
+  cryptodev_clone(dst, src);
 }
-mbedtls_aes_context;
 
-#define mbedtls_aes_xts_context mbedtls_aes_context
+void mbedtls_ripemd160_init(FAR mbedtls_ripemd160_context *ctx)
+{
+  cryptodev_init(ctx);
+}
 
-#endif /* __APPS_CRYPTO_MBEDTLS_INCLUDE_AES_ALT_H */
+void mbedtls_ripemd160_free(FAR mbedtls_ripemd160_context *ctx)
+{
+  cryptodev_free(ctx);
+}
+
+int mbedtls_ripemd160_starts(FAR mbedtls_ripemd160_context *ctx)
+{
+  ctx->session.mac = CRYPTO_RIPEMD160;
+  return cryptodev_get_session(ctx);
+}
+
+int mbedtls_ripemd160_update(FAR mbedtls_ripemd160_context *ctx,
+                             FAR const unsigned char *input,
+                             size_t ilen)
+{
+  ctx->crypt.op = COP_ENCRYPT;
+  ctx->crypt.flags |= COP_FLAG_UPDATE;
+  ctx->crypt.src = (caddr_t)input;
+  ctx->crypt.len = ilen;
+  return cryptodev_crypt(ctx);
+}
+
+int mbedtls_ripemd160_finish(FAR mbedtls_ripemd160_context *ctx,
+                             unsigned char output[20])
+{
+  int ret;
+
+  ctx->crypt.op = COP_ENCRYPT;
+  ctx->crypt.flags = 0;
+  ctx->crypt.mac = (caddr_t)output;
+  ret = cryptodev_crypt(ctx);
+  cryptodev_free_session(ctx);
+  return ret;
+}

@@ -144,4 +144,8 @@ CSRCS += nxevent.c
 endif
 endif
 
+ifeq ($(CONFIG_BUILD_FLAT),y)
+CSRCS += wdog.c
+endif
+
 include $(APPDIR)/Application.mk

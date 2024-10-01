@@ -147,6 +147,10 @@ if(CONFIG_TESTING_OSTEST)
     list(APPEND SRCS nxevent.c)
   endif()
 
+  if(CONFIG_BUILD_FLAT)
+    list(APPEND SRCS wdog.c)
+  endif()
+
   set(OSTEST_SRCS ostest_main.c ${SRCS})
   nuttx_add_application(NAME ostest SRCS ${OSTEST_SRCS})
 

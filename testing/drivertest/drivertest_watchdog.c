@@ -80,7 +80,10 @@ struct wdg_state_s
   uint32_t timeout;
   uint32_t deviation;
   int test_case;
+  bool test_getstatus;
 };
+
+static sem_t g_semaphore;
 
 /****************************************************************************
  * Private Data
@@ -161,7 +164,7 @@ static void show_usage(FAR const char *progname,
                        FAR struct wdg_state_s *wdg_state, int exitcode)
 {
   printf("Usage: %s -d <devpath> -r <test case> -t <pingtime>"
-         "-l <pingdelay> -o <timeout> -a <deviation>\n", progname);
+         "-l <pingdelay> -o <timeout> -a <deviation> -g\n", progname);
   printf("  [-d devpath] selects the WATCHDOG device.\n"
          "  Default: %s Current: %s\n", WDG_DEFAULT_DEV_PATH,
          wdg_state->devpath);
@@ -180,6 +183,7 @@ static void show_usage(FAR const char *progname,
   printf("  [-a deviation] Watchdog getstatus precision.\n"
          "  Default: %d Current: %" PRIu32 "\n",
          WDG_DEFAULT_DEVIATION, wdg_state->deviation);
+  printf("  [-g] don't test getstatus\n");
   printf("  [-h] = Shows this message and exits\n");
 
   exit(exitcode);
@@ -195,7 +199,7 @@ static void parse_commandline(FAR struct wdg_state_s *wdg_state, int argc,
   int ch;
   int converted;
 
-  while ((ch = getopt(argc, argv, "d:r:t:l:o:a:h")) != ERROR)
+  while ((ch = getopt(argc, argv, "d:r:t:l:o:a:gh")) != ERROR)
     {
       switch (ch)
         {
@@ -257,6 +261,9 @@ static void parse_commandline(FAR struct wdg_state_s *wdg_state, int argc,
               }
 
             wdg_state->deviation = (uint32_t)converted;
+
+          case 'g':
+            wdg_state->test_getstatus = false;
             break;
 
           case '?':
@@ -265,6 +272,16 @@ static void parse_commandline(FAR struct wdg_state_s *wdg_state, int argc,
             break;
         }
     }
+}
+
+/****************************************************************************
+ * Name: capture_callback
+ ****************************************************************************/
+
+static int capture_callback(int irq, FAR void *context, FAR void *arg)
+{
+  sem_post(&g_semaphore);
+  return OK;
 }
 
 /****************************************************************************
@@ -307,7 +324,7 @@ static void test_case_wdog_01(FAR void **state)
     {
       /* Sleep for the requested amount of time */
 
-      usleep(wdg_state->pingdelay * 1000);
+      up_udelay(wdg_state->pingdelay * 1000);
 
       /* Then ping */
 
@@ -317,9 +334,11 @@ static void test_case_wdog_01(FAR void **state)
 
   /* Then stop pinging */
 
-  /* Sleep for the requested amount of time */
+  /* Sleep for the requested amount of time, use up_udelay prevent system
+   * into low power mode and watchdog be pause cannot trigger restart.
+   */
 
-  usleep(2 * wdg_state->timeout * 1000);
+  up_udelay(2 * wdg_state->timeout * 1000);
 
   assert_true(false);
 }
@@ -420,6 +439,7 @@ static void test_case_wdog_04(FAR void **state)
   FAR struct wdg_state_s *wdg_state;
   struct watchdog_status_s status;
   struct boardioc_reset_cause_s reset_cause;
+  struct watchdog_capture_s watchdog_capture;
 
   wdg_state = (FAR struct wdg_state_s *)*state;
 
@@ -438,26 +458,51 @@ static void test_case_wdog_04(FAR void **state)
 
   while (get_time_elaps(start_ms) < wdg_state->pingtime)
     {
-      /* Sleep for the requested amount of time */
+      /* Sleep for the requested amount of time, use up_udelay prevent
+       * system into low power mode and watchdog be pause stop count.
+       */
 
-      usleep(wdg_state->pingdelay * 1000);
+      up_udelay(wdg_state->pingdelay * 1000);
 
-      /* Get Status */
+      if (wdg_state->test_getstatus)
+        {
+          /* Get Status */
 
-      ret = ioctl(dev_fd, WDIOC_GETSTATUS, &status);
-      assert_return_code(ret, OK);
+          ret = ioctl(dev_fd, WDIOC_GETSTATUS, &status);
+          assert_return_code(ret, OK);
 
-      assert_int_equal(status.timeout, wdg_state->timeout);
-      assert_in_range(
-        status.timeout - status.timeleft,
-        wdg_state->pingdelay - wdg_state->deviation,
-        wdg_state->pingdelay + wdg_state->deviation);
+          assert_int_equal(status.timeout, wdg_state->timeout);
+          assert_in_range(
+            status.timeout - status.timeleft,
+            wdg_state->pingdelay - wdg_state->deviation,
+            wdg_state->pingdelay + wdg_state->deviation);
+        }
 
       /* Then ping */
 
       ret = ioctl(dev_fd, WDIOC_KEEPALIVE, 0);
       assert_return_code(ret, OK);
     }
+
+  /* Test capture. */
+
+  ret = sem_init(&g_semaphore, 0, 0);
+  assert_return_code(ret, OK);
+
+  watchdog_capture.newhandler = capture_callback;
+  ret = ioctl(dev_fd, WDIOC_CAPTURE, &watchdog_capture);
+  assert_return_code(ret, OK);
+
+  /* Prevent the os entering pm then turn off watchdog. */
+
+  up_udelay(2 * wdg_state->timeout * 1000);
+
+  sem_wait(&g_semaphore);
+  sem_destroy(&g_semaphore);
+
+  watchdog_capture.newhandler = watchdog_capture.oldhandler;
+  ret = ioctl(dev_fd, WDIOC_CAPTURE, &watchdog_capture);
+  assert_return_code(ret, OK);
 
   /* Then stop pinging */
 
@@ -485,7 +530,8 @@ int main(int argc, FAR char *argv[])
     .pingdelay = WDG_DEFAULT_PINGDELAY,
     .timeout = WDG_DEFAULT_TIMEOUT,
     .test_case = WDG_DEFAULT_TESTCASE,
-    .deviation = WDG_DEFAULT_DEVIATION
+    .deviation = WDG_DEFAULT_DEVIATION,
+    .test_getstatus = true
   };
 
   parse_commandline(&wdg_state, argc, argv);

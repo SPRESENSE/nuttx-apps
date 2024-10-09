@@ -19,5 +19,22 @@
 # ##############################################################################
 
 if(CONFIG_EXAMPLES_UDPBLASTER)
-  nuttx_add_application(NAME udpblaster)
+
+  if(NOT CONFIG_EXAMPLES_TCPBLASTER_LOOPBACK)
+    include(udpblaster_host.cmake)
+  endif()
+
+  nuttx_add_application(
+    NAME
+    ${CONFIG_EXAMPLES_UDPBLASTER_PROGNAME}
+    PRIORITY
+    ${CONFIG_EXAMPLES_UDPBLASTER_PRIORITY}
+    STACKSIZE
+    ${CONFIG_EXAMPLES_UDPBLASTER_STACKSIZE}
+    MODULE
+    ${CONFIG_EXAMPLES_UDPBLASTER}
+    SRCS
+    udpblaster_target.c
+    udpblaster_text.c)
+
 endif()

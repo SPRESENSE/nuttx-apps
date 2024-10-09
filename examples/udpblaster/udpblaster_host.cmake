@@ -1,5 +1,5 @@
 # ##############################################################################
-# apps/system/dhcp6c/CMakeLists.txt
+# apps/examples/udpblaster/udpblaster.cmake
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more contributor
 # license agreements.  See the NOTICE file distributed with this work for
@@ -17,15 +17,23 @@
 # the License.
 #
 # ##############################################################################
+# Configure project
+cmake_minimum_required(VERSION 3.16)
+project(udpblaster_host LANGUAGES C)
 
-if(CONFIG_SYSTEM_DHCPC_RENEW6)
-  nuttx_add_application(
-    NAME
-    ${CONFIG_DHCPC_RENEW6_PROGNAME}
-    SRCS
-    renew6_main.c
-    STACKSIZE
-    ${CONFIG_DHCPC_RENEW6_STACKSIZE}
-    PRIORITY
-    ${CONFIG_DHCPC_RENEW6_PRIORITY})
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE
+      "Release"
+      CACHE STRING "Build type" FORCE)
 endif()
+
+message(STATUS "NuttX apps examples udpblaster host")
+
+include_directories(${CMAKE_BINARY_DIR}/include/nuttx)
+
+add_compile_definitions(UDPBLASTER_HOST=1)
+add_library(udpblaster)
+target_sources(udpblaster PRIVATE udpblaster_text.c)
+add_executable(host udpblaster_host.c)
+target_link_libraries(host PRIVATE udpblaster)
+install(TARGETS host DESTINATION bin)

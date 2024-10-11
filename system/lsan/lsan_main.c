@@ -1,5 +1,5 @@
 /****************************************************************************
- * apps/examples/pipe/pipe.h
+ * apps/system/lsan/lsan_main.c
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,39 +18,21 @@
  *
  ****************************************************************************/
 
-#ifndef __APPS_EXAMPLES_PIPE_PIPE_H
-#define __APPS_EXAMPLES_PIPE_PIPE_H
-
-/****************************************************************************
- * Compilation Switches
- ****************************************************************************/
-
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
-/****************************************************************************
- * Pre-processor Definitions
- ****************************************************************************/
-
-#define FIFO_PATH1 "/var/testfifo-1"
-#define FIFO_PATH2 "/var/testfifo-2"
+#include <nuttx/config.h>
+#include <stdio.h>
 
 /****************************************************************************
- * Public Types
+ * Public Functions
  ****************************************************************************/
 
-/****************************************************************************
- * Public Data
- ****************************************************************************/
+extern void __lsan_do_recoverable_leak_check(void);
 
-/****************************************************************************
- * Public Function Prototypes
- ****************************************************************************/
-
-extern int transfer_test(int fdin, int fdout,
-                         int boost_reader, int boost_writer);
-extern int interlock_test(void);
-extern int redirection_test(void);
-
-#endif /* __APPS_EXAMPLES_PIPE_PIPE_H */
+int main(int argc, FAR char *argv[])
+{
+  __lsan_do_recoverable_leak_check();
+  return 0;
+}

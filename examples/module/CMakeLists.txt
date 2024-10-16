@@ -18,6 +18,5 @@
 #
 # ##############################################################################
 
-if(CONFIG_EXAMPLES_MODULE)
-  nuttx_add_application(NAME module)
-endif()
+nuttx_add_subdirectory()
+nuttx_generate_kconfig(MENUDESC "Module")

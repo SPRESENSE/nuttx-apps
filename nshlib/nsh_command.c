@@ -474,7 +474,8 @@ static const struct cmdmap_s g_cmdmap[] =
 #endif
 
 #ifndef CONFIG_NSH_DISABLE_PS
-  CMD_MAP("ps",       cmd_ps,       1, 1, NULL),
+  CMD_MAP("ps",       cmd_ps,       1, CONFIG_NSH_MAXARGUMENTS,
+    "<-heap> <pid1 pid2 ...>"),
 #endif
 
 #ifdef CONFIG_NET_UDP
@@ -592,6 +593,11 @@ static const struct cmdmap_s g_cmdmap[] =
 #if !defined(CONFIG_NSH_DISABLESCRIPT) && !defined(CONFIG_NSH_DISABLE_TEST)
   CMD_MAP("test",     cmd_test,
           3, CONFIG_NSH_MAXARGUMENTS, "<expression>"),
+#endif
+
+#if !defined(CONFIG_NSH_DISABLE_TOP) && defined(NSH_HAVE_CPULOAD)
+  CMD_MAP("top",       cmd_top,       1, 5,
+          "[ -n <num> ][ -d <delay>] [ -p <pidlist>] [-h]"),
 #endif
 
 #ifndef CONFIG_NSH_DISABLE_TIME

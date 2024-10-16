@@ -18,6 +18,5 @@
 #
 # ##############################################################################
 
-if(CONFIG_EXAMPLES_SOTEST)
-  nuttx_add_application(NAME sotest)
-endif()
+nuttx_add_subdirectory()
+nuttx_generate_kconfig(MENUDESC "Sotest")

@@ -40,10 +40,10 @@
 
 #include <nuttx/version.h>
 #include <nuttx/sched_note.h>
-#include "nshlib/nshlib.h"
 
 #include "nsh.h"
 #include "nsh_console.h"
+#include "nshlib/nshlib.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -216,7 +216,7 @@ static FAR char *nsh_envexpand(FAR struct nsh_vtbl_s *vtbl,
                FAR char *varname);
 #endif
 
-#if defined(CONFIG_NSH_QUOTE) && defined(CONFIG_NSH_ARGCAT)
+#if defined(CONFIG_NSH_QUOTE)
 static void nsh_dequote(FAR char *cmdline);
 #else
 #  define nsh_dequote(c)
@@ -1306,7 +1306,7 @@ static FAR char *nsh_envexpand(FAR struct nsh_vtbl_s *vtbl,
  * Name: nsh_dequote
  ****************************************************************************/
 
-#if defined(CONFIG_NSH_QUOTE) && defined(CONFIG_NSH_ARGCAT)
+#if defined(CONFIG_NSH_QUOTE)
 static void nsh_dequote(FAR char *cmdline)
 {
   FAR char *ptr;

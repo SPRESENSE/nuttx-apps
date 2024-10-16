@@ -18,6 +18,4 @@
 #
 ############################################################################
 
-ifneq ($(CONFIG_EXAMPLES_MODULE),)
-CONFIGURED_APPS += $(APPDIR)/examples/module
-endif
+include $(wildcard $(APPDIR)/examples/module/*/Make.defs)

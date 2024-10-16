@@ -929,6 +929,9 @@ void nsh_usbtrace(void);
 #ifndef CONFIG_NSH_DISABLE_TIME
   int cmd_time(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv);
 #endif
+#if !defined(CONFIG_NSH_DISABLE_TOP) && defined(NSH_HAVE_CPULOAD)
+  int cmd_top(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv);
+#endif
 #ifndef CONFIG_NSH_DISABLE_PS
   int cmd_ps(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv);
 #endif
@@ -1394,7 +1397,7 @@ int nsh_foreach_direntry(FAR struct nsh_vtbl_s *vtbl, FAR const char *cmd,
  *
  ****************************************************************************/
 
-#if defined(CONFIG_FS_PROCFS) && !defined(CONFIG_NSH_DISABLE_PIDOF)
+#ifdef CONFIG_FS_PROCFS
 ssize_t nsh_getpid(FAR struct nsh_vtbl_s *vtbl, FAR const char *name,
                    FAR pid_t *pids, size_t count);
 #endif

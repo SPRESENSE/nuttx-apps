@@ -1,5 +1,5 @@
 # ##############################################################################
-# apps/testing/gpu/CMakeLists.txt
+# apps/math/gemmlowp/CMakeLists.txt
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more contributor
 # license agreements.  See the NOTICE file distributed with this work for
@@ -18,35 +18,29 @@
 #
 # ##############################################################################
 
-if(CONFIG_TESTING_GPU)
-  file(GLOB VG_LITE_SRCS vg_lite/*.c)
-  file(GLOB CURRENT_SRCS *.c)
-  list(REMOVE_ITEM CURRENT_SRCS gpu_main.c)
+if(CONFIG_MATH_GEMMLOWP)
 
-  set(SRCS gpu_main.c ${CURRENT_SRCS} ${VG_LITE_SRCS})
+  # ############################################################################
+  # Config and Fetch gemmlowp lib
+  # ############################################################################
 
-  set(INCDIR ${CMAKE_CURRENT_LIST_DIR})
-  if(CONFIG_TESTING_GPU_VG_LITE_INCLUDE)
-    list(APPEND INCDIR
-         ${NUTTX_APPS_DIR}/../${CONFIG_TESTING_GPU_VG_LITE_INCLUDE})
+  set(GEMMLOWP_DIR ${CMAKE_CURRENT_LIST_DIR}/gemmlowp)
+
+  if(NOT EXISTS ${GEMMLOWP_DIR})
+    set(GEMMLOWP_URL
+        https://github.com/google/gemmlowp/archive/719139ce755a0f31cbf1c37f7f98adcc7fc9f425.zip
+    )
+    FetchContent_Declare(
+      gemmlowp_fetch
+      URL ${GEMMLOWP_URL} SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/gemmlowp
+          BINARY_DIR ${CMAKE_BINARY_DIR}/apps/math/gemmlowp/gemmlowp
+      DOWNLOAD_NO_PROGRESS true
+      TIMEOUT 30)
+
+    FetchContent_GetProperties(gemmlowp_fetch)
+
+    if(NOT gemmlowp_fetch_POPULATED)
+      FetchContent_Populate(gemmlowp_fetch)
+    endif()
   endif()
-
-  if(CONFIG_LIB_PNG)
-    list(APPEND INCDIR ${NUTTX_APPS_DIR}/../external/libpng
-         ${NUTTX_APPS_DIR}/../external/libpng/libpng)
-  endif()
-
-  nuttx_add_application(
-    NAME
-    gpu_test
-    PRIORITY
-    ${CONFIG_TESTING_GPU_PRIORITY}
-    STACKSIZE
-    ${CONFIG_TESTING_GPU_STACKSIZE}
-    MODULE
-    ${CONFIG_TESTING_GPU}
-    INCLUDE_DIRECTORIES
-    ${INCDIR}
-    SRCS
-    ${SRCS})
 endif()

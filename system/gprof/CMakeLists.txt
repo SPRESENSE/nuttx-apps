@@ -1,5 +1,5 @@
 # ##############################################################################
-# apps/testing/opus_ramtest/CMakeLists.txt
+# apps/system/gprof/CMakeLists.txt
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more contributor
 # license agreements.  See the NOTICE file distributed with this work for
@@ -18,16 +18,14 @@
 #
 # ##############################################################################
 
-if(CONFIG_TESTING_OPUS_RAMTEST)
+if(CONFIG_SYSTEM_GPROF)
   nuttx_add_application(
     NAME
-    opus_ramtest
-    PRIORITY
-    ${CONFIG_TESTING_OPUS_RAMTEST_PRIORITY}
+    gprof
     STACKSIZE
-    ${CONFIG_TESTING_OPUS_RAMTEST_STACKSIZE}
-    MODULE
-    ${CONFIG_TESTING_OPUS_RAMTEST}
+    ${CONFIG_SYSTEM_GPROF_STACKSIZE}
+    PRIORITY
+    ${CONFIG_SYSTEM_GPROF_PRIORITY}
     SRCS
-    opus_ramtest_main.c)
+    gprof.c)
 endif()

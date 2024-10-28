@@ -85,7 +85,7 @@ if(CONFIG_TESTING_DRIVER_TEST)
       drivertest_timer.c)
   endif()
 
-  if(CONFIG_ONESHOT)
+  if(CONFIG_TESTING_ONESHOT_TEST)
     nuttx_add_application(
       NAME
       cmocka_driver_oneshot
@@ -387,6 +387,22 @@ if(CONFIG_TESTING_DRIVER_TEST)
       cmocka
       SRCS
       drivertest_pm.c)
+  endif()
+
+  if(CONFIG_PM AND CONFIG_SMP)
+    nuttx_add_application(
+      NAME
+      cmocka_driver_pm_smp
+      PRIORITY
+      ${CONFIG_TESTING_DRIVER_TEST_PRIORITY}
+      STACKSIZE
+      ${CONFIG_TESTING_DRIVER_TEST_STACKSIZE}
+      MODULE
+      ${CONFIG_TESTING_DRIVER_TEST}
+      DEPENDS
+      cmocka
+      SRCS
+      drivertest_pm_smp.c)
   endif()
 
   if(CONFIG_PM_RUNTIME)

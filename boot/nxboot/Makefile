@@ -1,5 +1,5 @@
 ############################################################################
-# apps/crypto/mbedtls/Make.defs
+# apps/boot/nxboot/Makefile
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -18,15 +18,17 @@
 #
 ############################################################################
 
-ifneq ($(CONFIG_CRYPTO_MBEDTLS),)
-CONFIGURED_APPS += $(APPDIR)/crypto/mbedtls
+include $(APPDIR)/Make.defs
 
-# Allows `<mbedtls/<>.h>` import.
+ifneq ($(CONFIG_NXBOOT_BOOTLOADER),)
+PROGNAME  = nxboot_loader
+PRIORITY  = SCHED_PRIORITY_DEFAULT
+STACKSIZE = $(CONFIG_DEFAULT_TASK_STACKSIZE)
 
-CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/crypto/mbedtls/include
-CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/crypto/mbedtls/mbedtls/include
-
-CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/crypto/mbedtls/include
-CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/crypto/mbedtls/mbedtls/include
-
+MAINSRC = nxboot_main.c
 endif
+
+CSRCS := loader/boot.c \
+				 loader/flash.c
+
+include $(APPDIR)/Application.mk

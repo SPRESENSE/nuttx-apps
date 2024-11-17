@@ -1,5 +1,5 @@
 ############################################################################
-# apps/testing/uclibcxx_test/Makefile
+# apps/testing/iob/Makefile
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -20,28 +20,17 @@
 
 include $(APPDIR)/Make.defs
 
-CXXEXT := .cpp
+# Iob ! built-in application info
 
-TESTDIR = $(TOPDIR)/libs/libxx/uClibc++/uClibc++/tests
-ORIGS  := $(wildcard $(TESTDIR)/*.cpp)
+PROGNAME  = $(CONFIG_TESTING_IOB_PROGNAME)
+PRIORITY  = $(CONFIG_TESTING_IOB_PRIORITY)
+STACKSIZE = $(CONFIG_TESTING_IOB_STACKSIZE)
+MODULE    = $(CONFIG_TESTING_IOB)
 
-BLACKSRCS := wchartest.cpp
-BLACKSRCS += excepttest.cpp
+# Iob! Example
 
-MAINWORDS += "main("
+MAINSRC = iob_main.c
 
-$(foreach src, $(BLACKSRCS), $(eval BLACKLIST+=$(filter %$(src),$(ORIGS))))
-ORIGS := $(filter-out $(BLACKLIST), $(ORIGS))
-
-$(foreach word, $(MAINWORDS), $(eval MAINCSRCSS+=$(shell grep -lr $(word) $(ORIGS))))
-
-PROGNAME := $(basename $(shell echo $(MAINCSRCSS) | xargs -n 1 | awk -F "[/]" '{print "uclib_"$$(NF)}' | sed s/-/_/g))
-PRIORITY  = SCHED_PRIORITY_DEFAULT
-STACKSIZE = $(CONFIG_DEFAULT_TASK_STACKSIZE)
-MODULE    = $(CONFIG_TESTING_UCLIBCXXTEST)
-
-CXXFLAGS += -I$(TESTDIR)
-CXXSRCS  += $(TESTDIR)/testframework.cpp
-MAINSRC   = $(MAINCSRCSS)
+CFLAGS += -I$(TOPDIR)/mm/iob
 
 include $(APPDIR)/Application.mk

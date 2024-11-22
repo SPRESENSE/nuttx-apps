@@ -57,7 +57,6 @@ static sem_t g_sem_signal_finish;
 static volatile bool g_waiter_running;
 static volatile bool g_interferer_running;
 static volatile bool g_done;
-static volatile int g_nestlevel;
 
 static volatile int g_even_handled;
 static volatile int g_odd_handled;
@@ -144,7 +143,7 @@ static FAR void *waiter_main(FAR void *arg)
   act.sa_flags   = 0;
 
   sigemptyset(&act.sa_mask);
-  for (i = 1; i < MAX_SIGNO; i += 2)
+  for (i = 1; i <= MAX_SIGNO; i += 2)
     {
       if (signest_catchable(i))
         {
@@ -152,7 +151,7 @@ static FAR void *waiter_main(FAR void *arg)
         }
     }
 
-  for (i = 1; i < MAX_SIGNO; i++)
+  for (i = 1; i <= MAX_SIGNO; i++)
     {
       if (signest_catchable(i))
         {
@@ -259,7 +258,6 @@ void signest_test(void)
   g_waiter_running = false;
   g_interferer_running = false;
   g_done = false;
-  g_nestlevel = 0;
 
   even_signals = 0;
   odd_signals = 0;
@@ -324,7 +322,7 @@ void signest_test(void)
 
   for (i = 0; i < 10; i++)
     {
-      for (j = 1; j < MAX_SIGNO; j += 2)
+      for (j = 1; j + 1 <= MAX_SIGNO; j += 2)
         {
           if (signest_catchable(j))
             {
@@ -379,7 +377,7 @@ void signest_test(void)
 
   for (i = 0; i < 10; i++)
     {
-      for (j = 1; j < MAX_SIGNO; j += 2)
+      for (j = 1; j + 1 <= MAX_SIGNO; j += 2)
         {
           /* Odd then even */
 
@@ -441,7 +439,7 @@ void signest_test(void)
 
   for (i = 0; i < 10; i++)
     {
-      for (j = 1; j < MAX_SIGNO; j += 2)
+      for (j = 1; j + 1 <= MAX_SIGNO; j += 2)
         {
           /* Odd then even */
 

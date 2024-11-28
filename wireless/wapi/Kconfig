@@ -53,4 +53,26 @@ config WIRELESS_WAPI_CONFIG_PATH
 
 endif # WIRELESS_WAPI_INITCONF
 
+config WIRELESS_WAPI_USOCKDTERM_CMDTOOL
+	tristate "Usrsock termination tool"
+	default n
+	---help---
+        If this option is selected, a command line tool that terminates
+        usrsock daemon is enabled.
+
+config WIRELESS_WAPI_USOCKDTERM_PROGNAME
+	string "Program Name"
+	default "usockdterm"
+	---help---
+		This is the name of the program that will be used when the NSH ELF
+		program is installed.
+
+config WIRELESS_WAPI_USOCKDTERM_STACKSIZE
+	int "Stack Size (bytes)"
+	default DEFAULT_TASK_STACKSIZE
+
+config WIRELESS_WAPI_USOCKDTERM_PRIORITY
+	int "Command Priority"
+	default 100
+
 endif # WIRELESS_WAPI

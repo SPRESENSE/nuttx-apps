@@ -58,6 +58,11 @@
 #include "netutils/cJSON.h"
 #endif /* CONFIG_WIRELESS_WAPI_INITCONF */
 
+#ifdef CONFIG_WIRELESS_NRC7292
+#include <nuttx/net/nrc7292.h>
+#include <nuttx/wireless/nrc7292.h>
+#endif /* CONFIG_WIRELESS_NRC7292 */
+
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
@@ -274,6 +279,30 @@ FAR const char *wapi_ioctl_command_name(int cmd)
 
     case SIOCSIWPTAPRIO:
       return "SIOCSIWPTAPRIO";
+
+#ifdef CONFIG_WIRELESS_NRC7292
+    case SIOCSIWBANDWIDTH:
+      return "SIOCSIWBANDWIDTH";
+
+    case SIOCSIFWUPDINIT:
+      return "SIOCSIFWUPDINIT";
+
+    case SIOCSIFWUPDINJECT:
+      return "SIOCSIFWUPDINJECT";
+
+    case SIOCSIFWUPDEXEC:
+      return "SIOCSIFWUPDEXEC";
+
+    case SIOCSIWCONNECT:
+      return "SIOCSIWCONNECT";
+
+    case SIOCSIWREGEVTCB:
+      return "SIOCSIWREGEVTCB";
+
+    case SIOCDHCPV4START:
+      return "SIOCDHCPV4START";
+
+#endif
 
     default:
       snprintf(g_ioctl_command_namebuf, WAPI_IOCTL_COMMAND_NAMEBUFSIZ,
@@ -534,3 +563,197 @@ errout:
   return ret < 0 ? ret : OK;
 }
 #endif /* CONFIG_WIRELESS_WAPI_INITCONF */
+
+#ifdef CONFIG_WIRELESS_NRC7292
+/****************************************************************************
+ * Name: wapi_fw_update_init
+ *
+ * Description:
+ *   Initializes firmware update.
+ *
+ ****************************************************************************/
+
+int wapi_fw_update_init(int sock, FAR const char *ifname, size_t total_size)
+{
+  struct iwreq wrq =
+  {
+  };
+
+  int ret;
+
+  wrq.u.param.value = (int32_t) total_size;
+
+  strlcpy(wrq.ifr_name, ifname, IFNAMSIZ);
+  ret = ioctl(sock, SIOCSIFWUPDINIT, (unsigned long)((uintptr_t)&wrq));
+  if (ret < 0)
+    {
+      int errcode = errno;
+      WAPI_IOCTL_STRERROR(SIOCSIFWUPDINIT, errcode);
+      ret = -errcode;
+    }
+
+  return ret;
+}
+
+/****************************************************************************
+ * Name: wapi_fw_update_inject
+ *
+ * Description:
+ *   Initializes firmware update.
+ *
+ ****************************************************************************/
+
+int wapi_fw_update_inject(int sock, FAR const char *ifname,
+                          void *data, size_t len)
+{
+  struct iwreq wrq =
+  {
+  };
+
+  int ret;
+
+  if (data == NULL || len == 0)
+    {
+      return -EINVAL;
+    }
+
+  wrq.u.data.pointer = (FAR void *) data;
+  wrq.u.data.length = (uint16_t) len;
+
+  strlcpy(wrq.ifr_name, ifname, IFNAMSIZ);
+  ret = ioctl(sock, SIOCSIFWUPDINJECT, (unsigned long)((uintptr_t)&wrq));
+  if (ret < 0)
+    {
+      int errcode = errno;
+      WAPI_IOCTL_STRERROR(SIOCSIFWUPDINJECT, errcode);
+      ret = -errcode;
+    }
+
+  return ret;
+}
+
+/****************************************************************************
+ * Name: wapi_fw_update_exec
+ *
+ * Description:
+ *   Executes firmware update.
+ *
+ ****************************************************************************/
+
+int wapi_fw_update_exec(int sock, FAR const char *ifname)
+{
+  struct iwreq wrq =
+  {
+  };
+
+  int ret;
+
+  wrq.u.param.value = 1;
+
+  strlcpy(wrq.ifr_name, ifname, IFNAMSIZ);
+  ret = ioctl(sock, SIOCSIFWUPDEXEC, (unsigned long)((uintptr_t)&wrq));
+  if (ret < 0)
+    {
+      int errcode = errno;
+      WAPI_IOCTL_STRERROR(SIOCSIFWUPDEXEC, errcode);
+      ret = -errcode;
+    }
+
+  return ret;
+}
+
+/****************************************************************************
+ * Name: wapi_event_register_callback
+ *
+ * Description:
+ *   Registers callback function
+ *
+ ****************************************************************************/
+
+int wapi_event_register_callback(int sock, FAR const char *ifname,
+                                 wapi_event_cb_t cb)
+{
+  struct iwreq wrq =
+  {
+  };
+
+  int ret;
+
+  wrq.u.data.pointer = cb;
+  wrq.u.data.length = sizeof(wapi_event_cb_t);
+  wrq.u.data.flags = 1;
+
+  strlcpy(wrq.ifr_name, ifname, IFNAMSIZ);
+  ret = ioctl(sock, SIOCSIWREGEVTCB, (unsigned long)((uintptr_t)&wrq));
+  if (ret < 0)
+    {
+      int errcode = errno;
+      WAPI_IOCTL_STRERROR(SIOCSIWREGEVTCB, errcode);
+      ret = -errcode;
+    }
+
+  return ret;
+}
+
+/****************************************************************************
+ * Name: wapi_event_unregister_callback
+ *
+ * Description:
+ *   Unregisters callback function
+ *
+ ****************************************************************************/
+
+int wapi_event_unregister_callback(int sock, FAR const char *ifname,
+                                 wapi_event_cb_t cb)
+{
+  struct iwreq wrq =
+  {
+  };
+
+  int ret;
+
+  wrq.u.data.pointer = cb;
+  wrq.u.data.length = sizeof(wapi_event_cb_t);
+  wrq.u.data.flags = 0;
+
+  strlcpy(wrq.ifr_name, ifname, IFNAMSIZ);
+  ret = ioctl(sock, SIOCSIWREGEVTCB, (unsigned long)((uintptr_t)&wrq));
+  if (ret < 0)
+    {
+      int errcode = errno;
+      WAPI_IOCTL_STRERROR(SIOCSIWREGEVTCB, errcode);
+      ret = -errcode;
+    }
+
+  return ret;
+}
+
+/****************************************************************************
+ * Name: wapi_term_usock_daemon
+ *
+ * Description:
+ *   Terminates usrsock daemon
+ *
+ ****************************************************************************/
+
+int wapi_term_usock_daemon(int sock, FAR const char *ifname)
+{
+  struct ifreq ifr =
+  {
+  };
+
+  int ret;
+
+  memset(&ifr, 0, sizeof(ifr));
+  strlcpy(ifr.ifr_name, ifname, IFNAMSIZ);
+  ret = ioctl(sock, SIOCUSRSOCKDTERM, (unsigned long) &ifr);
+  if (ret < 0)
+    {
+      int errcode = errno;
+      ret = -errcode;
+    }
+
+  return ret;
+}
+
+#endif

@@ -89,6 +89,29 @@ struct usrsock_request_buff_s;
 
 struct alt1250_s
 {
+  lte_apn_setting_t apn;
+  char apn_name[LTE_APN_LEN];
+  char user_name[LTE_APN_USER_NAME_LEN];
+  char pass[LTE_APN_PASSWD_LEN];
+#ifdef CONFIG_LTE_ALT1250_ENABLE_HIBERNATION_MODE
+  uint32_t       d_flags;
+#  ifdef CONFIG_NET_IPv4
+  in_addr_t      d_ipaddr;
+  in_addr_t      d_draddr;
+  in_addr_t      d_netmask;
+#  endif
+#  ifdef CONFIG_NET_IPv6
+  net_ipv6addr_t d_ipv6addr;
+  net_ipv6addr_t d_ipv6draddr;
+  net_ipv6addr_t d_ipv6netmask;
+#  endif
+  struct sockaddr_storage dnsaddrs[ALTCOM_DNS_SERVERS];
+  int                     dnsqfamily;
+
+  uint16_t       checksum;
+  int            stored_ctx_size;
+#endif
+
   int usockfd;
   int altfd;
   int usock_enable;
@@ -102,10 +125,6 @@ struct alt1250_s
 
   enum alt1250_state_e modem_state;
 
-  lte_apn_setting_t apn;
-  char apn_name[LTE_APN_LEN];
-  char user_name[LTE_APN_USER_NAME_LEN];
-  char pass[LTE_APN_PASSWD_LEN];
   lte_pdn_t o_pdn;
 
   struct usock_s sockets[SOCKET_COUNT + CONFIG_LTE_ALT1250_CONTROL_SOCKETS];
@@ -131,32 +150,6 @@ struct alt1250_s
   uint32_t cellinfo_report_period;
 };
 
-struct alt1250_save_ctx
-{
-  uint8_t        ip_type;
-  uint8_t        auth_type;
-  uint32_t       apn_type;
-  char           apn_name[LTE_APN_LEN];
-  char           user_name[LTE_APN_USER_NAME_LEN];
-  char           pass[LTE_APN_PASSWD_LEN];
-
-  uint32_t       d_flags;
-
-#ifdef CONFIG_NET_IPv4
-  in_addr_t      d_ipaddr;
-  in_addr_t      d_draddr;
-  in_addr_t      d_netmask;
-#endif
-
-#ifdef CONFIG_NET_IPv6
-  net_ipv6addr_t d_ipv6addr;
-  net_ipv6addr_t d_ipv6draddr;
-  net_ipv6addr_t d_ipv6netmask;
-#endif
-
-  uint16_t       checksum;
-};
-
 /****************************************************************************
  * Public Functions Prototypes
  ****************************************************************************/
@@ -168,7 +161,9 @@ int alt1250_set_context_save_cb(FAR struct alt1250_s *dev,
                                 context_save_cb_t context_cb);
 int alt1250_collect_daemon_context(FAR struct alt1250_s *dev);
 int alt1250_apply_daemon_context(FAR struct alt1250_s *dev,
-                                 FAR struct alt1250_save_ctx *ctx);
+                                 FAR uint8_t *ctx, int len);
+void alt1250_save_dnsaddr(FAR struct sockaddr_storage *dnsaddr, int index);
+void alt1250_save_dnsqfamily(int dnsqfamily);
 #endif
 
 #endif  /* __APPS_LTE_ALT1250_ALT1250_DAEMON_H */

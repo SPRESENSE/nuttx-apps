@@ -1224,6 +1224,7 @@ static uint64_t lte_set_report_netinfo_exec_cb(FAR void *cb,
 #if defined(CONFIG_NETDB_DNSCLIENT)
   socklen_t addrlen;
   uint8_t i;
+  int dnsqfamily = AF_UNSPEC;
 #endif
 
 #if defined(CONFIG_NETDB_DNSCLIENT)
@@ -1238,6 +1239,9 @@ static uint64_t lte_set_report_netinfo_exec_cb(FAR void *cb,
       addrlen = (dnsaddr[i].ss_family == AF_INET) ?
         sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6);
       dns_add_nameserver((FAR const struct sockaddr *)&dnsaddr[i], addrlen);
+#  ifdef CONFIG_LTE_ALT1250_ENABLE_HIBERNATION_MODE
+      alt1250_save_dnsaddr(&dnsaddr[i], i);
+#  endif
     }
 
   if (info->pdn_num > 0)
@@ -1249,21 +1253,18 @@ static uint64_t lte_set_report_netinfo_exec_cb(FAR void *cb,
 
       if ((pdn->ipaddr_num == 1) && (ipaddr->ip_type == LTE_IPTYPE_V4))
         {
-          dns_set_queryfamily(AF_INET);
+          dnsqfamily = AF_INET;
         }
       else if ((pdn->ipaddr_num == 1) && (ipaddr->ip_type == LTE_IPTYPE_V6))
         {
-          dns_set_queryfamily(AF_INET6);
-        }
-      else
-        {
-          dns_set_queryfamily(AF_UNSPEC);
+          dnsqfamily = AF_INET6;
         }
     }
-  else
-    {
-      dns_set_queryfamily(AF_UNSPEC);
-    }
+
+  dns_set_queryfamily(dnsqfamily);
+#  ifdef CONFIG_LTE_ALT1250_ENABLE_HIBERNATION_MODE
+  alt1250_save_dnsqfamily(dnsqfamily);
+#  endif
 #endif
 
   if (callback)

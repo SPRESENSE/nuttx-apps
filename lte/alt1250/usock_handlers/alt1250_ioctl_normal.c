@@ -326,22 +326,17 @@ static int lte_context_resume(FAR struct alt1250_s *dev,
       goto error;
     }
 
-  if (len != sizeof(struct alt1250_save_ctx))
-    {
-      dbg_alt1250("Context data size is invalid(%d!=%d).\n",
-                  sizeof(struct alt1250_save_ctx), len);
-      *usock_result = -EINVAL;
-      goto error;
-    }
-
-  ret = alt1250_apply_daemon_context(dev,
-                                     (FAR struct alt1250_save_ctx *)
-                                     ctx_data);
+  ret = alt1250_apply_daemon_context(dev, ctx_data, len);
   if (ret < 0)
     {
       dbg_alt1250("Failed to apply saved alt1250 context(%d).\n", ret);
       *usock_result = -EINVAL;
       goto error;
+    }
+  else if (ret != 0)
+    {
+      *usock_result = ret;
+      return REP_SEND_ACK;
     }
 
   /* Retry mode is released in order to resume reception from ALT 1250. */
@@ -510,8 +505,14 @@ int usockreq_ioctl_normal(FAR struct alt1250_s *dev,
 
 #ifdef CONFIG_LTE_ALT1250_ENABLE_HIBERNATION_MODE
       case LTE_CMDID_RESUME:
-        return lte_context_resume(dev, ltecmd, container, usock,
-                                  usock_result);
+        ret = lte_context_resume(dev, ltecmd, container, usock,
+                                 usock_result);
+        if (IS_NEED_CONTAINER_FREE(ret))
+          {
+            container_free(container);
+          }
+
+        return ret;
 #endif
 
       case LTE_CMDID_SAVE_LOG:

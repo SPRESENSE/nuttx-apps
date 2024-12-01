@@ -34,6 +34,14 @@ if(CONFIG_TFLITEMICRO)
       tflite_micro_fetch
       URL ${TFLITE_MICRO_URL} SOURCE_DIR ${TFLITE_MICRO_DIR} BINARY_DIR
           ${CMAKE_BINARY_DIR}/apps/mlearning/tflite-micro/tflite-micro
+      PATCH_COMMAND
+        patch -d ${TFLITE_MICRO_DIR} -p1 <
+        ${CMAKE_CURRENT_LIST_DIR}/tflite-micro.patch && patch -d
+        ${TFLITE_MICRO_DIR} -p1 <
+        ${CMAKE_CURRENT_LIST_DIR}/0001-dequantize-int8.patch && patch -d
+        ${TFLITE_MICRO_DIR} -p1 <
+        ${CMAKE_CURRENT_LIST_DIR}/0002-quantize-int8.patch && patch -d
+        ${TFLITE_MICRO_DIR} -p1 < ${CMAKE_CURRENT_LIST_DIR}/0003-mean-int8.patch
       DOWNLOAD_NO_PROGRESS true
       TIMEOUT 30)
 
@@ -41,21 +49,6 @@ if(CONFIG_TFLITEMICRO)
 
     if(NOT tflite_micro_fetch_POPULATED)
       FetchContent_Populate(tflite_micro_fetch)
-
-      # Apply the patch after fetching the content
-      execute_process(
-        COMMAND ${CMAKE_COMMAND} -E echo "Applying patch to tflite-micro"
-        WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
-      execute_process(COMMAND patch -d ${TFLITE_MICRO_DIR} -p1 <
-                              ${CMAKE_CURRENT_LIST_DIR}/tflite-micro.patch)
-      execute_process(
-        COMMAND patch -d ${TFLITE_MICRO_DIR} -p1 <
-                ${CMAKE_CURRENT_LIST_DIR}/0001-dequantize-int8.patch)
-      execute_process(
-        COMMAND patch -d ${TFLITE_MICRO_DIR} -p1 <
-                ${CMAKE_CURRENT_LIST_DIR}/0002-quantize-int8.patch)
-      execute_process(COMMAND patch -d ${TFLITE_MICRO_DIR} -p1 <
-                              ${CMAKE_CURRENT_LIST_DIR}/0003-mean-int8.patch)
     endif()
   endif()
 
@@ -66,7 +59,6 @@ if(CONFIG_TFLITEMICRO)
   set(COMMON_FLAGS
       -DTF_LITE_STATIC_MEMORY
       -DTF_LITE_DISABLE_X86_NEON
-      -DTF_LITE_STRIP_ERROR_STRINGS
       -Wno-sign-compare
       -Wno-unused-variable
       -Wno-undef
@@ -75,6 +67,13 @@ if(CONFIG_TFLITEMICRO)
 
   if(CONFIG_MLEARNING_CMSIS_NN)
     list(APPEND COMMON_FLAGS -DCMSIS_NN)
+  endif()
+
+  if(CONFIG_TFLITEMICRO_DEBUG)
+    list(APPEND COMMON_FLAGS -DTF_LITE_SHOW_MEMORY_USE)
+    list(APPEND COMMON_FLAGS -DTF_LITE_USE_CTIME)
+  else()
+    list(APPEND COMMON_FLAGS -DTF_LITE_STRIP_ERROR_STRINGS)
   endif()
 
   # ############################################################################
@@ -143,13 +142,15 @@ if(CONFIG_TFLITEMICRO)
   # ############################################################################
 
   set(INCDIR
-      ${CMAKE_BINARY_DIR}/apps/math/gemmlowp/gemmlowp
-      ${CMAKE_BINARY_DIR}/apps/math/ruy/ruy
-      ${CMAKE_BINARY_DIR}/apps/math/kissfft/kissfft
-      ${CMAKE_BINARY_DIR}/apps/math/tflite-micro/tflite-micro)
+      ${NUTTX_APPS_DIR}/math/gemmlowp/gemmlowp
+      ${NUTTX_APPS_DIR}/math/ruy/ruy
+      ${NUTTX_APPS_DIR}/math/kissfft/kissfft
+      ${NUTTX_APPS_DIR}/math/kissfft/kissfft
+      ${NUTTX_APPS_DIR}/mlearning/tflite-micro/tflite-micro
+      ${NUTTX_APPS_DIR}/system/flatbuffers/flatbuffers/include)
 
   if(CONFIG_MLEARNING_CMSIS_NN)
-    list(APPEND INCDIR ${CMAKE_BINARY_DIR}/apps/mlearning/cmsis-nn/cmsis-nn)
+    list(APPEND INCDIR ${NUTTX_APPS_DIR}/apps/mlearning/cmsis-nn/cmsis-nn)
   endif()
 
   # ############################################################################
@@ -160,5 +161,21 @@ if(CONFIG_TFLITEMICRO)
   target_compile_options(tflite_micro PRIVATE ${COMMON_FLAGS})
   target_sources(tflite_micro PRIVATE ${TFLITE_MICRO_SRCS})
   target_include_directories(tflite_micro PUBLIC ${INCDIR})
+
+  if(CONFIG_TFLITEMICRO_TOOL)
+    nuttx_add_application(
+      NAME
+      tflm
+      STACKSIZE
+      ${CONFIG_TFLITEMICRO_TOOL_STACKSIZE}
+      PRIORITY
+      ${CONFIG_TFLITEMICRO_TOOL_PRIORITY}
+      SRCS
+      ${CMAKE_CURRENT_LIST_DIR}/tflm_tool.cc
+      INCLUDE_DIRECTORIES
+      ${INCDIR}
+      COMPILE_FLAGS
+      ${COMMON_FLAGS})
+  endif()
 
 endif()

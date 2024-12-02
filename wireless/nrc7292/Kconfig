@@ -9,6 +9,7 @@ config WIRELESS_NRC7292
 	depends on NET_USRSOCK && WL_NRC7292
 	select NET_USRSOCK_TCP
 	select PIPES
+	select TIMER_FD
 	---help---
 		Enable support for the nrc7292 usrsock daemon
 

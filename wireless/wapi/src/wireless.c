@@ -48,6 +48,10 @@
 
 #include <nuttx/wireless/wireless.h>
 
+#ifdef CONFIG_WIRELESS_NRC7292
+#include <nuttx/wireless/nrc7292.h>
+#endif /* CONFIG_WIRELESS_NRC7292 */
+
 #include "wireless/wapi.h"
 #include "util.h"
 
@@ -99,6 +103,7 @@ FAR const char *g_wapi_modes[] =
   "WAPI_MODE_SECOND",
   "WAPI_MODE_MONITOR",
   "WAPI_MODE_MESH",
+  "WAPI_MODE_RELAY",
   NULL
 };
 
@@ -941,7 +946,6 @@ int wapi_set_ap(int sock, FAR const char *ifname,
   wrq.u.ap_addr.sa_family = ARPHRD_ETHER;
   memcpy(wrq.u.ap_addr.sa_data, ap, sizeof(struct ether_addr));
   strlcpy(wrq.ifr_name, ifname, IFNAMSIZ);
-
   ret = ioctl(sock, SIOCSIWAP, (unsigned long)((uintptr_t)&wrq));
   if (ret < 0)
     {
@@ -1332,7 +1336,6 @@ retry:
   wrq.u.data.length  = buflen;
   wrq.u.data.flags   = 0;
   strlcpy(wrq.ifr_name, ifname, IFNAMSIZ);
-
   ret = ioctl(sock, SIOCGIWSCAN, (unsigned long)((uintptr_t)&wrq));
   if (ret < 0 && errno == E2BIG)
     {
@@ -1593,3 +1596,95 @@ int wapi_get_pta_prio(int sock, FAR const char *ifname,
   return ret;
 }
 
+#ifdef CONFIG_WIRELESS_NRC7292
+/****************************************************************************
+ * Name: wapi_set_bandwidth
+ *
+ * Description:
+ *   Sets the bandwidth of the device.
+ *
+ ****************************************************************************/
+
+int wapi_set_bandwidth(int sock, FAR const char *ifname, uint16_t bandwidth)
+{
+  struct iwreq wrq =
+  {
+  };
+
+  int ret;
+
+  wrq.u.param.value = (int) bandwidth;
+
+  strlcpy(wrq.ifr_name, ifname, IFNAMSIZ);
+  ret = ioctl(sock, SIOCSIWBANDWIDTH, (unsigned long)((uintptr_t)&wrq));
+  if (ret < 0)
+    {
+      int errcode = errno;
+      WAPI_IOCTL_STRERROR(SIOCSIWBANDWIDTH, errcode);
+      ret = -errcode;
+    }
+
+  return ret;
+}
+
+/****************************************************************************
+ * Name: wapi_connect
+ *
+ * Description:
+ *   Connects to access point
+ *
+ ****************************************************************************/
+
+int wapi_connect(int sock, FAR const char *ifname)
+{
+  struct iwreq wrq =
+  {
+  };
+
+  int ret;
+
+  wrq.u.param.value = TRUE;
+
+  strlcpy(wrq.ifr_name, ifname, IFNAMSIZ);
+  ret = ioctl(sock, SIOCSIWCONNECT, (unsigned long)((uintptr_t)&wrq));
+  if (ret < 0)
+    {
+      int errcode = errno;
+      WAPI_IOCTL_STRERROR(SIOCSIWCONNECT, errcode);
+      ret = -errcode;
+    }
+
+  return ret;
+}
+
+/****************************************************************************
+ * Name: wapi_disconnect
+ *
+ * Description:
+ *   Disconnects from access point
+ *
+ ****************************************************************************/
+
+int wapi_disconnect(int sock, FAR const char *ifname)
+{
+  struct iwreq wrq =
+  {
+  };
+
+  int ret;
+
+  wrq.u.param.value = FALSE;
+
+  strlcpy(wrq.ifr_name, ifname, IFNAMSIZ);
+  ret = ioctl(sock, SIOCSIWCONNECT, (unsigned long)((uintptr_t)&wrq));
+  if (ret < 0)
+    {
+      int errcode = errno;
+      WAPI_IOCTL_STRERROR(SIOCSIWCONNECT, errcode);
+      ret = -errcode;
+    }
+
+  return ret;
+}
+
+#endif

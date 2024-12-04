@@ -305,7 +305,8 @@ int lte_hibernation_resume(FAR const uint8_t *res_ctx, int len)
 
   int dummy_arg; /* Dummy for blocking API call */
 
-  if (res_ctx == NULL || len < 0)
+  if ((len < 0) ||
+      (len > 0 && res_ctx == NULL))
     {
       return -EINVAL;
     }

@@ -31,6 +31,8 @@
 #include <assert.h>
 #include <sys/poll.h>
 
+#include <nuttx/net/dns.h>
+
 #include "alt1250_dbg.h"
 #include "alt1250_daemon.h"
 #include "alt1250_devif.h"
@@ -62,6 +64,9 @@
   while (0)
 
 #define IS_POLLIN(fds) ((fds).revents & POLLIN)
+
+#define ALT1250_CTX_SIZE (offsetof(struct alt1250_s, checksum) + \
+                          sizeof(dev->checksum))
 
 /****************************************************************************
  * Private Data
@@ -252,6 +257,27 @@ static uint16_t calc_checksum(FAR uint8_t *ptr, uint16_t len)
 
   return (uint16_t)ret;
 }
+
+/****************************************************************************
+ * Name: apply_context
+ ****************************************************************************/
+
+static int apply_context(FAR struct alt1250_s *dev,
+                         FAR uint8_t *ctx, int len)
+{
+  int remlen = ALT1250_CTX_SIZE - dev->stored_ctx_size;
+
+  if (remlen < len)
+    {
+      return ERROR;
+    }
+
+  memcpy((FAR uint8_t *)dev + dev->stored_ctx_size, ctx, len);
+  dev->stored_ctx_size += len;
+  remlen -= len;
+
+  return remlen;
+}
 #endif
 
 /****************************************************************************
@@ -356,8 +382,6 @@ int alt1250_set_context_save_cb(FAR struct alt1250_s *dev,
 
 int alt1250_collect_daemon_context(FAR struct alt1250_s *dev)
 {
-  struct alt1250_save_ctx ctx;
-
   if (!dev)
     {
       return ERROR;
@@ -368,77 +392,69 @@ int alt1250_collect_daemon_context(FAR struct alt1250_s *dev)
       return ERROR;
     }
 
-  memset(&ctx, 0, sizeof(struct alt1250_save_ctx));
-
-  /* Copy APN settings */
-
-  ctx.ip_type = dev->apn.ip_type;
-  ctx.auth_type = dev->apn.auth_type;
-  ctx.apn_type = dev->apn.apn_type;
-  memcpy(ctx.apn_name, dev->apn_name, LTE_APN_LEN);
-  memcpy(ctx.user_name, dev->user_name, LTE_APN_USER_NAME_LEN);
-  memcpy(ctx.pass, dev->pass, LTE_APN_PASSWD_LEN);
-
   /* Copy connection information */
 
-  ctx.d_flags = dev->net_dev.d_flags;
+  dev->d_flags = dev->net_dev.d_flags;
 
 #ifdef CONFIG_NET_IPv4
-  memcpy(&ctx.d_ipaddr, &dev->net_dev.d_ipaddr, sizeof(in_addr_t));
-  memcpy(&ctx.d_draddr, &dev->net_dev.d_draddr, sizeof(in_addr_t));
-  memcpy(&ctx.d_netmask, &dev->net_dev.d_netmask, sizeof(in_addr_t));
+  memcpy(&dev->d_ipaddr, &dev->net_dev.d_ipaddr, sizeof(in_addr_t));
+  memcpy(&dev->d_draddr, &dev->net_dev.d_draddr, sizeof(in_addr_t));
+  memcpy(&dev->d_netmask, &dev->net_dev.d_netmask, sizeof(in_addr_t));
 #endif
 #ifdef CONFIG_NET_IPv6
-  memcpy(&ctx.d_ipv6addr, &dev->net_dev.d_ipv6addr, sizeof(net_ipv6addr_t));
-  memcpy(&ctx.d_ipv6draddr,
+  memcpy(&dev->d_ipv6addr, &dev->net_dev.d_ipv6addr, sizeof(net_ipv6addr_t));
+  memcpy(&dev->d_ipv6draddr,
          &dev->net_dev.d_ipv6draddr,
          sizeof(net_ipv6addr_t));
-  memcpy(&ctx.d_ipv6netmask,
+  memcpy(&dev->d_ipv6netmask,
          &dev->net_dev.d_ipv6netmask,
          sizeof(net_ipv6addr_t));
 #endif
 
   /* Save checksum without checksum for validation */
 
-  ctx.checksum = calc_checksum((FAR uint8_t *)&ctx,
-                               offsetof(struct alt1250_save_ctx, checksum));
+  dev->checksum = calc_checksum((FAR uint8_t *)dev,
+                                offsetof(struct alt1250_s, checksum));
 
   /* Call user application callback */
 
-  dev->context_cb((FAR uint8_t *)&ctx, sizeof(ctx));
+  dev->context_cb((FAR uint8_t *)dev,
+                  offsetof(struct alt1250_s, checksum) +
+                  sizeof(dev->checksum));
 
   return OK;
 }
 
 int alt1250_apply_daemon_context(FAR struct alt1250_s *dev,
-                                 FAR struct alt1250_save_ctx *ctx)
+                                 FAR uint8_t *ctx, int len)
 {
   uint16_t checksum;
+#if defined(CONFIG_NETDB_DNSCLIENT)
+  uint8_t ndnsaddrs = ALTCOM_DNS_SERVERS;
+  int i;
+#endif
+  int remlen;
 
   if (!dev)
     {
       return ERROR;
     }
 
+  remlen = apply_context(dev, ctx, len);
+  if (remlen != 0)
+    {
+      return remlen;
+    }
+
   /* Calc checksum without checksum parameter */
 
-  checksum = calc_checksum((FAR uint8_t *)ctx,
-                           offsetof(struct alt1250_save_ctx, checksum));
-
-  if (ctx->checksum != checksum)
+  checksum = calc_checksum((FAR uint8_t *)dev,
+                           offsetof(struct alt1250_s, checksum));
+  if (dev->checksum != checksum)
     {
       dbg_alt1250("Saved context is invalid.\n");
       return ERROR;
     }
-
-  /* Copy APN settings */
-
-  dev->apn.ip_type = ctx->ip_type;
-  dev->apn.auth_type = ctx->auth_type;
-  dev->apn.apn_type = ctx->apn_type;
-  memcpy(dev->apn_name, ctx->apn_name, LTE_APN_LEN);
-  memcpy(dev->user_name, ctx->user_name, LTE_APN_USER_NAME_LEN);
-  memcpy(dev->pass, ctx->pass, LTE_APN_PASSWD_LEN);
 
   /* Set APN related pointers */
 
@@ -448,23 +464,52 @@ int alt1250_apply_daemon_context(FAR struct alt1250_s *dev,
 
   /* Copy connection information */
 
-  dev->net_dev.d_flags = ctx->d_flags;
+  dev->net_dev.d_flags = dev->d_flags;
 
 #ifdef CONFIG_NET_IPv4
-  memcpy(&dev->net_dev.d_ipaddr, &ctx->d_ipaddr, sizeof(in_addr_t));
-  memcpy(&dev->net_dev.d_draddr, &ctx->d_draddr, sizeof(in_addr_t));
-  memcpy(&dev->net_dev.d_netmask, &ctx->d_netmask, sizeof(in_addr_t));
+  memcpy(&dev->net_dev.d_ipaddr, &dev->d_ipaddr, sizeof(in_addr_t));
+  memcpy(&dev->net_dev.d_draddr, &dev->d_draddr, sizeof(in_addr_t));
+  memcpy(&dev->net_dev.d_netmask, &dev->d_netmask, sizeof(in_addr_t));
 #endif
 #ifdef CONFIG_NET_IPv6
-  memcpy(&dev->net_dev.d_ipv6addr, &ctx->d_ipv6addr, sizeof(net_ipv6addr_t));
+  memcpy(&dev->net_dev.d_ipv6addr, &dev->d_ipv6addr, sizeof(net_ipv6addr_t));
   memcpy(&dev->net_dev.d_ipv6draddr,
-         &ctx->d_ipv6draddr,
+         &dev->d_ipv6draddr,
          sizeof(net_ipv6addr_t));
   memcpy(&dev->net_dev.d_ipv6netmask,
-         &ctx->d_ipv6netmask,
+         &dev->d_ipv6netmask,
          sizeof(net_ipv6addr_t));
 #endif
 
+#if defined(CONFIG_NETDB_DNSCLIENT)
+  for (i = 0; (i < ndnsaddrs) && (i < CONFIG_NETDB_DNSSERVER_NAMESERVERS);
+      i++)
+    {
+      FAR const struct sockaddr *dnsaddr =
+        (FAR const struct sockaddr *)&dev->dnsaddrs[i];
+      socklen_t addrlen;
+
+      if (dnsaddr->sa_family == AF_INET || dnsaddr->sa_family == AF_INET6)
+        {
+          addrlen = (dnsaddr->sa_family == AF_INET) ?
+            sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6);
+          dns_add_nameserver(dnsaddr, addrlen);
+        }
+    }
+
+  dns_set_queryfamily(dev->dnsqfamily);
+#endif
   return OK;
+}
+
+void alt1250_save_dnsaddr(FAR struct sockaddr_storage *dnsaddr, int index)
+{
+  memcpy(&g_daemon->dnsaddrs[index], dnsaddr,
+         sizeof(struct sockaddr_storage));
+}
+
+void alt1250_save_dnsqfamily(int dnsqfamily)
+{
+  g_daemon->dnsqfamily = dnsqfamily;
 }
 #endif

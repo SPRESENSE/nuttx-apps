@@ -1,0 +1,129 @@
+#
+# For a description of the syntax of this configuration file,
+# see the file kconfig-language.txt in the NuttX tools repository.
+#
+
+config WIRELESS_NRC7292
+	tristate "Newracom NRC7292 usrsock daemon"
+	default n
+	depends on NET_USRSOCK && WL_NRC7292
+	select NET_USRSOCK_TCP
+	select PIPES
+	select TIMER_FD
+	---help---
+		Enable support for the nrc7292 usrsock daemon
+
+if WIRELESS_NRC7292
+config WIRELESS_NRC7292_PROGNAME
+	string "nrc7292 program name"
+	default "nrc7292"
+	---help---
+		Command-line command name of Usersock daemon task for NRC7292.
+
+config WIRELESS_NRC7292_PRIORITY
+	int "nrc7292 task priority"
+	default 100
+	---help---
+		Task priority of Usercok daemon.
+
+config WIRELESS_NRC7292_STACKSIZE
+	int "nrc7292 stack size"
+	default 4096
+	---help---
+		Stack size of Usercok daemon.
+
+config WIRELESS_NRC7292_HALOW_STA_DHCPCLIENT
+	bool "DHCP Client"
+	default y
+	---help---
+		Use internal DHCP Client in NRC7292.
+
+config WIRELESS_NRC7292_HALOW_AP_DHCPSERVER
+	bool "DHCP Server"
+	default y
+	---help---
+		Enable DNCP Server in NRC7292.
+
+config WIRELESS_NRC7292_ATSSEND_TIMEOUT
+	int "AT+SSEND command timeout (second)"
+	default 10
+	---help---
+		Timeout setting for AT+SSEND command. Unit is second.
+		This command will block any other SSEND command until finishing previous
+		previous command, or expireing the timeout.
+
+config WIRELESS_NRC7292_HALOW_REGDOM_CHECK_ENABLE
+	bool "Regulatory domain check"
+	default n
+	---help---
+		When this option is enabled, nrc7292 daemon checks regulatory domain for
+		setting of band frequency.
+
+if WIRELESS_NRC7292_HALOW_REGDOM_CHECK_ENABLE
+config WIRELESS_NRC7292_HALOW_REGDOM_US_ENABLE
+	bool "US"
+	default y
+	---help---
+		Enable to check "United State" domain
+
+config WIRELESS_NRC7292_HALOW_REGDOM_KR_ENABLE
+	bool "KR"
+	default y
+	---help---
+		Enable to check "Korea" domain
+
+config WIRELESS_NRC7292_HALOW_REGDOM_JP_ENABLE
+	bool "JP"
+	default y
+	---help---
+		Enable to check "Japan" domain
+
+config WIRELESS_NRC7292_HALOW_REGDOM_TW_ENABLE
+	bool "TW"
+	default y
+	---help---
+		Enable to check "Taiwan" domain
+
+config WIRELESS_NRC7292_HALOW_REGDOM_EU_ENABLE
+	bool "EU"
+	default y
+	---help---
+		Enable to check "European Union" domain
+
+config WIRELESS_NRC7292_HALOW_REGDOM_CN_ENABLE
+	bool "CN"
+	default y
+	---help---
+		Enable to check "China" domain
+
+config WIRELESS_NRC7292_HALOW_REGDOM_NZ_ENABLE
+	bool "NZ"
+	default y
+	---help---
+		Enable to check "New Zealand" domain
+
+config WIRELESS_NRC7292_HALOW_REGDOM_AU_ENABLE
+	bool "AU"
+	default y
+	---help---
+		Enable to check "Australia" domain
+
+config NRC7292_SPECIFIC_DEFAULT_BANDFREQUENCY
+	bool "Use user specific default band frequency"
+	default n
+	---help---
+		Enable to use user-specific default band frequency.
+
+if NRC7292_SPECIFIC_DEFAULT_BANDFREQUENCY
+
+config NRC7292_SPECIFIC_DEFAULT_BANDFREQUENCY_KHZ
+	int "Band frequency of Wi-Fi Halow"
+	default 921000
+	---help---
+		Band frequency of Wi-Fi Halow network
+
+endif
+
+endif
+
+endif

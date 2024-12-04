@@ -1,5 +1,5 @@
 # ##############################################################################
-# apps/audioutils/fmsynth/CMakeLists.txt
+# apps/system/spi/CMakeLists.txt
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more contributor
 # license agreements.  See the NOTICE file distributed with this work for
@@ -18,6 +18,18 @@
 #
 # ##############################################################################
 
-if(CONFIG_AUDIOUTILS_FMSYNTH_LIB)
-  target_sources(apps PRIVATE fmsynth.c fmsynth_eg.c fmsynth_op.c)
+if(CONFIG_SYSTEM_SPITOOL)
+  nuttx_add_application(
+    NAME
+    ${CONFIG_SPITOOL_PROGNAME}
+    SRCS
+    spi_main.c
+    spi_bus.c
+    spi_devif.c
+    spi_exch.c
+    spi_common.c
+    STACKSIZE
+    ${CONFIG_SPITOOL_STACKSIZE}
+    PRIORITY
+    ${CONFIG_SPITOOL_PRIORITY})
 endif()

@@ -60,6 +60,12 @@ config SYSTEM_NXDIAG_HOST_MODULES
 		modules on the host system. This is useful for debugging the
 		host system. Enables the "-m" and "--host-modules" options.
 
+config SYSTEM_NXDIAG_VERBOSE
+	bool "Verbose"
+	default n
+	---help---
+		Enable printing nxdiag application information during build.
+
 comment "Vendor specific information"
 
 config SYSTEM_NXDIAG_ESPRESSIF
@@ -73,5 +79,12 @@ config SYSTEM_NXDIAG_ESPRESSIF_CHIP
 	default n
 	---help---
 		Enable Espressif-specific information about chip. Chip must be connected during build process.
+
+config SYSTEM_NXDIAG_ESPRESSIF_CHIP_WO_TOOL
+	bool "Espressif Chip info without esptool"
+	depends on SYSTEM_NXDIAG_ESPRESSIF_CHIP
+	default n
+	---help---
+		Enable Espressif-specific information about chip without using esptool.
 
 endif # SYSTEM_NXDIAG

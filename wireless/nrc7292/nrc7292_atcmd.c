@@ -127,6 +127,12 @@ static const struct setup_cmd_s g_module_setup_cmds[] =
   procret_none
 },
 {
+  "AT+WDUTYCYCLE=1000000,100000\r\n", /* Duty ratio 10%: window=1s, duration=0.1s */
+  NULL,
+  NULL,
+  procret_none
+},
+{
   NULL,
   NULL,
   NULL,

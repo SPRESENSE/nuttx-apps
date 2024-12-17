@@ -1,5 +1,5 @@
 # ##############################################################################
-# apps/examples/audio_rttl/CMakeLists.txt
+# apps/lte/lapi/CMakeLists.txt
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more contributor
 # license agreements.  See the NOTICE file distributed with this work for
@@ -18,14 +18,21 @@
 #
 # ##############################################################################
 
-if(CONFIG_EXAMPLES_AUDIO_SOUND)
-  nuttx_add_application(
-    NAME
-    ${CONFIG_EXAMPLES_AUDIO_SOUND_PROGNAME}
-    PRIORITY
-    ${CONFIG_EXAMPLES_AUDIO_SOUND_PRIORITY}
-    STACKSIZE
-    ${CONFIG_EXAMPLES_AUDIO_SOUND_STACKSIZE}
-    SRCS
-    audio_rttl.cxx)
+if(CONFIG_LTE_LAPI)
+
+  set(CSRCS
+    src/lapi_evt.c
+    src/lapi_firmware.c
+    src/lapi_net.c
+    src/lapi_other.c
+    src/lapi_pdn.c
+    src/lapi_pin.c
+    src/lapi_power.c
+    src/lapi_psave.c
+    src/lapi_radio.c
+    src/lapi_sim.c
+    src/lapi_lwm2m.c
+    src/lapi_log.c)
+
+  target_sources(apps PRIVATE ${CSRCS})
 endif()

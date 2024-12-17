@@ -1,5 +1,5 @@
 # ##############################################################################
-# apps/examples/audio_rttl/CMakeLists.txt
+# apps/system/spi/CMakeLists.txt
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more contributor
 # license agreements.  See the NOTICE file distributed with this work for
@@ -18,14 +18,18 @@
 #
 # ##############################################################################
 
-if(CONFIG_EXAMPLES_AUDIO_SOUND)
+if(CONFIG_SYSTEM_SPITOOL)
   nuttx_add_application(
     NAME
-    ${CONFIG_EXAMPLES_AUDIO_SOUND_PROGNAME}
-    PRIORITY
-    ${CONFIG_EXAMPLES_AUDIO_SOUND_PRIORITY}
-    STACKSIZE
-    ${CONFIG_EXAMPLES_AUDIO_SOUND_STACKSIZE}
+    ${CONFIG_SPITOOL_PROGNAME}
     SRCS
-    audio_rttl.cxx)
+    spi_main.c
+    spi_bus.c
+    spi_devif.c
+    spi_exch.c
+    spi_common.c
+    STACKSIZE
+    ${CONFIG_SPITOOL_STACKSIZE}
+    PRIORITY
+    ${CONFIG_SPITOOL_PRIORITY})
 endif()

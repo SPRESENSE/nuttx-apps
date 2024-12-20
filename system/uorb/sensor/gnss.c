@@ -29,10 +29,21 @@
  ****************************************************************************/
 
 #ifdef CONFIG_DEBUG_UORB
-#define UORB_DEBUG_FORMAT_SENSOR_GNSS \
-  "timestamp:%" PRIu64 ",time_utc:%" PRIu64 ",latitude:%hf,longitude:%hf," \
-  "altitude:%hf,altitude_ellipsoid:%hf,eph:%hf,epv:%hf,hdop:%hf,pdop:%hf," \
-  "vdop:%hf,ground_speed:%hf,course:%hf,satellites_used:%" PRIu32 ""
+#define UORB_DEBUG_FORMAT_SENSOR_GNSS     \
+  "timestamp:%" PRIu64                    \
+  ",time_utc:%" PRIu64                    \
+  ",latitude:%hf"                         \
+  ",longitude:%hf"                        \
+  ",altitude:%hf"                         \
+  ",altitude_ellipsoid:%hf"               \
+  ",eph:%hf"                              \
+  ",epv:%hf"                              \
+  ",hdop:%hf"                             \
+  ",pdop:%hf"                             \
+  ",vdop:%hf"                             \
+  ",ground_speed:%hf"                     \
+  ",course:%hf"                           \
+  ",satellites_used:%" PRIu32 ""
 
 #define SENSOR_GNSS_SATELLITE_INFO_FORMAT(idx) \
   ",svid" #idx ":%" PRIu32 \
@@ -69,6 +80,7 @@ static const char sensor_gnss_measurement_format[] =
 static const char sensor_gnss_satellite_format[] =
   "timestamp:%" PRIu64 ",count:%" PRIu32 ",satellites:%" PRIu32 ","
   "constellation:%" PRIu32 ""
+  ",cf:%hf"
   SENSOR_GNSS_SATELLITE_INFO_FORMAT(0)
   SENSOR_GNSS_SATELLITE_INFO_FORMAT(1)
   SENSOR_GNSS_SATELLITE_INFO_FORMAT(2)

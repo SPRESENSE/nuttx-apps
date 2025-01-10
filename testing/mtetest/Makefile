@@ -1,6 +1,8 @@
 ############################################################################
 # apps/testing/mtetest/Makefile
 #
+# SPDX-License-Identifier: Apache-2.0
+#
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.  The
@@ -22,7 +24,7 @@ include $(APPDIR)/Make.defs
 
 MAINSRC   = mtetest.c
 PROGNAME  = mtetest
-PRIORITY  = $(CONFIG_TESTING_KASAN_PRIORITY)
+PRIORITY  = $(CONFIG_TESTING_MTE_PRIORITY)
 STACKSIZE = $(CONFIG_DEFAULT_TASK_STACKSIZE)
 
 include $(APPDIR)/Application.mk

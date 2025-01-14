@@ -1,7 +1,5 @@
 /****************************************************************************
- * apps/nshlib/nsh_mmcmds.c
- *
- * SPDX-License-Identifier: Apache-2.0
+ * apps/testing/nettest/others/test_others_common.c
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -24,67 +22,27 @@
  * Included Files
  ****************************************************************************/
 
-#include <nuttx/config.h>
-
-#include <string.h>
-
-#include "nsh.h"
-#include "nsh_console.h"
+#include "test_others.h"
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 
-#if !defined(CONFIG_NSH_DISABLE_FREE) && defined(NSH_HAVE_CATFILE)
-
 /****************************************************************************
- * Name: cmd_free
+ * Name: test_others_group_setup
  ****************************************************************************/
 
-int cmd_free(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv)
+int test_others_group_setup(FAR void **state)
 {
-  UNUSED(argc);
-
-  return nsh_catfile(vtbl, argv[0], CONFIG_NSH_PROC_MOUNTPOINT "/meminfo");
+  return 0;
 }
-
-#endif /* !CONFIG_NSH_DISABLE_FREE && NSH_HAVE_CATFILE */
-
-#if !defined(CONFIG_NSH_DISABLE_MEMDUMP) && defined(NSH_HAVE_WRITEFILE)
 
 /****************************************************************************
- * Name: cmd_memdump
+ * Name: test_others_group_teardown
  ****************************************************************************/
 
-int cmd_memdump(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv)
+int test_others_group_teardown(FAR void **state)
 {
-  char arg[LINE_MAX] = "";
-  int i;
-
-  if (argc == 1)
-    {
-      strlcpy(arg, "used", LINE_MAX);
-    }
-  else if (argc >= 2 && (strcmp(argv[1], "-h") == 0 ||
-                         strcmp(argv[1], "help") == 0))
-    {
-      return nsh_catfile(vtbl, argv[0],
-                         CONFIG_NSH_PROC_MOUNTPOINT "/memdump");
-    }
-  else
-    {
-      for (i = 1; i < argc; i++)
-        {
-          strlcat(arg, argv[i], LINE_MAX);
-          if (i < argc - 1)
-            {
-              strlcat(arg, " ", LINE_MAX);
-            }
-        }
-    }
-
-  return nsh_writefile(vtbl, argv[0], arg, strlen(arg),
-                       CONFIG_NSH_PROC_MOUNTPOINT "/memdump");
+  return 0;
 }
 
-#endif /* !CONFIG_NSH_DISABLE_MEMDUMP && NSH_HAVE_WRITEFILE */

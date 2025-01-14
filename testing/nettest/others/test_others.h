@@ -1,7 +1,5 @@
 /****************************************************************************
- * apps/nshlib/nsh_mmcmds.c
- *
- * SPDX-License-Identifier: Apache-2.0
+ * apps/testing/nettest/others/test_others.h
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -20,71 +18,35 @@
  *
  ****************************************************************************/
 
+#ifndef __APPS_TESTING_NETTEST_OTHERS_TEST_OTHERS_H
+#define __APPS_TESTING_NETTEST_OTHERS_TEST_OTHERS_H
+
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
-#include <nuttx/config.h>
-
-#include <string.h>
-
-#include "nsh.h"
-#include "nsh_console.h"
+#include <nuttx/compiler.h>
 
 /****************************************************************************
- * Public Functions
+ * Public Function Prototypes
  ****************************************************************************/
-
-#if !defined(CONFIG_NSH_DISABLE_FREE) && defined(NSH_HAVE_CATFILE)
 
 /****************************************************************************
- * Name: cmd_free
+ * Name: test_others_group_setup
  ****************************************************************************/
 
-int cmd_free(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv)
-{
-  UNUSED(argc);
-
-  return nsh_catfile(vtbl, argv[0], CONFIG_NSH_PROC_MOUNTPOINT "/meminfo");
-}
-
-#endif /* !CONFIG_NSH_DISABLE_FREE && NSH_HAVE_CATFILE */
-
-#if !defined(CONFIG_NSH_DISABLE_MEMDUMP) && defined(NSH_HAVE_WRITEFILE)
+int test_others_group_setup(FAR void **state);
 
 /****************************************************************************
- * Name: cmd_memdump
+ * Name: test_others_group_teardown
  ****************************************************************************/
 
-int cmd_memdump(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv)
-{
-  char arg[LINE_MAX] = "";
-  int i;
+int test_others_group_teardown(FAR void **state);
 
-  if (argc == 1)
-    {
-      strlcpy(arg, "used", LINE_MAX);
-    }
-  else if (argc >= 2 && (strcmp(argv[1], "-h") == 0 ||
-                         strcmp(argv[1], "help") == 0))
-    {
-      return nsh_catfile(vtbl, argv[0],
-                         CONFIG_NSH_PROC_MOUNTPOINT "/memdump");
-    }
-  else
-    {
-      for (i = 1; i < argc; i++)
-        {
-          strlcat(arg, argv[i], LINE_MAX);
-          if (i < argc - 1)
-            {
-              strlcat(arg, " ", LINE_MAX);
-            }
-        }
-    }
+/****************************************************************************
+ * Name: test_others_bufpool
+ ****************************************************************************/
 
-  return nsh_writefile(vtbl, argv[0], arg, strlen(arg),
-                       CONFIG_NSH_PROC_MOUNTPOINT "/memdump");
-}
+void test_others_bufpool(FAR void **state);
 
-#endif /* !CONFIG_NSH_DISABLE_MEMDUMP && NSH_HAVE_WRITEFILE */
+#endif /* __APPS_TESTING_NETTEST_OTHERS_TEST_OTHERS_H */

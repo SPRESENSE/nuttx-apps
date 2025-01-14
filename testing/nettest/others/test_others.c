@@ -1,7 +1,5 @@
 /****************************************************************************
- * apps/system/readline/readline.c
- *
- * SPDX-License-Identifier: Apache-2.0
+ * apps/testing/nettest/others/test_others.c
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -24,49 +22,25 @@
  * Included Files
  ****************************************************************************/
 
-#include <nuttx/config.h>
+#include <setjmp.h>
+#include <stdarg.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <cmocka.h>
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-
-#include "system/readline.h"
+#include "test_others.h"
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 
-/****************************************************************************
- * Name: readline
- *
- *   readline will read a line from the terminal and return it, using
- *   prompt as a prompt.  If prompt is NULL or the empty string, no prompt
- *   is issued.  The line returned is allocated with malloc(3);
- *   the caller must free it when finished.  The line re‐turned has the
- *   final newline removed, so only the text of the line remains.
- *
- ****************************************************************************/
-
-FAR char *readline(FAR const char *prompt)
+int main(int argc, FAR char *argv[])
 {
-  FAR char *line = malloc(LINE_MAX);
-
-  if (line != NULL)
+  const struct CMUnitTest others_tests[] =
     {
-#ifdef CONFIG_READLINE_TABCOMPLETION
-      FAR const char *orig = readline_prompt(prompt);
-#endif
-      if (readline_fd(line, LINE_MAX,
-                      STDIN_FILENO, STDOUT_FILENO) == 0)
-        {
-          free(line);
-          line = NULL;
-        }
+      cmocka_unit_test(test_others_bufpool),
+    };
 
-#ifdef CONFIG_READLINE_TABCOMPLETION
-      readline_prompt(orig);
-#endif
-    }
-
-  return line;
+  return cmocka_run_group_tests(others_tests, test_others_group_setup,
+                                test_others_group_teardown);
 }

@@ -1,7 +1,5 @@
 /****************************************************************************
- * apps/testing/drivers/drivertest/drivertest_simple.c
- *
- * SPDX-License-Identifier: Apache-2.0
+ * apps/examples/nimble_bleprph/misc.c
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -24,43 +22,27 @@
  * Included Files
  ****************************************************************************/
 
-#include <stdarg.h>
-#include <stddef.h>
-#include <setjmp.h>
-#include <stdint.h>
-#include <cmocka.h>
-
-/****************************************************************************
- * Private Functions
- ****************************************************************************/
-
-static void drivertest_simple_assert(FAR void **state)
-{
-  UNUSED(state);
-  assert_int_equal(0, 0);
-}
-
-static void drivertest_simple_assert_string(FAR void **state)
-{
-  UNUSED(state);
-  assert_string_not_equal("hello", "world");
-}
+#include "bleprph.h"
 
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
 
-/****************************************************************************
- * drivertest_simple_main
- ****************************************************************************/
-
-int main(int argc, FAR char *argv[])
+void print_bytes(FAR const uint8_t *bytes, int len)
 {
-  const struct CMUnitTest tests[] =
-  {
-    cmocka_unit_test(drivertest_simple_assert),
-    cmocka_unit_test(drivertest_simple_assert_string),
-  };
+  int i;
 
-  return cmocka_run_group_tests(tests, NULL, NULL);
+  for (i = 0; i < len; i++)
+    {
+      printf("%s0x%02x", i != 0 ? ":" : "", bytes[i]);
+    }
+}
+
+void print_addr(FAR const void *addr)
+{
+  const uint8_t *u8p;
+
+  u8p = addr;
+  printf("%02x:%02x:%02x:%02x:%02x:%02x",
+         u8p[5], u8p[4], u8p[3], u8p[2], u8p[1], u8p[0]);
 }

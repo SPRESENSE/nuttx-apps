@@ -29,6 +29,7 @@
 #include <nuttx/mtd/mtd.h>
 #include <nuttx/version.h>
 
+#include <endian.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
@@ -40,9 +41,11 @@
 #include <syslog.h>
 #include <unistd.h>
 
+#include <netinet/in.h>
 #include <sys/boardctl.h>
 #include <sys/ioctl.h>
 #include <sys/param.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/statfs.h>
 #include <sys/types.h>
@@ -72,10 +75,18 @@
 #define FASTBOOT_SPARSE_HEADER      sizeof(struct fastboot_sparse_header_s)
 #define FASTBOOT_CHUNK_HEADER       sizeof(struct fastboot_chunk_header_s)
 
-#define FASTBOOT_GETUINT32(p)       (((uint32_t)(p)[3] << 24) | \
-                                     ((uint32_t)(p)[2] << 16) | \
-                                     ((uint32_t)(p)[1] << 8) | \
-                                     (uint32_t)(p)[0])
+/* Fastboot TCP Protocol v1
+ *
+ *   handshake: chars "FB" followed by a 2-digit base-10 ASCII version number
+ *   data_size: 8-byte big-endian binary value before fastboot packet
+ *
+ *   https://android.googlesource.com/platform/system/core/+/refs/heads/main\
+ *         /fastboot/README.md#tcp-protocol-v1
+ */
+
+#define FASTBOOT_TCP_HANDSHAKE      "FB01"
+#define FASTBOOT_TCP_HANDSHAKE_LEN  4
+#define FASTBOOT_TCP_PORT           5554
 
 #define fb_info(...)                syslog(LOG_INFO, ##__VA_ARGS__);
 #define fb_err(...)                 syslog(LOG_ERR, ##__VA_ARGS__);
@@ -83,6 +94,8 @@
 /****************************************************************************
  * Private types
  ****************************************************************************/
+
+struct fastboot_ctx_s;
 
 struct fastboot_var_s
 {
@@ -126,19 +139,40 @@ struct fastboot_file_s
   off_t offset;
 };
 
+struct fastboot_transport_ops_s
+{
+  CODE int (*init)(FAR struct fastboot_ctx_s *);
+  CODE void (*deinit)(FAR struct fastboot_ctx_s *);
+  CODE ssize_t (*read)(FAR struct fastboot_ctx_s *, FAR void *, size_t);
+  CODE int (*write)(FAR struct fastboot_ctx_s *, FAR const void *, size_t);
+};
+
 struct fastboot_ctx_s
 {
-  int usbdev_in;
-  int usbdev_out;
+  /* Transport file descriptors
+   *
+   * | idx |    USB   |      TCP      | poll |
+   * |-----|----------|---------------|------|
+   * |   0 |usbdev in |TCP socket     |  Y   |
+   * |   1 |usbdev out|accepted socket|  N   |
+   */
+
+  int tran_fd[2];
   int flash_fd;
   size_t download_max;
   size_t download_size;
   size_t download_offset;
   size_t total_imgsize;
-  int wait_ms;
+
+  /* Store wait_ms argument before poll of fastboot_command_loop, and
+   * TCP transport remaining data size later.
+   */
+
+  uint64_t left;
   FAR void *download_buffer;
   FAR struct fastboot_var_s *varlist;
   CODE int (*upload_func)(FAR struct fastboot_ctx_s *context);
+  FAR const struct fastboot_transport_ops_s *ops;
   struct
     {
       size_t size;
@@ -189,6 +223,27 @@ static void fastboot_shell(FAR struct fastboot_ctx_s *context,
                            FAR const char *arg);
 #endif
 
+/* USB transport */
+
+#ifdef CONFIG_USBFASTBOOT
+static int     fastboot_usbdev_initialize(FAR struct fastboot_ctx_s *ctx);
+static void    fastboot_usbdev_deinit(FAR struct fastboot_ctx_s *ctx);
+static ssize_t fastboot_usbdev_read(FAR struct fastboot_ctx_s *ctx,
+                                    FAR void *buf, size_t len);
+static int     fastboot_usbdev_write(FAR struct fastboot_ctx_s *ctx,
+                                     FAR const void *buf, size_t len);
+#elif defined(CONFIG_NET_TCP)
+
+/* TCP transport */
+
+static int     fastboot_tcp_initialize(FAR struct fastboot_ctx_s *ctx);
+static void    fastboot_tcp_deinit(FAR struct fastboot_ctx_s *ctx);
+static ssize_t fastboot_tcp_read(FAR struct fastboot_ctx_s *ctx,
+                                 FAR void *buf, size_t len);
+static int     fastboot_tcp_write(FAR struct fastboot_ctx_s *ctx,
+                                  FAR const void *buf, size_t len);
+#endif
+
 /****************************************************************************
  * Private Data
  ****************************************************************************/
@@ -221,6 +276,24 @@ static const struct memory_region_s g_memory_region[] =
 };
 #endif
 
+#ifdef CONFIG_USBFASTBOOT
+static const struct fastboot_transport_ops_s g_tran_ops_usb =
+{
+  .init    = fastboot_usbdev_initialize,
+  .deinit  = fastboot_usbdev_deinit,
+  .read    = fastboot_usbdev_read,
+  .write   = fastboot_usbdev_write,
+};
+#elif defined(CONFIG_NET_TCP)
+static const struct fastboot_transport_ops_s g_tran_ops_tcp =
+{
+  .init    = fastboot_tcp_initialize,
+  .deinit  = fastboot_tcp_deinit,
+  .read    = fastboot_tcp_read,
+  .write   = fastboot_tcp_write,
+};
+#endif
+
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
@@ -243,9 +316,9 @@ static ssize_t fastboot_read(int fd, FAR void *buf, size_t len)
   return r < 0 ? -errno : r;
 }
 
-static int fastboot_write(int fd, FAR void *buf, size_t len)
+static int fastboot_write(int fd, FAR const void *buf, size_t len)
 {
-  FAR char *data = buf;
+  FAR const char *data = buf;
 
   while (len > 0)
     {
@@ -274,7 +347,7 @@ static void fastboot_ack(FAR struct fastboot_ctx_s *context,
     }
 
   snprintf(response, FASTBOOT_MSG_LEN, "%s%s", code, reason);
-  fastboot_write(context->usbdev_out, response, strlen(response));
+  context->ops->write(context, response, strlen(response));
 }
 
 static void fastboot_fail(FAR struct fastboot_ctx_s *context,
@@ -437,7 +510,7 @@ fastboot_flash_program(FAR struct fastboot_ctx_s *context, int fd)
             break;
           case FASTBOOT_CHUNK_FILL:
             {
-              uint32_t fill_data = FASTBOOT_GETUINT32(chunk_ptr);
+              uint32_t fill_data = be32toh(*(FAR uint32_t *)chunk_ptr);
               uint32_t chunk_size = chunk->chunk_sz * sparse->blk_sz;
               ret = ffastboot_flash_fill(fd, context->download_offset,
                                          fill_data, sparse->blk_sz,
@@ -576,7 +649,7 @@ static void fastboot_download(FAR struct fastboot_ctx_s *context,
     }
 
   snprintf(response, FASTBOOT_MSG_LEN, "DATA%08lx", len);
-  ret = fastboot_write(context->usbdev_out, response, strlen(response));
+  ret = context->ops->write(context, response, strlen(response));
   if (ret < 0)
     {
       fb_err("Reponse error [%d]\n", -ret);
@@ -588,8 +661,7 @@ static void fastboot_download(FAR struct fastboot_ctx_s *context,
 
   while (len > 0)
     {
-      ssize_t r = fastboot_read(context->usbdev_in,
-                                download, len);
+      ssize_t r = context->ops->read(context, download, len);
       if (r < 0)
         {
           context->download_size = 0;
@@ -655,9 +727,8 @@ static void fastboot_reboot_bootloader(FAR struct fastboot_ctx_s *context,
 
 static int fastboot_memdump_upload(FAR struct fastboot_ctx_s *context)
 {
-  return fastboot_write(context->usbdev_out,
-                        context->upload_param.u.mem.addr,
-                        context->upload_param.size);
+  return context->ops->write(context, context->upload_param.u.mem.addr,
+                             context->upload_param.size);
 }
 
 static void fastboot_memdump_region(memdump_print_t memprint, FAR void *priv)
@@ -752,9 +823,8 @@ static int fastboot_filedump_upload(FAR struct fastboot_ctx_s *context)
           break;
         }
       else if (nread < 0 ||
-               fastboot_write(context->usbdev_out,
-                              context->download_buffer,
-                              nread) < 0)
+               context->ops->write(context, context->download_buffer,
+                                   nread) < 0)
         {
           fb_err("Upload failed (%zu bytes left)\n", size);
           close(fd);
@@ -873,7 +943,7 @@ static void fastboot_upload(FAR struct fastboot_ctx_s *context,
   snprintf(response, FASTBOOT_MSG_LEN, "DATA%08zx",
            context->upload_param.size);
 
-  ret = fastboot_write(context->usbdev_out, response, strlen(response));
+  ret = context->ops->write(context, response, strlen(response));
   if (ret < 0)
     {
       fb_err("Reponse error [%d]\n", -ret);
@@ -923,18 +993,22 @@ static void fastboot_oem(FAR struct fastboot_ctx_s *context,
 
 static void fastboot_command_loop(FAR struct fastboot_ctx_s *context)
 {
-  if (context->wait_ms > 0)
+  if (context->left > 0)
     {
       struct pollfd fds[1];
 
-      fds[0].fd = context->usbdev_in;
+      fds[0].fd = context->tran_fd[0];
       fds[0].events = POLLIN;
 
-      if (poll(fds, 1, context->wait_ms) <= 0)
+      if (poll(fds, 1, context->left) <= 0)
         {
           return;
         }
     }
+
+  /* Reinitialize for storing TCP transport remaining data size. */
+
+  context->left = 0;
 
   while (1)
     {
@@ -942,12 +1016,11 @@ static void fastboot_command_loop(FAR struct fastboot_ctx_s *context)
       size_t ncmds = nitems(g_fast_cmd);
       size_t index;
 
-      ssize_t r = fastboot_read(context->usbdev_in,
-                                buffer, FASTBOOT_MSG_LEN);
+      ssize_t r = context->ops->read(context, buffer, FASTBOOT_MSG_LEN);
       if (r < 0)
         {
-          fb_err("USB read error\n");
-          break;
+          fb_err("fastboot transport read() %zd\n", r);
+          continue;
         }
 
       buffer[r] = '\0';
@@ -1011,6 +1084,7 @@ static void fastboot_free_publish(FAR struct fastboot_ctx_s *context)
     }
 }
 
+#ifdef CONFIG_USBFASTBOOT
 static int fastboot_open_usb(int index, int flags)
 {
   int try = FASTBOOT_EP_RETRY_TIMES;
@@ -1036,7 +1110,7 @@ static int fastboot_open_usb(int index, int flags)
   return -errno;
 }
 
-static int fastboot_usbdev_initialize(void)
+static int fastboot_usbdev_initialize(FAR struct fastboot_ctx_s *ctx)
 {
 #ifdef CONFIG_SYSTEM_FASTBOOTD_USB_BOARDCTL
   struct boardioc_usbdev_ctrl_s ctrl;
@@ -1075,7 +1149,244 @@ static int fastboot_usbdev_initialize(void)
     }
 #endif /* SYSTEM_FASTBOOTD_USB_BOARDCTL */
 
+  ctx->tran_fd[0]  =
+      fastboot_open_usb(FASTBOOT_EP_BULKOUT_IDX, O_RDONLY | O_CLOEXEC);
+  if (ctx->tran_fd[0] < 0)
+    {
+      return ctx->tran_fd[0];
+    }
+
+  ctx->tran_fd[1] =
+      fastboot_open_usb(FASTBOOT_EP_BULKIN_IDX, O_WRONLY | O_CLOEXEC);
+  if (ctx->tran_fd[1] < 0)
+    {
+      close(ctx->tran_fd[0]);
+      ctx->tran_fd[0] = -1;
+      return ctx->tran_fd[1];
+    }
+
   return 0;
+}
+
+static void fastboot_usbdev_deinit(FAR struct fastboot_ctx_s *ctx)
+{
+  int i;
+
+  for (i = 0; i < nitems(ctx->tran_fd); i++)
+    {
+      close(ctx->tran_fd[i]);
+      ctx->tran_fd[i] = -1;
+    }
+}
+
+static ssize_t fastboot_usbdev_read(FAR struct fastboot_ctx_s *ctx,
+                                    FAR void *buf, size_t len)
+{
+  return fastboot_read(ctx->tran_fd[0], buf, len);
+}
+
+static int fastboot_usbdev_write(FAR struct fastboot_ctx_s *ctx,
+                                 FAR const void *buf, size_t len)
+{
+  return fastboot_write(ctx->tran_fd[1], buf, len);
+}
+
+#elif defined(CONFIG_NET_TCP)
+static int fastboot_tcp_initialize(FAR struct fastboot_ctx_s *ctx)
+{
+  struct sockaddr_in addr;
+
+  ctx->tran_fd[0] = socket(AF_INET, SOCK_STREAM, 0);
+  if (ctx->tran_fd[0] < 0)
+    {
+      fb_err("create socket failed %d", errno);
+      return -errno;
+    }
+
+  memset(&addr, 0, sizeof(addr));
+  addr.sin_family = AF_INET;
+  addr.sin_addr.s_addr = htonl(INADDR_ANY);
+  addr.sin_port = htons(FASTBOOT_TCP_PORT);
+  if (bind(ctx->tran_fd[0], (struct sockaddr *) &addr, sizeof(addr)) < 0)
+    {
+      fb_err("bind() failed %d", errno);
+      goto error;
+    }
+
+  if (listen(ctx->tran_fd[0], 1) < 0)
+    {
+      fb_err("listen() failed %d", errno);
+      goto error;
+    }
+
+  return 0;
+error:
+  close(ctx->tran_fd[0]);
+  ctx->tran_fd[0] = -1;
+  return -errno;
+}
+
+static void fastboot_tcp_disconn(FAR struct fastboot_ctx_s *ctx)
+{
+  close(ctx->tran_fd[1]);
+  ctx->tran_fd[1] = -1;
+}
+
+static void fastboot_tcp_deinit(FAR struct fastboot_ctx_s *ctx)
+{
+  fastboot_tcp_disconn(ctx);
+  close(ctx->tran_fd[0]);
+  ctx->tran_fd[0] = -1;
+}
+
+static ssize_t fastboot_read_all(int fd, FAR void *buf, size_t len)
+{
+  size_t total = 0;
+  ssize_t nread;
+
+  while (total < len)
+    {
+      nread = fastboot_read(fd, buf, len);
+      if (nread <= 0)
+        {
+          if (total == 0)
+            {
+              return nread;
+            }
+
+          break;
+        }
+
+      total += nread;
+    }
+
+  return total;
+}
+
+static ssize_t fastboot_tcp_read(FAR struct fastboot_ctx_s *ctx,
+                                 FAR void *buf, size_t len)
+{
+  char handshake[FASTBOOT_TCP_HANDSHAKE_LEN];
+  uint64_t data_size;
+  ssize_t nread;
+
+  if (ctx->tran_fd[1] == -1)
+    {
+      while (1)
+        {
+          /* Accept a connection, not care the address of the peer socket */
+
+          ctx->tran_fd[1] = accept(ctx->tran_fd[0], NULL, 0);
+          if (ctx->tran_fd[1] < 0)
+            {
+              continue;
+            }
+
+          /* Handshake */
+
+          memset(handshake, 0, sizeof(handshake));
+          if (fastboot_read_all(ctx->tran_fd[1], handshake,
+                                sizeof(handshake)) != sizeof(handshake) ||
+              strncmp(handshake, FASTBOOT_TCP_HANDSHAKE,
+                      sizeof(handshake)) != 0 ||
+              fastboot_write(ctx->tran_fd[1], handshake,
+                             sizeof(handshake)) < 0)
+            {
+              fb_err("%s err handshake %d 0x%" PRIx32, __func__, errno,
+                     *(FAR uint32_t *)handshake);
+              fastboot_tcp_disconn(ctx);
+              continue;
+            }
+
+          break;
+        }
+    }
+
+  if (ctx->left == 0)
+    {
+      nread =
+          fastboot_read_all(ctx->tran_fd[1], &data_size, sizeof(data_size));
+      if (nread != sizeof(data_size))
+        {
+          /* As normal, end of file if client has closed the connection */
+
+          if (nread != 0)
+            {
+              fb_err("%s err read data_size %zd %d", __func__, nread, errno);
+            }
+
+          fastboot_tcp_disconn(ctx);
+          return nread;
+        }
+
+      ctx->left = be64toh(data_size);
+    }
+
+  if (len > ctx->left)
+    {
+      len = ctx->left;
+    }
+
+  nread = fastboot_read(ctx->tran_fd[1], buf, len);
+  if (nread <= 0)
+    {
+      fastboot_tcp_disconn(ctx);
+      ctx->left = 0;
+    }
+  else
+    {
+      ctx->left -= nread;
+    }
+
+  return nread;
+}
+
+static int fastboot_tcp_write(FAR struct fastboot_ctx_s *ctx,
+                              FAR const void *buf, size_t len)
+{
+  uint64_t data_size = htobe64(len);
+  int ret;
+
+  ret = fastboot_write(ctx->tran_fd[1], &data_size, sizeof(data_size));
+  if (ret < 0)
+    {
+      return ret;
+    }
+
+  return fastboot_write(ctx->tran_fd[1], buf, len);
+}
+#endif
+
+static int fastboot_context_initialize(FAR struct fastboot_ctx_s *ctx)
+{
+  ctx->download_max    = CONFIG_SYSTEM_FASTBOOTD_DOWNLOAD_MAX;
+  ctx->download_offset = 0;
+  ctx->download_size   = 0;
+  ctx->flash_fd        = -1;
+  ctx->total_imgsize   = 0;
+  ctx->varlist         = NULL;
+  ctx->left            = 0;
+#ifdef CONFIG_USBFASTBOOT
+  ctx->ops             = &g_tran_ops_usb;
+#elif defined(CONFIG_NET_TCP)
+  ctx->ops             = &g_tran_ops_tcp;
+#endif
+  ctx->tran_fd[0]      = -1;
+  ctx->tran_fd[1]      = -1;
+
+  ctx->download_buffer = malloc(CONFIG_SYSTEM_FASTBOOTD_DOWNLOAD_MAX);
+  if (ctx->download_buffer == NULL)
+    {
+      fb_err("ERROR: Could not allocate the memory.\n");
+      return -errno;
+    }
+
+  return 0;
+}
+
+static void fastboot_context_deinit(FAR struct fastboot_ctx_s *ctx)
+{
+  free(ctx->download_buffer);
 }
 
 /****************************************************************************
@@ -1085,8 +1396,13 @@ static int fastboot_usbdev_initialize(void)
 int main(int argc, FAR char **argv)
 {
   struct fastboot_ctx_s context;
-  FAR void *buffer = NULL;
-  int ret = OK;
+  int ret;
+
+  ret = fastboot_context_initialize(&context);
+  if (ret < 0)
+    {
+      return ret;
+    }
 
   if (argc > 1)
     {
@@ -1098,62 +1414,23 @@ int main(int argc, FAR char **argv)
           return 0;
         }
 
-      context.wait_ms = atoi(argv[1]);
-    }
-  else
-    {
-      context.wait_ms = 0;
+      if (sscanf(argv[1], "%" SCNu64 , &context.left) != 1)
+        {
+          return -EINVAL;
+        }
     }
 
-  ret = fastboot_usbdev_initialize();
+  ret = context.ops->init(&context);
   if (ret < 0)
     {
       return ret;
     }
 
-  buffer = malloc(CONFIG_SYSTEM_FASTBOOTD_DOWNLOAD_MAX);
-  if (buffer == NULL)
-    {
-      fb_err("ERROR: Could not allocate the memory.\n");
-      return -ENOMEM;
-    }
-
-  context.usbdev_in =
-      fastboot_open_usb(FASTBOOT_EP_BULKOUT_IDX, O_RDONLY | O_CLOEXEC);
-  if (context.usbdev_in < 0)
-    {
-      ret = -errno;
-      goto err_with_mem;
-    }
-
-  context.usbdev_out =
-      fastboot_open_usb(FASTBOOT_EP_BULKIN_IDX, O_WRONLY | O_CLOEXEC);
-  if (context.usbdev_out < 0)
-    {
-      ret = -errno;
-      goto err_with_in;
-    }
-
-  context.varlist         = NULL;
-  context.flash_fd        = -1;
-  context.download_buffer = buffer;
-  context.download_size   = 0;
-  context.download_offset = 0;
-  context.download_max    = CONFIG_SYSTEM_FASTBOOTD_DOWNLOAD_MAX;
-  context.total_imgsize   = 0;
-
   fastboot_create_publish(&context);
   fastboot_command_loop(&context);
   fastboot_free_publish(&context);
+  context.ops->deinit(&context);
+  fastboot_context_deinit(&context);
 
-  close(context.usbdev_out);
-  context.usbdev_out = -1;
-
-err_with_in:
-  close(context.usbdev_in);
-  context.usbdev_in = -1;
-
-err_with_mem:
-  free(buffer);
   return ret;
 }

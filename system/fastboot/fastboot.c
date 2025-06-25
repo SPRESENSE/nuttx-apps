@@ -109,7 +109,7 @@ struct fastboot_sparse_header_s
 {
   uint32_t magic;           /* 0xed26ff3a */
   uint16_t major_version;   /* (0x1) - reject images with higher major versions */
-  uint16_t minor_version;   /* (0x0) - allow images with higer minor versions */
+  uint16_t minor_version;   /* (0x0) - allow images with higher minor versions */
   uint16_t file_hdr_sz;     /* 28 bytes for first revision of the file format */
   uint16_t chunk_hdr_sz;    /* 12 bytes for first revision of the file format */
   uint32_t blk_sz;          /* block size in bytes, must be a multiple of 4 (4096) */
@@ -169,6 +169,7 @@ struct fastboot_ctx_s
    */
 
   uint64_t left;
+  FAR void *handle;
   FAR void *download_buffer;
   FAR struct fastboot_var_s *varlist;
   CODE int (*upload_func)(FAR struct fastboot_ctx_s *);
@@ -651,7 +652,7 @@ static void fastboot_download(FAR struct fastboot_ctx_s *ctx,
   ret = ctx->ops->write(ctx, response, strlen(response));
   if (ret < 0)
     {
-      fb_err("Reponse error [%d]\n", -ret);
+      fb_err("Response error [%d]\n", -ret);
       return;
     }
 
@@ -942,7 +943,7 @@ static void fastboot_upload(FAR struct fastboot_ctx_s *ctx,
   ret = ctx->ops->write(ctx, response, strlen(response));
   if (ret < 0)
     {
-      fb_err("Reponse error [%d]\n", -ret);
+      fb_err("Response error [%d]\n", -ret);
       goto done;
     }
 
@@ -1008,7 +1009,7 @@ static void fastboot_command_loop(FAR struct fastboot_ctx_s *ctx,
       if (epoll_ctl(epfd, EPOLL_CTL_ADD, c->tran_fd[0], &ev[n]) < 0)
         {
           fb_err("err add poll %d", c->tran_fd[0]);
-          return;
+          goto epoll_close;
         }
     }
 
@@ -1016,7 +1017,7 @@ static void fastboot_command_loop(FAR struct fastboot_ctx_s *ctx,
     {
       if (epoll_wait(epfd, ev, nitems(ev), ctx->left) <= 0)
         {
-          return;
+          goto epoll_close;
         }
     }
 
@@ -1061,6 +1062,14 @@ static void fastboot_command_loop(FAR struct fastboot_ctx_s *ctx,
             }
         }
     }
+
+epoll_close:
+  while (--c >= ctx)
+    {
+      epoll_ctl(epfd, EPOLL_CTL_DEL, c->tran_fd[0], NULL);
+    }
+
+  close(epfd);
 }
 
 static void fastboot_publish(FAR struct fastboot_ctx_s *ctx,
@@ -1149,7 +1158,6 @@ static int fastboot_usbdev_initialize(FAR struct fastboot_ctx_s *ctx)
 #  else
     uint8_t dev = BOARDIOC_USBDEV_FASTBOOT;
 #  endif
-  FAR void *handle;
   int ret;
 
   ctrl.usbdev   = dev;
@@ -1169,7 +1177,7 @@ static int fastboot_usbdev_initialize(FAR struct fastboot_ctx_s *ctx)
   ctrl.action   = BOARDIOC_USBDEV_CONNECT;
   ctrl.instance = 0;
   ctrl.config   = 0;
-  ctrl.handle   = &handle;
+  ctrl.handle   = &ctx->handle;
 
   ret = boardctl(BOARDIOC_USBDEV_CONTROL, (uintptr_t)&ctrl);
   if (ret < 0)
@@ -1200,6 +1208,9 @@ static int fastboot_usbdev_initialize(FAR struct fastboot_ctx_s *ctx)
 
 static void fastboot_usbdev_deinit(FAR struct fastboot_ctx_s *ctx)
 {
+#ifdef CONFIG_SYSTEM_FASTBOOTD_USB_BOARDCTL
+  struct boardioc_usbdev_ctrl_s ctrl;
+#endif
   int i;
 
   for (i = 0; i < nitems(ctx->tran_fd); i++)
@@ -1207,6 +1218,27 @@ static void fastboot_usbdev_deinit(FAR struct fastboot_ctx_s *ctx)
       close(ctx->tran_fd[i]);
       ctx->tran_fd[i] = -1;
     }
+
+#ifdef CONFIG_SYSTEM_FASTBOOTD_USB_BOARDCTL
+  if (ctx->handle)
+    {
+#  ifdef CONFIG_USBDEV_COMPOSITE
+      ctrl.usbdev   = BOARDIOC_USBDEV_COMPOSITE;
+#  else
+      ctrl.usbdev   =  BOARDIOC_USBDEV_FASTBOOT;
+#  endif
+      ctrl.action   = BOARDIOC_USBDEV_DISCONNECT;
+      ctrl.instance = 0;
+      ctrl.config   = 0;
+      ctrl.handle   = &ctx->handle;
+
+      i = boardctl(BOARDIOC_USBDEV_CONTROL, (uintptr_t)&ctrl);
+      if (i < 0)
+        {
+          fb_err("boardctl(BOARDIOC_USBDEV_DISCONNECT) failed: %d\n", i);
+        }
+    }
+#endif /* SYSTEM_FASTBOOTD_USB_BOARDCTL */
 }
 
 static ssize_t fastboot_usbdev_read(FAR struct fastboot_ctx_s *ctx,

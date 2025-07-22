@@ -2177,7 +2177,7 @@ int lesp_socket(int domain, int type, int protocol)
  *   close socket creates with lesp_socket.
  *
  * Input Parameters:
- *   sockfd   : socket indentifer.
+ *   sockfd    Socket descriptor returned by socket()
  *
  * Returned Value:
  *   A 0 on success; -1 on error.

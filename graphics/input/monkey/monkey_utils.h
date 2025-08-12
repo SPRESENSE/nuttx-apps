@@ -1,5 +1,5 @@
 /****************************************************************************
- * apps/system/monkey/monkey_log.c
+ * apps/graphics/input/monkey/monkey_utils.h
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -20,78 +20,83 @@
  *
  ****************************************************************************/
 
+#ifndef __APPS_GRAPHICS_INPUT_MONKEY_MONKEY_UTILS_H
+#define __APPS_GRAPHICS_INPUT_MONKEY_MONKEY_UTILS_H
+
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
-#include <stdarg.h>
-#include <syslog.h>
-#include <nuttx/streams.h>
-#include "monkey_log.h"
+#include <stddef.h>
+#include "monkey_type.h"
 
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
 
-/****************************************************************************
- * Private Data
- ****************************************************************************/
-
-static enum monkey_log_level_type_e g_log_level = MONKEY_LOG_LEVEL_NOTICE;
-
-/****************************************************************************
- * Public Functions
- ****************************************************************************/
-
-/****************************************************************************
- * Name: monkey_log_printf
- ****************************************************************************/
-
-void monkey_log_printf(enum monkey_log_level_type_e level,
-                       FAR const char *func,
-                       FAR const char *fmt,
-                       ...)
+#ifdef __cplusplus
+#define EXTERN extern "C"
+extern "C"
 {
-  struct va_format vaf;
-  va_list ap;
-
-  static const int priority[MONKEY_LOG_LEVEL_LAST] =
-    {
-      LOG_INFO, LOG_NOTICE, LOG_WARNING, LOG_ERR
-    };
-
-  if (level < g_log_level)
-    {
-      return;
-    }
-
-  va_start(ap, fmt);
-  vaf.fmt = fmt;
-  vaf.va  = &ap;
-  syslog(priority[level], "[monkey] %s: %pV\n", func, &vaf);
-  va_end(ap);
-}
+#else
+#define EXTERN extern
+#endif
 
 /****************************************************************************
- * Name: monkey_log_set_level
+ * Public Function Prototypes
  ****************************************************************************/
-
-void monkey_log_set_level(enum monkey_log_level_type_e level)
-{
-  if (level >= MONKEY_LOG_LEVEL_LAST)
-    {
-      MONKEY_LOG_WARN("error level: %d", level);
-      return;
-    }
-
-  g_log_level = level;
-}
 
 /****************************************************************************
- * Name: monkey_log_get_level
+ * Name: monkey_random
  ****************************************************************************/
 
-enum monkey_log_level_type_e monkey_log_get_level(void)
-{
-  return g_log_level;
+int monkey_random(int min, int max);
+
+/****************************************************************************
+ * Name: monkey_tick_get
+ ****************************************************************************/
+
+uint32_t monkey_tick_get(void);
+
+/****************************************************************************
+ * Name: monkey_tick_elaps
+ ****************************************************************************/
+
+uint32_t monkey_tick_elaps(uint32_t act_time, uint32_t prev_tick);
+
+/****************************************************************************
+ * Name: monkey_get_localtime_str
+ ****************************************************************************/
+
+void monkey_get_localtime_str(FAR char *str_buf, size_t buf_size);
+
+/****************************************************************************
+ * Name: monkey_dir_check
+ ****************************************************************************/
+
+bool monkey_dir_check(FAR const char *dir_path);
+
+/****************************************************************************
+ * Name: monkey_dev_type2name
+ ****************************************************************************/
+
+FAR const char *monkey_dev_type2name(enum monkey_dev_type_e type);
+
+/****************************************************************************
+ * Name: monkey_dev_name2type
+ ****************************************************************************/
+
+enum monkey_dev_type_e monkey_dev_name2type(FAR const char *name);
+
+/****************************************************************************
+ * Name: monkey_event_type2name
+ ****************************************************************************/
+
+FAR const char *monkey_event_type2name(enum monkey_event_e event);
+
+#undef EXTERN
+#ifdef __cplusplus
 }
+#endif
+
+#endif /* __APPS_GRAPHICS_INPUT_MONKEY_MONKEY_UTILS_H */

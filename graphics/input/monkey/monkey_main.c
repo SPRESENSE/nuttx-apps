@@ -1,5 +1,5 @@
 /****************************************************************************
- * apps/system/monkey/monkey_main.c
+ * apps/graphics/input/monkey/monkey_main.c
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -330,7 +330,7 @@ static FAR struct monkey_s *monkey_init(
     {
       monkey_set_mode(monkey, MONKEY_MODE_RECORD);
       if (!monkey_set_recorder_path(monkey,
-                                    CONFIG_SYSTEM_MONKEY_REC_DIR_PATH))
+                                  CONFIG_GRAPHICS_INPUT_MONKEY_REC_DIR_PATH))
         {
           goto failed;
         }
@@ -532,7 +532,7 @@ static enum monkey_wait_res_e monkey_wait(uint32_t ms)
         }
       else
         {
-          MONKEY_LOG_ERROR("Unknow error: %d", errcode);
+          MONKEY_LOG_ERROR("Unknown error: %d", errcode);
         }
     }
   else if (ret == SIGTSTP)

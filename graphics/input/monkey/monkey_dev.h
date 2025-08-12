@@ -1,5 +1,5 @@
 /****************************************************************************
- * apps/system/monkey/monkey_event.h
+ * apps/graphics/input/monkey/monkey_dev.h
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -20,28 +20,24 @@
  *
  ****************************************************************************/
 
-#ifndef __APPS_SYSTEM_MONKEY_EVENT_H
-#define __APPS_SYSTEM_MONKEY_EVENT_H
+#ifndef __APPS_GRAPHICS_INPUT_MONKEY_MONKEY_DEV_H
+#define __APPS_GRAPHICS_INPUT_MONKEY_MONKEY_DEV_H
 
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
-#include <stdint.h>
 #include "monkey_type.h"
 
 /****************************************************************************
  * Public Types
  ****************************************************************************/
 
-struct monkey_event_param_s
+struct monkey_dev_s
 {
-  enum monkey_event_e event;
-  int duration;
-  int x1;
-  int y1;
-  int x2;
-  int y2;
+  int fd;
+  enum monkey_dev_type_e type;
+  bool is_available;
 };
 
 /****************************************************************************
@@ -57,23 +53,47 @@ extern "C"
 #endif
 
 /****************************************************************************
- * Name: monkey_event_gen
+ * Name: monkey_dev_create
  ****************************************************************************/
 
-void monkey_event_gen(FAR struct monkey_s *monkey,
-                      FAR struct monkey_event_param_s *param);
+FAR struct monkey_dev_s *monkey_dev_create(FAR const char *dev_path,
+                                           enum monkey_dev_type_e type);
 
 /****************************************************************************
- * Name: monkey_event_exec
+ * Name: monkey_dev_delete
  ****************************************************************************/
 
-bool monkey_event_exec(FAR struct monkey_s *monkey,
-                       FAR struct monkey_dev_s *dev,
-                       FAR const struct monkey_event_param_s *param);
+void monkey_dev_delete(FAR struct monkey_dev_s *dev);
+
+/****************************************************************************
+ * Name: monkey_dev_set_state
+ ****************************************************************************/
+
+void monkey_dev_set_state(input_gen_ctx_t input_gen_ctx,
+                          FAR const struct monkey_dev_state_s *state);
+
+/****************************************************************************
+ * Name: monkey_dev_get_state
+ ****************************************************************************/
+
+bool monkey_dev_get_state(FAR struct monkey_dev_s *dev,
+                          FAR struct monkey_dev_state_s *state);
+
+/****************************************************************************
+ * Name: monkey_dev_get_type
+ ****************************************************************************/
+
+enum monkey_dev_type_e monkey_dev_get_type(FAR struct monkey_dev_s *dev);
+
+/****************************************************************************
+ * Name: monkey_dev_get_available
+ ****************************************************************************/
+
+int monkey_dev_get_available(FAR struct monkey_dev_s *devs[], int dev_num);
 
 #undef EXTERN
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __APPS_SYSTEM_MONKEY_EVENT_H */
+#endif /* __APPS_GRAPHICS_INPUT_MONKEY_MONKEY_DEV_H */

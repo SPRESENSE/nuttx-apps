@@ -1,5 +1,5 @@
 /****************************************************************************
- * apps/system/monkey/monkey_type.h
+ * apps/graphics/input/monkey/monkey_type.h
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -20,13 +20,14 @@
  *
  ****************************************************************************/
 
-#ifndef __APPS_SYSTEM_MONKEY_MONKEY_TYPE_H
-#define __APPS_SYSTEM_MONKEY_MONKEY_TYPE_H
+#ifndef __APPS_GRAPHICS_INPUT_MONKEY_MONKEY_TYPE_H
+#define __APPS_GRAPHICS_INPUT_MONKEY_MONKEY_TYPE_H
 
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
+#include <graphics/input_gen.h>
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -124,6 +125,7 @@ struct monkey_s
   FAR struct monkey_dev_s *devs[MONKEY_DEV_MAX_NUM];
   int dev_num;
   FAR struct monkey_recorder_s *recorder;
+  input_gen_ctx_t input_gen_ctx;
   struct
   {
     struct monkey_dev_state_s state;
@@ -131,4 +133,4 @@ struct monkey_s
   } playback_ctx;
 };
 
-#endif /* __APPS_SYSTEM_MONKEY_MONKEY_TYPE_H */
+#endif /* __APPS_GRAPHICS_INPUT_MONKEY_MONKEY_TYPE_H */

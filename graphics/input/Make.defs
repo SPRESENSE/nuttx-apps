@@ -1,5 +1,5 @@
 ############################################################################
-# apps/system/monkey/Make.defs
+# apps/graphics/input/Make.defs
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -20,6 +20,6 @@
 #
 ############################################################################
 
-ifneq ($(CONFIG_SYSTEM_MONKEY),)
-CONFIGURED_APPS += $(APPDIR)/system/monkey
+ifneq ($(CONFIG_GRAPHICS_INPUT_GENERATOR),)
+CONFIGURED_APPS += $(APPDIR)/graphics/input
 endif

@@ -1,5 +1,5 @@
 /****************************************************************************
- * apps/system/monkey/monkey_dev.h
+ * apps/graphics/input/monkey/monkey.h
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -20,25 +20,15 @@
  *
  ****************************************************************************/
 
-#ifndef __APPS_SYSTEM_MONKEY_MONKEY_DEV_H
-#define __APPS_SYSTEM_MONKEY_MONKEY_DEV_H
+#ifndef __APPS_GRAPHICS_INPUT_MONKEY_MONKEY_H
+#define __APPS_GRAPHICS_INPUT_MONKEY_MONKEY_H
 
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
+#include <stdint.h>
 #include "monkey_type.h"
-
-/****************************************************************************
- * Public Types
- ****************************************************************************/
-
-struct monkey_dev_s
-{
-  int fd;
-  enum monkey_dev_type_e type;
-  bool is_available;
-};
 
 /****************************************************************************
  * Public Function Prototypes
@@ -53,47 +43,58 @@ extern "C"
 #endif
 
 /****************************************************************************
- * Name: monkey_dev_create
+ * Name: monkey_create
  ****************************************************************************/
 
-FAR struct monkey_dev_s *monkey_dev_create(FAR const char *dev_path,
-                                           enum monkey_dev_type_e type);
+FAR struct monkey_s *monkey_create(int dev_type_mask);
 
 /****************************************************************************
- * Name: monkey_dev_delete
+ * Name: monkey_update
  ****************************************************************************/
 
-void monkey_dev_delete(FAR struct monkey_dev_s *dev);
+int monkey_update(FAR struct monkey_s *monkey);
 
 /****************************************************************************
- * Name: monkey_dev_set_state
+ * Name: monkey_delete
  ****************************************************************************/
 
-void monkey_dev_set_state(FAR struct monkey_dev_s *dev,
-                          FAR const struct monkey_dev_state_s *state);
+void monkey_delete(FAR struct monkey_s *monkey);
 
 /****************************************************************************
- * Name: monkey_dev_get_state
+ * Name: monkey_config_default_init
  ****************************************************************************/
 
-bool monkey_dev_get_state(FAR struct monkey_dev_s *dev,
-                          FAR struct monkey_dev_state_s *state);
+void monkey_config_default_init(FAR struct monkey_config_s *config);
 
 /****************************************************************************
- * Name: monkey_dev_get_type
+ * Name: monkey_set_config
  ****************************************************************************/
 
-enum monkey_dev_type_e monkey_dev_get_type(FAR struct monkey_dev_s *dev);
+void monkey_set_config(FAR struct monkey_s *monkey,
+                       FAR const struct monkey_config_s *config);
 
 /****************************************************************************
- * Name: monkey_dev_get_available
+ * Name: monkey_set_mode
  ****************************************************************************/
 
-int monkey_dev_get_available(FAR struct monkey_dev_s *devs[], int dev_num);
+void monkey_set_mode(FAR struct monkey_s *monkey, enum monkey_mode_e mode);
+
+/****************************************************************************
+ * Name: monkey_set_period
+ ****************************************************************************/
+
+void monkey_set_period(FAR struct monkey_s *monkey, uint32_t period);
+
+/****************************************************************************
+ * Name: monkey_set_recorder_path
+ ****************************************************************************/
+
+bool monkey_set_recorder_path(FAR struct monkey_s *monkey,
+                              FAR const char *path);
 
 #undef EXTERN
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __APPS_SYSTEM_MONKEY_MONKEY_DEV_H */
+#endif /* __APPS_GRAPHICS_INPUT_MONKEY_MONKEY_H */

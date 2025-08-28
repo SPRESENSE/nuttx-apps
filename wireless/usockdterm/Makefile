@@ -1,5 +1,5 @@
 ############################################################################
-# apps/wireless/wapi/usockdterm/Make.defs
+# apps/wireless/wapi/usockdterm/Makefile
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -18,7 +18,13 @@
 #
 ############################################################################
 
-ifneq ($(CONFIG_WIRELESS_WAPI),)
-CONFIGURED_APPS += $(APPDIR)/wireless/wapi/usockdterm
-endif
+include $(APPDIR)/Make.defs
 
+PROGNAME  = $(CONFIG_WIRELESS_WAPI_USOCKDTERM_PROGNAME)
+PRIORITY  = $(CONFIG_WIRELESS_WAPI_USOCKDTERM_PRIORITY)
+STACKSIZE = $(CONFIG_WIRELESS_WAPI_USOCKDTERM_STACKSIZE)
+MODULE    = $(CONFIG_WIRELESS_WAPI_USOCKDTERM_CMDTOOL)
+
+MAINSRC = usockdterm.c
+
+include $(APPDIR)/Application.mk

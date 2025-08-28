@@ -60,6 +60,8 @@ config WIRELESS_WAPI_USOCKDTERM_CMDTOOL
         If this option is selected, a command line tool that terminates
         usrsock daemon is enabled.
 
+if WIRELESS_WAPI_USOCKDTERM_CMDTOOL
+
 config WIRELESS_WAPI_USOCKDTERM_PROGNAME
 	string "Program Name"
 	default "usockdterm"
@@ -74,5 +76,7 @@ config WIRELESS_WAPI_USOCKDTERM_STACKSIZE
 config WIRELESS_WAPI_USOCKDTERM_PRIORITY
 	int "Command Priority"
 	default 100
+
+endif # WIRELESS_WAPI_USOCKDTERM_CMDTOOL
 
 endif # WIRELESS_WAPI

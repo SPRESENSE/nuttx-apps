@@ -147,7 +147,7 @@ void update_wireless_state(FAR struct nrc7292_s *priv,
     case WIRELESS_DISCONNECTED:
       {
         memset(priv->bssid, 0, sizeof(priv->bssid));
-        ifr.ifr_flags = IFF_DOWN;
+        IFF_CLR_UP(ifr.ifr_flags);
         strcpy(ifr.ifr_name, WLAN_IFNAME);
         ioctl(priv->drv_fd, SIOCSIFFLAGS, &ifr);
 

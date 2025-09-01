@@ -52,6 +52,13 @@ config WIRELESS_NRC7292_ATSSEND_TIMEOUT
 		This command will block any other SSEND command until finishing previous
 		previous command, or expireing the timeout.
 
+config DISABLE_DUTY10
+	bool "Disable Communication duty cycle 10%"
+	default n
+	---help---
+		Disable limitation of communication duty cycle 10%.
+		in Japan, this option must be 'N'.
+
 config WIRELESS_NRC7292_HALOW_REGDOM_CHECK_ENABLE
 	bool "Regulatory domain check"
 	default n
@@ -122,8 +129,8 @@ config NRC7292_SPECIFIC_DEFAULT_BANDFREQUENCY_KHZ
 	---help---
 		Band frequency of Wi-Fi Halow network
 
-endif
+endif # if NRC7292_SPECIFIC_DEFAULT_BANDFREQUENCY
 
-endif
+endif # if WIRELESS_NRC7292_HALOW_REGDOM_CHECK_ENABLE
 
-endif
+endif # if WIRELESS_NRC7292

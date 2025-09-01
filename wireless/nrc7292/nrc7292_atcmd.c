@@ -126,12 +126,14 @@ static const struct setup_cmd_s g_module_setup_cmds[] =
   NULL,
   procret_none
 },
+#ifndef CONFIG_DISABLE_DUTY10
 {
   "AT+WDUTYCYCLE=1000000,100000\r\n", /* Duty ratio 10%: window=1s, duration=0.1s */
   NULL,
   NULL,
   procret_none
 },
+#endif
 {
   NULL,
   NULL,

@@ -1,7 +1,5 @@
 ############################################################################
-# apps/wireless/wapi/Make.defs
-#
-# SPDX-License-Identifier: Apache-2.0
+# apps/examples/hello/Makefile
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -20,9 +18,25 @@
 #
 ############################################################################
 
-ifneq ($(CONFIG_WIRELESS_WAPI),)
-CONFIGURED_APPS += $(APPDIR)/wireless/wapi
-#CONFIGURED_APPS += $(APPDIR)/wireless/wapi/usockdterm
-endif
+include $(APPDIR)/Make.defs
 
-include $(APPDIR)/wireless/wapi/usockdterm/Make.defs
+# Hello, World! built-in application info
+
+PROGNAME  = $(CONFIG_EXAMPLES_NRC7292_FWUPDATE_PROGNAME)
+PRIORITY  = $(CONFIG_EXAMPLES_NRC7292_FWUPDATE_PRIORITY)
+STACKSIZE = $(CONFIG_EXAMPLES_NRC7292_FWUPDATE_STACKSIZE)
+MODULE    = $(CONFIG_EXAMPLES_NRC7292_FWUPDATE)
+
+# Hello, World! Example
+
+MAINSRC = nrc7292_fwupdate_main.c
+
+# Build with WebAssembly when CONFIG_INTERPRETERS_WAMR is enabled
+
+WASM_BUILD = both
+
+# Mode of WebAssembly Micro Runtime
+
+WAMR_MODE  = AOT
+
+include $(APPDIR)/Application.mk

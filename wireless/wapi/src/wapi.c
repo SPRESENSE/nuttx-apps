@@ -102,6 +102,7 @@ static int wapi_save_config_cmd  (int sock, int argc, FAR char **argv);
 #endif
 static int wapi_pta_prio_cmd     (int sock, int argc, FAR char **argv);
 static int wapi_power_save_cmd   (int sock, int argc, FAR char **argv);
+static int wapi_bandwidth_cmd    (int sock, int argc, FAR char **argv);
 
 /****************************************************************************
  * Private Data
@@ -132,6 +133,7 @@ static const struct wapi_command_s g_wapi_commands[] =
 #endif
   {"pta_prio",     2, 2, wapi_pta_prio_cmd},
   {"power_save",   2, 2, wapi_power_save_cmd},
+  {"bandwidth",    2, 2, wapi_bandwidth_cmd},
 };
 
 /****************************************************************************
@@ -650,7 +652,11 @@ static int wapi_psk_cmd(int sock, int argc, FAR char **argv)
 
 static int wapi_disconnect_cmd(int sock, int argc, FAR char **argv)
 {
+#ifndef CONFIG_WIRELESS_NRC7292
   wpa_driver_wext_disconnect(sock, argv[0]);
+#else
+  wapi_disconnect(sock, argv[0]);
+#endif
 
   return 0;
 }
@@ -913,7 +919,6 @@ static int wapi_country_cmd(int sock, int argc, FAR char **argv)
         {
           printf("%s\n", country);
         }
-
       return ret;
     }
 
@@ -1109,6 +1114,31 @@ static int wapi_pta_prio_cmd(int sock, int argc, FAR char **argv)
   return wapi_set_pta_prio(sock, argv[0], pta_prio);
 }
 
+#ifdef CONFIG_WIRELESS_NRC7292
+/****************************************************************************
+ * Name: wapi_bandwidth_cmd
+ *
+ * Description:
+ *   Manually configure the bandwidth.
+ *
+ * Returned Value:
+ *   None
+ *
+ ****************************************************************************/
+
+static int wapi_bandwidth_cmd(int sock, int argc, FAR char **argv)
+{
+  uint16_t bandwidth;
+
+  /* Convert input strings to values */
+
+  bandwidth = (uint16_t) strtoul(argv[1], NULL, 10);
+
+  return wapi_set_bandwidth(sock, argv[0], bandwidth);
+}
+
+#endif
+
 /****************************************************************************
  * Name: wapi_power_save_cmd
  *
@@ -1179,6 +1209,9 @@ static void wapi_showusage(FAR const char *progname, int exitcode)
 #endif
   fprintf(stderr, "\t%s pta_prio     <ifname>  <index/flag>\n", progname);
   fprintf(stderr, "\t%s power_save   <ifname>  <on|off>\n", progname);
+
+  fprintf(stderr, "\t%s bandwidth    <ifname>  <bandwidth>\n", progname);
+
   fprintf(stderr, "\t%s help\n", progname);
 
   fprintf(stderr, "\nFrequency Flags:\n");

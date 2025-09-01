@@ -1,7 +1,5 @@
 ############################################################################
-# apps/wireless/wapi/Make.defs
-#
-# SPDX-License-Identifier: Apache-2.0
+# apps/wireless/nrc7292/Makefile
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -20,9 +18,25 @@
 #
 ############################################################################
 
-ifneq ($(CONFIG_WIRELESS_WAPI),)
-CONFIGURED_APPS += $(APPDIR)/wireless/wapi
-#CONFIGURED_APPS += $(APPDIR)/wireless/wapi/usockdterm
-endif
+include $(APPDIR)/Make.defs
 
-include $(APPDIR)/wireless/wapi/usockdterm/Make.defs
+# nrc7292 command
+
+PROGNAME = $(CONFIG_WIRELESS_NRC7292_PROGNAME)
+PRIORITY = $(CONFIG_WIRELESS_NRC7292_PRIORITY)
+STACKSIZE = $(CONFIG_WIRELESS_NRC7292_STACKSIZE)
+MODULE = $(CONFIG_WIRELESS_NRC7292)
+
+# Files
+
+CSRCS += nrc7292_socket.c
+CSRCS += nrc7292_ioctl.c
+CSRCS += nrc7292_usockif.c
+CSRCS += nrc7292_atcmd.c
+CSRCS += nrc7292_state.c
+CSRCS += nrc7292_regdom.c
+CSRCS += nrc7292_event.c
+
+MAINSRC = nrc7292_main.c
+
+include $(APPDIR)/Application.mk

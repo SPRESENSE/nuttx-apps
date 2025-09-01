@@ -1,7 +1,5 @@
 ############################################################################
-# apps/wireless/wapi/Make.defs
-#
-# SPDX-License-Identifier: Apache-2.0
+# apps/wireless/wapi/usockdterm/Make.defs
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -21,8 +19,6 @@
 ############################################################################
 
 ifneq ($(CONFIG_WIRELESS_WAPI),)
-CONFIGURED_APPS += $(APPDIR)/wireless/wapi
-#CONFIGURED_APPS += $(APPDIR)/wireless/wapi/usockdterm
+CONFIGURED_APPS += $(APPDIR)/wireless/wapi/usockdterm
 endif
 
-include $(APPDIR)/wireless/wapi/usockdterm/Make.defs

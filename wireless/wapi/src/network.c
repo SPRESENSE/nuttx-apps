@@ -49,6 +49,10 @@
 #include "util.h"
 #include "wireless/wapi.h"
 
+#ifdef CONFIG_WIRELESS_NRC7292
+#include <nuttx/net/nrc7292.h>
+#endif /* CONFIG_WIRELESS_NRC7292 */
+
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
@@ -353,3 +357,31 @@ int wapi_del_route_gw(int sock, enum wapi_route_target_e targettype,
   return wapi_act_route_gw(sock, SIOCDELRT, targettype, target, netmask, gw);
 }
 #endif
+
+#ifdef CONFIG_WIRELESS_NRC7292
+/****************************************************************************
+ * Name: wapi_start_dhcpv4
+ *
+ * Description:
+ *   Start DHCPv4 on the interface.
+ *
+ ****************************************************************************/
+
+int wapi_start_dhcp(int sock, FAR const char *ifname)
+{
+  struct ifreq ifr;
+  int ret;
+
+  strlcpy(ifr.ifr_name, ifname, IFNAMSIZ);
+  ret = ioctl(sock, SIOCDHCPV4START, (unsigned long)((uintptr_t)&ifr));
+  if (ret < 0)
+    {
+      int errcode = errno;
+      WAPI_IOCTL_STRERROR(SIOCDHCPV4START, errcode);
+      ret = -errcode;
+    }
+
+  return ret;
+}
+
+#endif /* CONFIG_WIRELESS_NRC7292 */

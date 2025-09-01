@@ -136,7 +136,8 @@ enum wapi_mode_e
   WAPI_MODE_REPEAT  = IW_MODE_REPEAT,  /* Wireless repeater, forwarder. */
   WAPI_MODE_SECOND  = IW_MODE_SECOND,  /* Secondary master/repeater, backup. */
   WAPI_MODE_MONITOR = IW_MODE_MONITOR, /* Passive monitor, listen only. */
-  WAPI_MODE_MESH    = IW_MODE_MESH     /* Mesh (IEEE 802.11s) network */
+  WAPI_MODE_MESH    = IW_MODE_MESH,    /* Mesh (IEEE 802.11s) network */
+  WAPI_MODE_RELAY   = IW_MODE_RELAY    /* Relay Mode (IEEE802.11ah) */
 };
 
 /* Flags for encoding */
@@ -299,6 +300,68 @@ enum wapi_pta_prio_e
   WAPI_PTA_PRIORITY_WLAN_HIGHD     = IW_PTA_PRIORITY_WLAN_HIGH,
   WAPI_PTA_PRIORITY_WLAN_MAXIMIZED = IW_PTA_PRIORITY_WLAN_MAXIMIZED
 };
+
+
+#ifdef CONFIG_WIRELESS_NRC7292
+
+/* event regsiter callback **************************************************/
+
+enum wapi_event_id_e
+{
+  WAPI_EVENT_CONNECTED = 0,
+  WAPI_EVENT_DISCONNECTED,
+  WAPI_EVENT_STA_ATTACHED,
+  WAPI_EVENT_STA_DETACHED,
+  WAPI_EVENT_IPADDR_UPDATED,
+  WAPI_EVENT_AP_ENABLED,
+  WAPI_EVENT_AP_DISABLED,
+  WAPI_EVENT_RELAY_ENABLED,
+  WAPI_EVENT_RELAY_DISABLED,
+  WAPI_EVENT_DHCP_TIMEOUT,
+  WAPI_EVENT_MODULE_CRUSHED,
+  WAPI_EVENT_TERMINATED
+};
+
+struct wapi_event_conn_s
+{
+  char essid[32];
+  uint8_t bssid[6];
+  uint8_t auth;
+  uint8_t cipher;
+  uint8_t key_mgmt;
+};
+
+struct wapi_event_sta_attach_s
+{
+  uint8_t mac[6];
+};
+
+struct wapi_event_ipaddr_s
+{
+  sa_family_t family;
+  uint16_t prefixlen;
+  union ipaddr
+    {
+      struct in_addr  ipv4;
+      struct in6_addr ipv6;
+    } u;
+};
+
+struct wapi_event_cb_args_s
+{
+  enum wapi_event_id_e event;
+
+  union wapi_args_s
+    {
+      struct wapi_event_conn_s conn;
+      struct wapi_event_sta_attach_s attach;
+      struct wapi_event_ipaddr_s ipaddr;
+    } u;
+};
+
+typedef FAR int (*wapi_event_cb_t)(FAR struct wapi_event_cb_args_s *);
+
+#endif
 
 /****************************************************************************
  * Public Data
@@ -1006,6 +1069,109 @@ int wapi_set_power_save(int sock, FAR const char *ifname, bool on);
  ****************************************************************************/
 
 int wapi_get_power_save(int sock, FAR const char *ifname, bool *on);
+
+/****************************************************************************
+ * Name: wapi_set_bandwidth
+ *
+ * Description:
+ *   Sets the bandwidth of the device.
+ *
+ ****************************************************************************/
+
+int wapi_set_bandwidth(int sock, FAR const char *ifname, uint16_t bandwidth);
+
+/****************************************************************************
+ * Name: wapi_fw_update_init
+ *
+ * Description:
+ *   Initializes firmware update.
+ *
+ ****************************************************************************/
+
+int wapi_fw_update_init(int sock, FAR const char *ifname, size_t total_size);
+
+/****************************************************************************
+ * Name: wapi_fw_update_inject
+ *
+ * Description:
+ *   Injects firmware update.
+ *
+ ****************************************************************************/
+
+int wapi_fw_update_inject(int sock, FAR const char *ifname,
+                          void *data, size_t len);
+
+/****************************************************************************
+ * Name: wapi_fw_update_exec
+ *
+ * Description:
+ *   Executes firmware update.
+ *
+ ****************************************************************************/
+
+int wapi_fw_update_exec(int sock, FAR const char *ifname);
+
+/****************************************************************************
+ * Name: wapi_connect
+ *
+ * Description:
+ *   Connects to an AP.
+ *
+ ****************************************************************************/
+
+int wapi_connect(int sock, FAR const char *ifname);
+
+/****************************************************************************
+ * Name: wapi_disconnect
+ *
+ * Description:
+ *   Disconnects from an AP.
+ *
+ ****************************************************************************/
+
+int wapi_disconnect(int sock, FAR const char *ifname);
+
+/****************************************************************************
+ * Name: wapi_event_register_callback
+ *
+ * Description:
+ *   Registers a callback function
+ *
+ ****************************************************************************/
+
+int wapi_event_register_callback(int sock, FAR const char *ifname,
+                                 wapi_event_cb_t cb);
+
+ /****************************************************************************
+ * Name: wapi_event_unregister_callback
+ *
+ * Description:
+ *   Unregisters a callback function
+ *
+ ****************************************************************************/
+
+int wapi_event_unregister_callback(int sock, FAR const char *ifname,
+                                 wapi_event_cb_t cb);
+
+/****************************************************************************
+ * Name: wapi_start_dhcpv4
+ *
+ * Description:
+ *   Start DHCPv4 on the interface.
+ *
+ ****************************************************************************/
+
+int wapi_start_dhcp(int sock, FAR const char *ifname);
+
+/****************************************************************************
+ * Name: wapi_term_usock_daemon
+ *
+ * Description:
+ *   Terminates usrsock daemon
+ *
+ ****************************************************************************/
+
+int wapi_term_usock_daemon(int sock, FAR const char *ifname);
 
 #undef EXTERN
 #ifdef __cplusplus

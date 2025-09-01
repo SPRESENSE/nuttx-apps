@@ -1,0 +1,29 @@
+#
+# For a description of the syntax of this configuration file,
+# see the file kconfig-language.txt in the NuttX tools repository.
+#
+
+config EXAMPLES_NRC7292_FWUPDATE
+	tristate "NRC7292 firmwrae update example"
+	default n
+	---help---
+		NRC7292 firmwrae update example
+
+if EXAMPLES_NRC7292_FWUPDATE
+
+config EXAMPLES_NRC7292_FWUPDATE_PROGNAME
+	string "Program name"
+	default "nrc7292_fwupdate"
+	---help---
+		This is the name of the program that will be used when the NSH ELF
+		program is installed.
+
+config EXAMPLES_NRC7292_FWUPDATE_PRIORITY
+	int "nrc7292_fwupdate task priority"
+	default 100
+
+config EXAMPLES_NRC7292_FWUPDATE_STACKSIZE
+	int "Hello stack size"
+	default DEFAULT_TASK_STACKSIZE
+
+endif

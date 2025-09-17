@@ -1,5 +1,5 @@
 # ##############################################################################
-# apps/system/cdcacm/CMakeLists.txt
+# apps/netutils/plcatool/CMakeLists.txt
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -20,7 +20,14 @@
 #
 # ##############################################################################
 
-if(CONFIG_SYSTEM_CDCACM)
-  nuttx_add_application(NAME sercon SRCS sercon_main.c)
-  nuttx_add_application(NAME serdis SRCS serdis_main.c)
+if(CONFIG_NETUTILS_PLCATOOL)
+  nuttx_add_application(
+    NAME
+    plcatool
+    STACKSIZE
+    ${CONFIG_DEFAULT_TASK_STACKSIZE}
+    MODULE
+    ${CONFIG_NETUTILS_PLCATOOL}
+    SRCS
+    plcatool.c)
 endif()

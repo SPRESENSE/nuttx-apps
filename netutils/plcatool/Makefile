@@ -1,5 +1,5 @@
 ############################################################################
-# apps/system/cdcacm/Makefile
+# apps/netutils/plcatool/Makefile
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -22,13 +22,11 @@
 
 include $(APPDIR)/Make.defs
 
-# USB CDC/ACM serial mass storage add-on
+MAINSRC = plcatool.c
 
-MAINSRC = sercon_main.c serdis_main.c
-
-PROGNAME = sercon serdis
+PROGNAME = plcatool
 PRIORITY = SCHED_PRIORITY_DEFAULT
 STACKSIZE = $(CONFIG_DEFAULT_TASK_STACKSIZE)
-MODULE = $(CONFIG_SYSTEM_CDCACM)
+MODULE = $(CONFIG_NETUTILS_PLCATOOL)
 
 include $(APPDIR)/Application.mk

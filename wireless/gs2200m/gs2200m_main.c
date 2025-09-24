@@ -135,6 +135,8 @@ static int getpeername_request(int fd, FAR struct gs2200m_s *priv,
                                FAR void *hdrbuf);
 static int ioctl_request(int fd, FAR struct gs2200m_s *priv,
                          FAR void *hdrbuf);
+static int shutdown_request(int fd, FAR struct gs2200m_s *priv,
+                            FAR void *hdrbuf);
 static int bind_request(int fd, FAR struct gs2200m_s *priv,
                         FAR void *hdrbuf);
 static int listen_request(int fd, FAR struct gs2200m_s *priv,
@@ -204,6 +206,10 @@ handlers[USRSOCK_REQUEST__MAX] =
 {
   sizeof(struct usrsock_request_ioctl_s),
   ioctl_request,
+},
+{
+  sizeof(struct usrsock_request_shutdown_s),
+  shutdown_request,
 },
 };
 
@@ -1666,6 +1672,23 @@ static int ioctl_request(int fd, FAR struct gs2200m_s *priv,
     }
 
   return ret;
+}
+
+/****************************************************************************
+ * Name: shutdown_request
+ ****************************************************************************/
+
+static int shutdown_request(int fd, FAR struct gs2200m_s *priv,
+                            FAR void *hdrbuf)
+{
+  FAR struct usrsock_request_shutdown_s *req = hdrbuf;
+  struct usrsock_message_req_ack_s resp;
+
+  memset(&resp, 0, sizeof(resp));
+  resp.result = 0;
+  _send_ack_common(fd, 0, req->head.xid, &resp);
+
+  return 0;
 }
 
 /****************************************************************************

@@ -62,6 +62,10 @@ ifeq ($(CONFIG_LV_PORT_USE_ENCODER),y)
 CSRCS += port/lv_port_encoder.c
 endif
 
+ifeq ($(CONFIG_LV_PORT_USE_MOUSE),y)
+CSRCS += port/lv_port_mouse.c
+endif
+
 ifeq ($(CONFIG_LV_USE_LOG),y)
 CSRCS += port/lv_port_syslog.c
 endif

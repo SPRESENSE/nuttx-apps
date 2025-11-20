@@ -218,6 +218,18 @@ config LV_PORT_ENCODER_DEFAULT_DEVICEPATH
 
 endif # LV_PORT_USE_ENCODER
 
+config LV_PORT_USE_MOUSE
+	bool "Mouse interface"
+	default n
+
+if LV_PORT_USE_MOUSE
+
+config LV_PORT_MOUSE_DEFAULT_DEVICEPATH
+	string "Mouse default device path"
+	default "/dev/mouse0"
+
+endif # LV_PORT_USE_MOUSE
+
 menu "Memory configuration"
 
 config LV_PORT_MEM_ATTRIBUTE_FAST_MEM_SECTION_NAME

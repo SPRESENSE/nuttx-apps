@@ -1,5 +1,5 @@
 /****************************************************************************
- * apps/graphics/lvgl/port/lv_port.c
+ * apps/graphics/lvgl/port/lv_port_mouse.h
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,79 +18,63 @@
  *
  ****************************************************************************/
 
+#ifndef __APPS_GRAPHICS_LVGL_PORT_LV_PORT_MOUSE_H
+#define __APPS_GRAPHICS_LVGL_PORT_LV_PORT_MOUSE_H
+
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
-#include "lv_port.h"
-#include "lv_port_button.h"
-#include "lv_port_encoder.h"
-#include "lv_port_fbdev.h"
-#include "lv_port_lcddev.h"
-#include "lv_port_mem.h"
-#include "lv_port_keypad.h"
-#include "lv_port_syslog.h"
-#include "lv_port_touchpad.h"
-#include "lv_port_mouse.h"
+#include <nuttx/config.h>
+#include <lvgl/lvgl.h>
 
 /****************************************************************************
- * Public Functions
+ * Pre-processor Definitions
  ****************************************************************************/
-
-/****************************************************************************
- * Name: lv_port_init
- *
- * Description:
- *   Initialize all porting.
- *
- ****************************************************************************/
-
-void lv_port_init(void)
-{
-#if defined(CONFIG_LV_USE_LOG)
-  lv_port_syslog_init();
-#endif
-
-#if defined(CONFIG_LV_PORT_USE_LCDDEV)
-  lv_port_lcddev_init(NULL, 0);
-#endif
-
-#if defined(CONFIG_LV_PORT_USE_FBDEV)
-  lv_port_fbdev_init(NULL);
-#endif
-
-#if defined(CONFIG_LV_PORT_USE_BUTTON)
-  lv_port_button_init(NULL);
-
-#if defined(CONFIG_UINPUT_BUTTON)
-  lv_port_button_init("/dev/ubutton");
-#endif
-
-#endif
-
-#if defined(CONFIG_LV_PORT_USE_KEYPAD)
-  lv_port_keypad_init(NULL);
-
-#if defined(CONFIG_UINPUT_BUTTON)
-  lv_port_keypad_init("/dev/ubutton");
-#endif
-
-#endif
-
-#if defined(CONFIG_LV_PORT_USE_TOUCHPAD)
-  lv_port_touchpad_init(NULL);
-
-#if defined(CONFIG_UINPUT_TOUCH)
-  lv_port_touchpad_init("/dev/utouch");
-#endif
-
-#endif
-
-#if defined(CONFIG_LV_PORT_USE_ENCODER)
-  lv_port_encoder_init(NULL);
-#endif
 
 #if defined(CONFIG_LV_PORT_USE_MOUSE)
-  lv_port_mouse_init(NULL);
+
+/****************************************************************************
+ * Type Definitions
+ ****************************************************************************/
+
+/****************************************************************************
+ * Public Data
+ ****************************************************************************/
+
+#ifdef __cplusplus
+#define EXTERN extern "C"
+extern "C"
+{
+#else
+#define EXTERN extern
 #endif
+
+/****************************************************************************
+ * Public Function Prototypes
+ ****************************************************************************/
+
+/****************************************************************************
+ * Name: lv_port_mouse_init
+ *
+ * Description:
+ *   Mouse interface initialization.
+ *
+ * Input Parameters:
+ *   dev_path - input device path, set to NULL to use the default path.
+ *
+ * Returned Value:
+ *   lv_indev object address on success; NULL on failure.
+ *
+ ****************************************************************************/
+
+FAR lv_indev_t *lv_port_mouse_init(FAR const char *dev_path);
+
+#undef EXTERN
+#ifdef __cplusplus
 }
+#endif
+
+#endif /* CONFIG_LV_PORT_USE_MOUSE */
+
+#endif /* __APPS_GRAPHICS_LVGL_PORT_LV_PORT_MOUSE_H */

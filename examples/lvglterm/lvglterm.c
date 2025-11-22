@@ -251,7 +251,7 @@ static int create_widgets(void)
   /* Set the Font Style for NSH Input and Output to a Monospaced Font */
 
   lv_style_init(&g_terminal_style);
-  lv_style_set_text_font(&g_terminal_style, &lv_font_unscii_16);
+  lv_style_set_text_font(&g_terminal_style, &lv_font_montserrat_14);
 
   /* Create an LVGL Container with Column Flex Direction */
 

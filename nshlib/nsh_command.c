@@ -580,7 +580,7 @@ static const struct cmdmap_s g_cmdmap[] =
 #endif
 
 #if defined(CONFIG_BOARDCTL_SWITCH_BOOT) && !defined(CONFIG_NSH_DISABLE_SWITCHBOOT)
-  CMD_MAP("swtichboot", cmd_switchboot, 2, 2, "<image path>"),
+  CMD_MAP("switchboot", cmd_switchboot, 2, 2, "<image path>"),
 #endif
 
 #if !defined(CONFIG_NSH_DISABLESCRIPT) && !defined(CONFIG_NSH_DISABLE_TEST)
@@ -621,7 +621,7 @@ static const struct cmdmap_s g_cmdmap[] =
 
 #if !defined(CONFIG_DISABLE_MOUNTPOINT)
 #  ifndef CONFIG_NSH_DISABLE_UMOUNT
-  CMD_MAP("umount",   cmd_umount,   2, 2, "<dir-path>"),
+  CMD_MAP("umount",   cmd_umount,   2, 3, "[-f] <dir-path>"),
 #  endif
 #endif
 

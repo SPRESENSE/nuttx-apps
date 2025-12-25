@@ -477,6 +477,8 @@ void netlib_server(uint16_t portno, pthread_startroutine_t handler,
 int netlib_getifstatus(FAR const char *ifname, FAR uint8_t *flags);
 int netlib_ifup(FAR const char *ifname);
 int netlib_ifdown(FAR const char *ifname);
+int netlib_ifarp(const char *ifname);
+int netlib_ifnoarp(const char *ifname);
 
 /* DNS server addressing */
 
@@ -497,6 +499,12 @@ int netlib_set_mtu(FAR const char *ifname, int mtu);
 #if defined(CONFIG_NETDEV_STATISTICS)
 int netlib_getifstatistics(FAR const char *ifname,
                            FAR struct netdev_statistics_s *stat);
+#endif
+
+/* Network check support */
+
+#ifdef CONFIG_NET_ARP_ACD
+int netlib_check_ifconflict(FAR const char *ifname);
 #endif
 
 #undef EXTERN

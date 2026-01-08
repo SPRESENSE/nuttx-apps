@@ -286,6 +286,10 @@ static const struct cmdmap_s g_cmdmap[] =
     "[dr|gw|gateway <dr-address>] [netmask <net-mask>|prefixlen <len>] "
     "[dns <dns-address>] [hw <hw-mac>]"),
 #  endif
+#  if defined(CONFIG_NET_VLAN) && !defined(CONFIG_NSH_DISABLE_VCONFIG)
+  CMD_MAP("vconfig", cmd_vconfig, 3, 5,
+    "[add iface-name vlan-id [pcp]]|[rem vlan-name]"),
+#  endif
 #  ifndef CONFIG_NSH_DISABLE_IFUPDOWN
   CMD_MAP("ifdown",   cmd_ifdown,   2, 2, "<interface>"),
   CMD_MAP("ifup",     cmd_ifup,     2, 2, "<interface>"),
@@ -535,7 +539,7 @@ static const struct cmdmap_s g_cmdmap[] =
 
 #if defined(CONFIG_RPTUN) && !defined(CONFIG_NSH_DISABLE_RPTUN)
   CMD_MAP("rptun",    cmd_rptun,    2, 7,
-    "<start|stop|reset|panic|dump|ping> <path|all>"
+    "<start|stop|reset|panic|dump|ping|test> <path|all>"
     " [value|times length ack sleep]"),
 #endif
 

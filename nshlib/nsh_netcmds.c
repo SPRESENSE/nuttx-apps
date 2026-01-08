@@ -1098,6 +1098,60 @@ int cmd_ifconfig(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv)
 #endif
 
 /****************************************************************************
+ * Name: cmd_vconfig
+ ****************************************************************************/
+
+#if defined(CONFIG_NET_VLAN) && !defined(CONFIG_NSH_DISABLE_VCONFIG)
+int cmd_vconfig(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv)
+{
+  DEBUGASSERT(argc >= 2);
+
+  if (!strcmp(argv[1], "add"))
+    {
+      int prio = 0;
+
+      if (argc != 4 && argc != 5)
+        {
+          nsh_error(vtbl, g_fmtargrequired, argv[0]);
+          return ERROR;
+        }
+
+      if (argc == 5)
+        {
+          prio = atoi(argv[4]);
+        }
+
+      if (netlib_add_vlan(argv[2], atoi(argv[3]), prio) < 0)
+        {
+          perror("Failed to add VLAN");
+          return ERROR;
+        }
+    }
+  else if (!strcmp(argv[1], "rem") || !strcmp(argv[1], "del"))
+    {
+      if (argc != 3)
+        {
+          nsh_error(vtbl, g_fmtargrequired, argv[0]);
+          return ERROR;
+        }
+
+      if (netlib_del_vlan(argv[2]) < 0)
+        {
+          perror("Failed to remove VLAN");
+          return ERROR;
+        }
+    }
+  else
+    {
+      nsh_error(vtbl, g_fmtarginvalid, argv[1]);
+      return ERROR;
+    }
+
+  return OK;
+}
+#endif
+
+/****************************************************************************
  * Name: cmd_nslookup
  ****************************************************************************/
 

@@ -70,6 +70,10 @@ BLACKSRCS += $(TESTDIR)/conformance/interfaces/clock_nanosleep/1-4.c
 BLACKSRCS += $(TESTDIR)/conformance/interfaces/pthread_sigmask/18-1.c
 BLACKSRCS += $(TESTDIR)/conformance/interfaces/pthread_sigmask/4-1.c
 BLACKSRCS += $(TESTDIR)/conformance/interfaces/sigprocmask/4-1.c
+ifeq ($(CONFIG_FDCHECK),y)
+BLACKSRCS += $(TESTDIR)/conformance/interfaces/mq_close/3-1.c
+BLACKSRCS += $(TESTDIR)/conformance/interfaces/mq_close/4-1.c
+endif
 ifeq ($(CONFIG_LIBC_LOCALTIME),)
 BLACKSRCS += $(TESTDIR)/conformance/definitions/time_h/34-1-buildonly.c
 BLACKSRCS += $(TESTDIR)/conformance/definitions/time_h/35-3-buildonly.c
@@ -244,7 +248,7 @@ ltp-$(LTPS_VERSION).zip:
 	$(call DOWNLOAD,$(LTP_DOWNLOAD_URL),$(LTPS_VERSION).zip, ltp.zip)
 
 $(LTP_UNPACK): ltp-$(LTPS_VERSION).zip
-	$(Q) echo "dowload $(LTP_DOWNLOAD_URL)$(LTPS_VERSION).zip"
+	$(Q) echo "download $(LTP_DOWNLOAD_URL)$(LTPS_VERSION).zip"
 	$(Q) unzip -o ltp.zip
 	$(Q) rm -f ltp.zip
 	$(Q) mv ltp-$(LTPS_VERSION) $(LTP_UNPACK)

@@ -53,10 +53,26 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <debug.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <semaphore.h>
+#include <termios.h>
 
 #include "system/readline.h"
 
-#include "cu.h"
+/****************************************************************************
+ * Pre-processor Definitions
+ ****************************************************************************/
+
+/* Configuration ************************************************************/
+
+#ifndef CONFIG_SYSTEM_CUTERM_DEFAULT_DEVICE
+#  define CONFIG_SYSTEM_CUTERM_DEFAULT_DEVICE "/dev/ttyS0"
+#endif
+
+#ifndef CONFIG_SYSTEM_CUTERM_DEFAULT_BAUD
+#  define CONFIG_SYSTEM_CUTERM_DEFAULT_BAUD 115200
+#endif
 
 #ifdef CONFIG_SYSTEM_CUTERM_DISABLE_ERROR_PRINT
 #  define cu_error(...)
@@ -73,6 +89,21 @@ enum parity_mode
   PARITY_NONE,
   PARITY_EVEN,
   PARITY_ODD,
+};
+
+/* All terminal state data is packaged in a single structure to minimize
+ * name conflicts with other global symbols -- a poor man's name space.
+ */
+
+struct cu_globals_s
+{
+  int devfd;             /* I/O data to serial port */
+  int stdfd;             /* I/O data to standard console */
+  int escape;            /* Escape char */
+  struct termios devtio; /* Original serial port setting */
+  struct termios stdtio; /* Original standard console setting */
+  pthread_t listener;    /* Terminal listener thread */
+  bool force_exit;       /* Force exit */
 };
 
 /****************************************************************************
@@ -123,7 +154,7 @@ static FAR void *cu_listener(FAR void *parameter)
 }
 
 #ifdef CONFIG_ENABLE_ALL_SIGNALS
-static void sigint(int sig)
+static void cu_exit(int signo, FAR siginfo_t *siginfo, FAR void *context)
 {
   FAR struct cu_globals_s *cu = siginfo->si_user;
   cu->force_exit = true;
@@ -302,8 +333,16 @@ int main(int argc, FAR char *argv[])
   /* Install signal handlers */
 
   memset(&sa, 0, sizeof(sa));
-  sa.sa_handler = sigint;
-  sigaction(SIGINT, &sa, NULL);
+  sa.sa_user = &cu;
+  sa.sa_sigaction = cu_exit;
+  sigemptyset(&sa.sa_mask);
+  if (sigaction(SIGINT, &sa, NULL) < 0)
+    {
+      cu_error("cu_main: ERROR during setup cu_exit sigaction(): %d\n",
+               errno);
+      return EXIT_FAILURE;
+    }
+
 #endif
   optind = 0;   /* Global that needs to be reset in FLAT mode */
   while ((option = getopt(argc, argv, "l:s:ceE:fho?")) != ERROR)

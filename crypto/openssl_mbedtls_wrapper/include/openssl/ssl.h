@@ -251,7 +251,7 @@ int SSL_get_error(const SSL *ssl, int ret_code);
 
 OSSL_HANDSHAKE_STATE SSL_get_state(const SSL *ssl);
 
-SSL_CTX *SSL_CTX_new(const SSL_METHOD *method, ...);
+SSL_CTX *SSL_CTX_new(const SSL_METHOD *method);
 
 void SSL_CTX_free(SSL_CTX *ctx);
 
@@ -453,6 +453,10 @@ const char *SSL_get_cipher_list(const SSL *s, int n);
 int SSL_CTX_set_cipher_list(SSL_CTX *ctx, const char *str);
 
 int SSL_CTX_set_ex_data(SSL_CTX *s, int idx, void *arg);
+
+int SSL_CTX_load_verify_file(SSL_CTX *ctx, const char *CAfile);
+
+int SSL_CTX_load_verify_dir(SSL_CTX *ctx, const char *CApath);
 
 int SSL_CTX_load_verify_locations(SSL_CTX *ctx, const char *CAfile,
                                   const char *CApath);

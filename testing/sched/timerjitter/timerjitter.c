@@ -192,7 +192,8 @@ static FAR void *timerjitter(FAR void *arg)
       diff = calc_diff(&now, &next);
       if (param->print)
         {
-          printf("diff %lu, now %lu.%lu\n", diff, now.tv_sec, now.tv_nsec);
+          printf("diff %"PRId64", now %"PRId64".%09lu\n", diff, now.tv_sec,
+                  now.tv_nsec);
         }
 
       if (diff > param->max)
@@ -220,6 +221,7 @@ static FAR void *timerjitter(FAR void *arg)
         }
     }
 
+  timer_delete(timer);
   param->avg = param->avg / param->cur_cnt;
   return NULL;
 }

@@ -265,7 +265,7 @@ static void audio_test_help(FAR const char *progname, int exitcode)
          " -f <format>\n"
          " -b <bytes per sample> \n"
          " -s <sample rate> \n"
-         " -c <channles> \n",
+         " -c <channels> \n",
          progname);
   printf(" [-a testcase] selects the testcase\n"
          " Case 1: Capture\n"
@@ -742,7 +742,7 @@ static int audio_test_setup(FAR void **audio_state)
   attr.mq_flags   = 0;
 
   snprintf(state->mqname, sizeof(state->mqname), "/tmp/%p",
-           ((void *)state));
+           state);
 
   state->mq = mq_open(state->mqname, O_RDWR | O_CREAT, 0644, &attr);
   assert_false(state->mq < 0);

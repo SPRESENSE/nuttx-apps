@@ -381,7 +381,7 @@ static int user_main(int argc, char *argv[])
       check_test_memory_usage();
 #endif
 
-#if !defined(CONFIG_DISABLE_PTHREAD) && defined(__KERNEL__) && \
+#if !defined(CONFIG_DISABLE_PTHREAD) && defined(CONFIG_BUILD_FLAT) && \
     defined(CONFIG_SCHED_WORKQUEUE)
       /* Check work queues */
 
@@ -548,6 +548,10 @@ static int user_main(int argc, char *argv[])
 #endif
 
 #ifdef CONFIG_BUILD_FLAT
+      printf("\nuser_main: spinlock test\n");
+      spinlock_test();
+      check_test_memory_usage();
+
       printf("\nuser_main: wdog test\n");
       wdog_test();
       check_test_memory_usage();

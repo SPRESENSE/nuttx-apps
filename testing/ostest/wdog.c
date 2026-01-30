@@ -27,6 +27,7 @@
 #include <nuttx/config.h>
 #include <nuttx/arch.h>
 #include <nuttx/wdog.h>
+#include <nuttx/spinlock.h>
 
 #include <assert.h>
 #include <pthread.h>
@@ -69,13 +70,13 @@ static void wdtest_callback(wdparm_t param)
 {
   FAR wdtest_param_t *wdtest_param = (FAR wdtest_param_t *)param;
 
-  /* Increment the callback count */
-
-  wdtest_param->callback_cnt   += 1;
-
   /* Record the system tick at which the callback was triggered */
 
   wdtest_param->triggered_tick  = clock_systime_ticks();
+
+  /* Increment the callback count */
+
+  wdtest_param->callback_cnt   += 1;
 }
 
 static void wdtest_checkdelay(sclock_t diff, sclock_t delay_tick)
@@ -146,7 +147,7 @@ static void wdtest_rand(FAR struct wdog_s *wdog, FAR wdtest_param_t *param,
   clock_t    wdset_tick;
   sclock_t   delay_tick;
   sclock_t   diff;
-  irqstate_t flags;
+  irqstate_t flags = 0;
 
   /* Perform multiple iterations with random delays. */
 

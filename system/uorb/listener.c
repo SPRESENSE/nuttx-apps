@@ -84,7 +84,7 @@ static int listener_print(FAR const struct orb_metadata *meta, int fd);
 static void listener_monitor(FAR struct listen_list_s *objlist,
                              int nb_objects, float topic_rate,
                              int topic_latency, int nb_msgs,
-                             int timeout, bool record);
+                             int timeout, bool record, bool nonwakeup);
 static int listener_update(FAR struct listen_list_s *objlist,
                            FAR struct orb_object *object);
 static void listener_top(FAR struct listen_list_s *objlist,
@@ -130,7 +130,7 @@ listener <command> [arguments...]\n\
  Commands:\n\
 \t<topics_name> Topic name. Multi name are separated by ','\n\
 \t[-h       ]  Listener commands help\n\
-\t[-f       ]  Record uorb data to file\n\
+\t[-s       ]  Record uorb data to file\n\
 \t[-n <val> ]  Number of messages, default: 0\n\
 \t[-r <val> ]  Subscription rate (unlimited if 0), default: 0\n\
 \t[-b <val> ]  Subscription maximum report latency in us(unlimited if 0),\n\
@@ -138,6 +138,9 @@ listener <command> [arguments...]\n\
 \t[-t <val> ]  Time of listener, in seconds, default: 5\n\
 \t[-T       ]  Top, continuously print updating objects\n\
 \t[-l       ]  Top only execute once.\n\
+\t[-i       ]  Get sensor device information based on topic.\n\
+\t[-f       ]  Flush sensor drive data.\n\
+\t[-u       ]  Subscribe in non-wakeup mode to save power.\n\
   ");
 }
 
@@ -178,6 +181,34 @@ static int listener_create_dir(FAR char *dir, size_t size)
     }
 
   return OK;
+}
+
+/****************************************************************************
+ * Name: listener_subscribe
+ *
+ * Description:
+ *   Subscribe topic according to non wakeup mode.
+ *
+ * Input Parameters:
+ *   tmp          Given object
+ *   nonwakeup    State of nonwakeup.
+ *
+ * Returned Value:
+ *   fd on success, otherwise -1.
+ ****************************************************************************/
+
+static int listener_subscribe(FAR struct listen_object_s *tmp,
+                              bool nonwakeup)
+{
+  if (nonwakeup)
+    {
+      return orb_subscribe_multi_nonwakeup(tmp->object.meta,
+                                           tmp->object.instance);
+    }
+  else
+    {
+      return orb_subscribe_multi(tmp->object.meta, tmp->object.instance);
+    }
 }
 
 /****************************************************************************
@@ -531,6 +562,197 @@ static int listener_print(FAR const struct orb_metadata *meta, int fd)
 }
 
 /****************************************************************************
+ * Name: listener_flush_topic
+ *
+ * Description:
+ *   Flush sensor device.
+ *
+ * Input Parameters:
+ *   objlist      Topic object list.
+ *   nb_objects   Length of objects list.
+ *   timeout      Maximum poll waiting time(microsecond).
+ *   nonwakeup    The state of non wakeup
+ *
+ * Returned Value:
+ *   void
+ ****************************************************************************/
+
+static void listener_flush_topic(FAR const struct listen_list_s *objlist,
+                                 int nb_objects, int timeout, bool nonwakeup)
+{
+  FAR struct listen_object_s *tmp;
+  FAR struct pollfd *fds;
+  unsigned int events;
+  FAR int8_t *result;
+  int nb_flush = 0;
+  int i = 0;
+  int ret;
+
+  fds = calloc(nb_objects, sizeof(struct pollfd));
+  if (fds == NULL)
+    {
+      return;
+    }
+
+  result = calloc(nb_objects, sizeof(int8_t));
+  if (result == NULL)
+    {
+      free(fds);
+      return;
+    }
+
+  /* Prepare pollfd for all flush objects */
+
+  SLIST_FOREACH(tmp, objlist, node)
+    {
+      int fd;
+
+      fd = listener_subscribe(tmp, nonwakeup);
+      if (fd < 0)
+        {
+          fds[i].fd     = -1;
+          fds[i].events = 0;
+        }
+      else
+        {
+          fds[i].fd     = fd;
+          fds[i].events = POLLPRI;
+          i++;
+        }
+    }
+
+  i = 0;
+  SLIST_FOREACH(tmp, objlist, node)
+    {
+      ret = orb_flush(fds[i].fd);
+      if (ret < 0)
+        {
+          result[i] = ret;
+          uorbinfo_raw("topic [%s%d] call flush failed! return:%d\n",
+                       tmp->object.meta->o_name, tmp->object.instance, ret);
+        }
+      else
+        {
+          nb_flush++;
+        }
+
+      i++;
+    }
+
+  while (nb_flush && !g_should_exit)
+    {
+      if (poll(&fds[0], nb_objects, timeout * 1000) > 0)
+        {
+          i = 0;
+          SLIST_FOREACH(tmp, objlist, node)
+            {
+              if (fds[i].revents & POLLPRI)
+                {
+                  ret = orb_get_events(fds[i].fd, &events);
+                  if (ret < 0)
+                    {
+                      result[i] = ret;
+                    }
+                  else if (events & SENSOR_EVENT_FLUSH_COMPLETE)
+                    {
+                      nb_flush--;
+                    }
+                }
+
+              i++;
+            }
+        }
+      else if (errno != EINTR)
+        {
+          uorbinfo_raw("Waited for %d seconds without flush complete event. "
+                       "Giving up. err:%d\n", timeout, errno);
+          break;
+        }
+    }
+
+  i = 0;
+  uorbinfo_raw("Result:");
+  SLIST_FOREACH(tmp, objlist, node)
+    {
+      if (result[i] == 0)
+        {
+          uorbinfo_raw("\tTopic [%s%d] flush: SUCCESS.",
+                      tmp->object.meta->o_name, tmp->object.instance);
+        }
+      else
+        {
+          uorbinfo_raw("\tTopic [%s%d] flush: FAILURE. [%d]",
+                      tmp->object.meta->o_name,  tmp->object.instance,
+                      result[i]);
+        }
+
+      orb_unsubscribe(fds[i].fd);
+      i++;
+    }
+
+  uorbinfo_raw("Total number of flush topics: %d", nb_objects);
+  free(fds);
+  free(result);
+}
+
+/****************************************************************************
+ * Name: listener_print_info
+ *
+ * Description:
+ *   Print sensor device information.
+ *
+ * Input Parameters:
+ *   objlist      topic object list.
+ *   nonwakeup    The state of non wakeup
+ *
+ * Returned Value:
+ *   void
+ ****************************************************************************/
+
+static void listener_print_info(FAR const struct listen_list_s *objlist,
+                                bool nonwakeup)
+{
+  FAR struct listen_object_s *tmp;
+  orb_info_t info;
+  int ret;
+  int fd;
+
+  SLIST_FOREACH(tmp, objlist, node)
+    {
+      fd = listener_subscribe(tmp, nonwakeup);
+      if (fd < 0)
+        {
+          continue;
+        }
+
+      ret = orb_get_info(fd, &info);
+      orb_unsubscribe(fd);
+      uorbinfo_raw("Topic [%s%d] info:", tmp->object.meta->o_name,
+                   tmp->object.instance);
+      if (ret < 0)
+        {
+          uorbinfo_raw("\t NULL");
+          continue;
+        }
+
+      uorbinfo_raw("\tname:%s" \
+                   "\n\tvendor:%s" \
+                   "\n\tversion:%" PRIu32 "" \
+                   "\n\tpower:%f" \
+                   "\n\tmax_range:%f" \
+                   "\n\tresolution:%f" \
+                   "\n\tmin_delay:%" PRId32 "" \
+                   "\n\tmax_delay:%" PRId32 "" \
+                   "\n\tfifo_reserved_event_count:%" PRIu32 ""\
+                   "\n\tfifo_max_event_count:%" PRIu32 "\n",
+                   info.name, info.vendor, info.version, info.power,
+                   info.max_range, info.resolution, info.min_delay,
+                   info.max_delay, info.fifo_reserved_event_count,
+                   info.fifo_max_event_count);
+    }
+}
+
+/****************************************************************************
  * Name: listener_record
  *
  * Description:
@@ -576,7 +798,7 @@ static int listener_record(FAR const struct orb_metadata *meta, int fd,
  *   topic_rate     Subscribe frequency.
  *   topic_latency  Subscribe report latency.
  *   nb_msgs        Subscribe amount of messages.
- *   timeout        Maximum poll waiting time , ms.
+ *   timeout        Maximum poll waiting time(microseconds).
  *
  * Returned Value:
  *   None
@@ -585,7 +807,7 @@ static int listener_record(FAR const struct orb_metadata *meta, int fd,
 static void listener_monitor(FAR struct listen_list_s *objlist,
                              int nb_objects, float topic_rate,
                              int topic_latency, int nb_msgs,
-                             int timeout, bool record)
+                             int timeout, bool record, bool nonwakeup)
 {
   FAR struct pollfd *fds;
   char path[PATH_MAX];
@@ -616,7 +838,7 @@ static void listener_monitor(FAR struct listen_list_s *objlist,
     {
       int fd;
 
-      fd = orb_subscribe_multi(tmp->object.meta, tmp->object.instance);
+      fd = listener_subscribe(tmp, nonwakeup);
       if (fd < 0)
         {
           fds[i].fd     = -1;
@@ -854,7 +1076,10 @@ int main(int argc, FAR char *argv[])
   int nb_msgs       = 0;
   int timeout       = 5;
   bool top          = false;
+  bool info         = false;
+  bool flush        = false;
   bool record       = false;
+  bool nonwakeup    = false;
   bool only_once    = false;
   FAR char *filter  = NULL;
   int ret;
@@ -868,7 +1093,7 @@ int main(int argc, FAR char *argv[])
 
   /* Pasrse Argument */
 
-  while ((ch = getopt(argc, argv, "r:b:n:t:Tflh")) != EOF)
+  while ((ch = getopt(argc, argv, "r:b:n:t:Tfslhiu")) != EOF)
     {
       switch (ch)
       {
@@ -905,10 +1130,14 @@ int main(int argc, FAR char *argv[])
           break;
 
 #ifdef CONFIG_DEBUG_UORB
-        case 'f':
+        case 's':
           record = true;
           break;
 #endif
+
+        case 'f':
+          flush = true;
+          break;
 
         case 'T':
           top = true;
@@ -916,6 +1145,14 @@ int main(int argc, FAR char *argv[])
 
         case 'l':
           only_once = true;
+          break;
+
+        case 'i':
+          info = true;
+          break;
+
+        case 'u':
+          nonwakeup = true;
           break;
 
         case 'h':
@@ -938,6 +1175,18 @@ int main(int argc, FAR char *argv[])
       return 0;
     }
 
+  if (flush)
+    {
+      listener_flush_topic(&objlist, ret, timeout, nonwakeup);
+      goto exit;
+    }
+
+  if (info)
+    {
+      listener_print_info(&objlist, nonwakeup);
+      goto exit;
+    }
+
   if (top)
     {
       listener_top(&objlist, filter, only_once);
@@ -953,9 +1202,10 @@ int main(int argc, FAR char *argv[])
         }
 
       listener_monitor(&objlist, ret, topic_rate, topic_latency,
-                       nb_msgs, timeout, record);
+                       nb_msgs, timeout, record, nonwakeup);
     }
 
+exit:
   listener_delete_object_list(&objlist);
   return 0;
 

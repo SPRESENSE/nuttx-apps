@@ -23,7 +23,8 @@
 if(CONFIG_NETUTILS_CJSON)
 
   if(NOT CONFIG_NETUTILS_CJSON_URL)
-    set(CONFIG_NETUTILS_CJSON_URL "https://github.com/DaveGamble/cJSON/archive")
+    set(CONFIG_NETUTILS_CJSON_URL
+        "https://github.com/DaveGamble/cJSON/archive/refs/tags")
   endif()
 
   if(NOT CONFIG_NETUTILS_CJSON_VERSION)

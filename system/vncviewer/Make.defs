@@ -1,5 +1,5 @@
 ############################################################################
-# apps/examples/rmtchar/Makefile
+# apps/system/vncviewer/Make.defs
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -20,24 +20,6 @@
 #
 ############################################################################
 
-include $(APPDIR)/Make.defs
-
-# rmt character driver test
-
-ifeq ($(CONFIG_EXAMPLES_RMTCHAR_TX),y)
-CSRCS += rmtchar_transmitter.c
+ifneq ($(CONFIG_SYSTEM_VNCVIEWER),)
+CONFIGURED_APPS += $(APPDIR)/system/vncviewer
 endif
-ifeq ($(CONFIG_EXAMPLES_RMTCHAR_RX),y)
-CSRCS += rmtchar_receiver.c
-endif
-CSRCS += rmtchar_common.c
-MAINSRC = rmtchar_main.c
-
-# Touchscreen built-in application info
-
-PROGNAME = rmtchar
-PRIORITY = SCHED_PRIORITY_DEFAULT
-STACKSIZE = $(CONFIG_DEFAULT_TASK_STACKSIZE)
-MODULE = $(CONFIG_EXAMPLES_RMTCHAR)
-
-include $(APPDIR)/Application.mk

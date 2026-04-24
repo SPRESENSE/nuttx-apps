@@ -1,5 +1,5 @@
 /****************************************************************************
- * apps/examples/rmtchar/rmtchar_common.c
+ * apps/system/vncviewer/lcd_render.h
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -20,74 +20,87 @@
  *
  ****************************************************************************/
 
+#ifndef __APPS_SYSTEM_VNCVIEWER_LCD_RENDER_H
+#define __APPS_SYSTEM_VNCVIEWER_LCD_RENDER_H
+
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
-#include <nuttx/config.h>
-
-#include <sys/types.h>
-#include <stdio.h>
-#include <fcntl.h>
-#include <pthread.h>
-#include <errno.h>
-#include <nuttx/debug.h>
-#include <unistd.h>
-
-#include "rmtchar.h"
+#include <stdint.h>
 
 /****************************************************************************
- * Pre-processor Definitions
+ * Public Types
+ ****************************************************************************/
+
+struct lcd_ctx_s
+{
+  int fd;           /* File descriptor for /dev/lcdN */
+  uint16_t xres;    /* LCD horizontal resolution */
+  uint16_t yres;    /* LCD vertical resolution */
+  uint8_t fmt;      /* Pixel format (FB_FMT_*) */
+};
+
+/****************************************************************************
+ * Public Function Prototypes
  ****************************************************************************/
 
 /****************************************************************************
- * Private Types
- ****************************************************************************/
-
-/****************************************************************************
- * Private Function Prototypes
- ****************************************************************************/
-
-/****************************************************************************
- * Private Data
- ****************************************************************************/
-
-/****************************************************************************
- * Public Data
- ****************************************************************************/
-
-/****************************************************************************
- * Private Functions
- ****************************************************************************/
-
-/****************************************************************************
- * Public Functions
- ****************************************************************************/
-
-/****************************************************************************
- * Name: print_items
+ * Name: lcd_init
  *
  * Description:
- *   This function prints the level and duration of RMT items stored in a
- *   buffer. It iterates over the buffer, printing the level and duration of
- *   each item in a formatted manner.
+ *   Open and initialize the LCD device.
  *
  * Input Parameters:
- *   buf  - Pointer to the buffer containing the RMT items.
- *   len  - The number of RMT items in the buffer.
+ *   ctx   - LCD context to initialize
+ *   devno - LCD device number (0 for /dev/lcd0)
  *
  * Returned Value:
- *   None.
+ *   OK on success, negative errno on failure.
  *
  ****************************************************************************/
 
-void print_items(struct rmt_item32_s *buf, int len)
-{
-  int i;
+int lcd_init(struct lcd_ctx_s *ctx, int devno);
 
-  for (i = 0; i < len; i++, buf++)
-    {
-      printf("\t[%d]:\tL %d\tD %d\t", i, buf->level0, buf->duration0);
-      printf("L %d\t D %d\n", buf->level1, buf->duration1);
-    }
-}
+/****************************************************************************
+ * Name: lcd_put_row
+ *
+ * Description:
+ *   Write a single row of pixels to the LCD.
+ *
+ * Input Parameters:
+ *   ctx    - LCD context
+ *   x      - Starting X coordinate
+ *   y      - Y coordinate (row)
+ *   w      - Width in pixels
+ *   pixels - Pixel data matching LCD native format
+ *
+ * Returned Value:
+ *   OK on success, negative errno on failure.
+ *
+ ****************************************************************************/
+
+int lcd_put_row(struct lcd_ctx_s *ctx, uint16_t x, uint16_t y,
+                uint16_t w, const uint16_t *pixels);
+
+/****************************************************************************
+ * Name: lcd_fill
+ *
+ * Description:
+ *   Fill the entire LCD with a solid color.
+ *
+ ****************************************************************************/
+
+int lcd_fill(struct lcd_ctx_s *ctx, uint16_t color);
+
+/****************************************************************************
+ * Name: lcd_uninit
+ *
+ * Description:
+ *   Close the LCD device.
+ *
+ ****************************************************************************/
+
+void lcd_uninit(struct lcd_ctx_s *ctx);
+
+#endif /* __APPS_SYSTEM_VNCVIEWER_LCD_RENDER_H */

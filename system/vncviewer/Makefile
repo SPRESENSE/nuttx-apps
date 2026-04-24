@@ -1,5 +1,5 @@
 ############################################################################
-# apps/examples/rmtchar/Make.defs
+# apps/system/vncviewer/Makefile
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -20,6 +20,18 @@
 #
 ############################################################################
 
-ifneq ($(CONFIG_EXAMPLES_RMTCHAR),)
-CONFIGURED_APPS += $(APPDIR)/examples/rmtchar
-endif
+include $(APPDIR)/Make.defs
+
+# VNC Viewer built-in application info
+
+PROGNAME = $(CONFIG_SYSTEM_VNCVIEWER_PROGNAME)
+PRIORITY = $(CONFIG_SYSTEM_VNCVIEWER_PRIORITY)
+STACKSIZE = $(CONFIG_SYSTEM_VNCVIEWER_STACKSIZE)
+MODULE = $(CONFIG_SYSTEM_VNCVIEWER)
+
+# VNC Viewer sources
+
+MAINSRC = vncviewer_main.c
+CSRCS   = rfb_protocol.c lcd_render.c
+
+include $(APPDIR)/Application.mk

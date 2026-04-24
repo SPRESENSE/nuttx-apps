@@ -1,5 +1,5 @@
 # ##############################################################################
-# apps/examples/rmtchar/CMakeLists.txt
+# apps/system/vncviewer/CMakeLists.txt
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -20,21 +20,16 @@
 #
 # ##############################################################################
 
-if(CONFIG_EXAMPLES_RMTCHAR)
+if(CONFIG_SYSTEM_VNCVIEWER)
   nuttx_add_application(
     NAME
-    rmtchar
-    STACKSIZE
-    ${CONFIG_DEFAULT_TASK_STACKSIZE}
-    MODULE
-    ${CONFIG_EXAMPLES_RMTCHAR}
+    ${CONFIG_SYSTEM_VNCVIEWER_PROGNAME}
     SRCS
-    rmtchar_main.c)
-  target_sources(apps PRIVATE rmtchar_common.c)
-  if(CONFIG_EXAMPLES_RMTCHAR_TX)
-    target_sources(apps PRIVATE rmtchar_transmitter.c)
-  endif()
-  if(CONFIG_EXAMPLES_RMTCHAR_RX)
-    target_sources(apps PRIVATE rmtchar_receiver.c)
-  endif()
+    vncviewer_main.c
+    rfb_protocol.c
+    lcd_render.c
+    STACKSIZE
+    ${CONFIG_SYSTEM_VNCVIEWER_STACKSIZE}
+    PRIORITY
+    ${CONFIG_SYSTEM_VNCVIEWER_PRIORITY})
 endif()

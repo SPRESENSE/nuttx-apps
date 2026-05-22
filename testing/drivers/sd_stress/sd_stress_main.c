@@ -134,7 +134,7 @@ static bool create_files(const char *dir, const char *name,
 
   if (!read_bytes)
     {
-      printf("malloc failed for read bytes bufffer\n");
+      printf("malloc failed for read bytes buffer\n");
       return false;
     }
 
@@ -160,7 +160,7 @@ static bool create_files(const char *dir, const char *name,
           bytes[j] = (bytes[j] + i) & 0xff;
         }
 
-      int fd = open(path, O_CREAT | O_RDWR);
+      int fd = open(path, O_CREAT | O_RDWR, 0666);
 
       if (fd < 0)
         {
@@ -282,8 +282,8 @@ static uint64_t get_time_delta(const struct timespec *start,
                                const struct timespec *end)
 {
   uint64_t elapsed;
-  elapsed = (((uint64_t)end->tv_sec * NSEC_PER_SEC) + end->tv_nsec);
-  elapsed -= (((uint64_t)start->tv_sec * NSEC_PER_SEC) + start->tv_nsec);
+  elapsed = (end->tv_sec * NSEC_PER_SEC) + end->tv_nsec;
+  elapsed -= (start->tv_sec * NSEC_PER_SEC) + start->tv_nsec;
   return elapsed / 1000;
 }
 

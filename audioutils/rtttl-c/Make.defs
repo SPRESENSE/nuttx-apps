@@ -1,5 +1,5 @@
 ############################################################################
-# apps/system/microros/Make.defs
+# apps/audioutils/rtttl-c/Make.defs
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -20,11 +20,6 @@
 #
 ############################################################################
 
-ifneq ($(CONFIG_SYSTEM_MICROROS),)
-CONFIGURED_APPS += $(APPDIR)/system/microros
-
-CFLAGS   += ${INCDIR_PREFIX}$(APPDIR)/system/microros/include
-CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/system/microros/include
-
-LDLIBS   += $(APPDIR)/system/microros/libmicroros.a
+ifneq ($(CONFIG_AUDIOUTILS_RTTTL_C),)
+CONFIGURED_APPS += $(APPDIR)/audioutils/rtttl-c
 endif

@@ -70,7 +70,10 @@ static void lcddev_wait(FAR lv_disp_drv_t *disp_drv)
 {
   FAR struct lcddev_obj_s *lcddev_obj = disp_drv->user_data;
 
-  sem_wait(&(lcddev_obj->wait_sem));
+  while (sem_wait(&(lcddev_obj->wait_sem)) != 0)
+    {
+      DEBUGASSERT(errno == EINTR || errno == ECANCELED);
+    }
 
   /* Tell the flushing is ready */
 
@@ -89,7 +92,10 @@ static FAR void *lcddev_update_thread(FAR void *arg)
 
   while (ret == OK)
     {
-      sem_wait(&lcddev_obj->flush_sem);
+      while (sem_wait(&lcddev_obj->flush_sem) != 0)
+        {
+          DEBUGASSERT(errno == EINTR || errno == ECANCELED);
+        }
 
       ret = ioctl(lcddev_obj->fd, LCDDEVIO_PUTAREA,
                   (unsigned long)&(lcddev_obj->area));

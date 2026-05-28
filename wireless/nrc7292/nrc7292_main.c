@@ -722,8 +722,6 @@ static void parse_atcmd_socket_event(FAR struct nrc7292_s *priv,
           update_socket_state(priv, socket_id, CLOSED,
                               argc, &resp->tokens[2]);
         }
-
-      send_usock_ack_nodata(priv->usock_fd, sinfo->xid, -EPIPE);
     }
   else if (strncmp(resp->tokens[0], "RECV_READY", 10) == 0)
     {

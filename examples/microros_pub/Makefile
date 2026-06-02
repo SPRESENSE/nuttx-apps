@@ -1,5 +1,5 @@
 ############################################################################
-# apps/system/microros/Make.defs
+# apps/examples/microros_pub/Makefile
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -20,13 +20,13 @@
 #
 ############################################################################
 
-ifneq ($(CONFIG_SYSTEM_MICROROS),)
-CONFIGURED_APPS += $(APPDIR)/system/microros
+include $(APPDIR)/Make.defs
 
-MICROROS_INC_DIRS := $(APPDIR)/system/microros/include \
-                     $(wildcard $(APPDIR)/system/microros/include/*)
-CFLAGS   += $(foreach d,$(MICROROS_INC_DIRS),${INCDIR_PREFIX}$(d))
-CXXFLAGS += $(foreach d,$(MICROROS_INC_DIRS),${INCDIR_PREFIX}$(d))
+PROGNAME  = $(CONFIG_EXAMPLES_MICROROS_PUB_PROGNAME)
+PRIORITY  = $(CONFIG_EXAMPLES_MICROROS_PUB_PRIORITY)
+STACKSIZE = $(CONFIG_EXAMPLES_MICROROS_PUB_STACKSIZE)
+MODULE    = $(CONFIG_EXAMPLES_MICROROS_PUB)
 
-EXTRA_LIBS += $(APPDIR)/system/microros/libmicroros.a
-endif
+MAINSRC = microros_pub_main.c
+
+include $(APPDIR)/Application.mk

@@ -1,5 +1,5 @@
 # ##############################################################################
-# apps/system/popen/CMakeLists.txt
+# apps/testing/libc/popen/CMakeLists.txt
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -20,6 +20,14 @@
 #
 # ##############################################################################
 
-if(CONFIG_SYSTEM_POPEN)
-  target_sources(apps PRIVATE dpopen.c popen.c)
+if(CONFIG_TESTING_POPEN)
+  nuttx_add_application(
+    NAME
+    popen_test
+    STACKSIZE
+    ${CONFIG_DEFAULT_TASK_STACKSIZE}
+    MODULE
+    ${CONFIG_TESTING_POPEN}
+    SRCS
+    popen_test.c)
 endif()

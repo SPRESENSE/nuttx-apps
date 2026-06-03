@@ -1,5 +1,5 @@
 ############################################################################
-# apps/system/popen/Makefile
+# apps/testing/libc/popen/Makefile
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -22,8 +22,11 @@
 
 include $(APPDIR)/Make.defs
 
-# dpopen()/dpclose() core and popen()/pclose() FILE wrappers
+PROGNAME = popen_test
+PRIORITY = SCHED_PRIORITY_DEFAULT
+STACKSIZE = $(CONFIG_DEFAULT_TASK_STACKSIZE)
+MODULE = $(CONFIG_TESTING_POPEN)
 
-CSRCS = dpopen.c popen.c
+MAINSRC = popen_test.c
 
 include $(APPDIR)/Application.mk

@@ -1,5 +1,7 @@
 ############################################################################
-# apps/examples/rust/slint/Makefile
+# apps/examples/microros_sub/Makefile
+#
+# SPDX-License-Identifier: Apache-2.0
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -20,22 +22,11 @@
 
 include $(APPDIR)/Make.defs
 
-PROGNAME  = $(CONFIG_EXAMPLES_RUST_SLINT_PROGNAME)
-PRIORITY  = $(CONFIG_EXAMPLES_RUST_SLINT_PRIORITY)
-STACKSIZE = $(CONFIG_EXAMPLES_RUST_SLINT_STACKSIZE)
-MODULE    = $(CONFIG_EXAMPLES_RUST_SLINT)
+PROGNAME  = $(CONFIG_EXAMPLES_MICROROS_SUB_PROGNAME)
+PRIORITY  = $(CONFIG_EXAMPLES_MICROROS_SUB_PRIORITY)
+STACKSIZE = $(CONFIG_EXAMPLES_MICROROS_SUB_STACKSIZE)
+MODULE    = $(CONFIG_EXAMPLES_MICROROS_SUB)
 
-RUST_LIB  := $(call RUST_GET_BINDIR,slint,$(APPDIR)/examples/rust)
-RUST_SRCS := $(call RUST_CARGO_SRCS,slint,$(APPDIR)/examples/rust)
-
-$(RUST_LIB): $(RUST_SRCS)
-	$(call RUST_CARGO_BUILD,slint,$(APPDIR)/examples/rust)
-
-context:: $(RUST_LIB)
-
-all:: $(RUST_LIB)
-
-clean::
-	$(call RUST_CARGO_CLEAN,slint,$(APPDIR)/examples/rust)
+MAINSRC = microros_sub_main.c
 
 include $(APPDIR)/Application.mk

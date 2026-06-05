@@ -78,6 +78,11 @@ static void reap_process(FAR struct service_manager_s *sm,
   int ret;
   int pid;
 
+  /* prevent unused warning */
+
+  UNUSED(name);
+  UNUSED(status);
+
   for (; ; )
     {
       pid = waitpid(-1, &wstatus, WNOHANG);
@@ -90,7 +95,7 @@ static void reap_process(FAR struct service_manager_s *sm,
           status = "status";
           ret = WEXITSTATUS(wstatus);
         }
-      else if (WIFSIGNALED(wtatus))
+      else if (WIFSIGNALED(wstatus))
         {
           status = "signal";
           ret = WTERMSIG(wstatus);
@@ -154,8 +159,18 @@ int main(int argc, FAR char *argv[])
     };
 
   struct pollfd pfds[nitems(ev)];
+  sigset_t mask;
   size_t i;
   int r;
+
+  sigfillset(&mask);
+  r = sigprocmask(SIG_BLOCK, &mask, NULL);
+  sigemptyset(&mask);
+  if (r < 0)
+    {
+      init_err("sigprocmask failed %d", errno);
+      return r;
+    }
 
 #ifdef CONFIG_USBDEV_TRACE
   usbtrace_enable(TRACE_BITSET);
@@ -215,7 +230,7 @@ int main(int argc, FAR char *argv[])
           break;
         }
 
-      r = ppoll(pfds, nitems(pfds), MS2TIMESPEC(&timeout, t), NULL);
+      r = ppoll(pfds, nitems(pfds), MS2TIMESPEC(&timeout, t), &mask);
       if (r < 0 && errno != EINTR)
         {
           init_err("Wait event");

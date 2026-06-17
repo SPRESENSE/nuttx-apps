@@ -1,5 +1,5 @@
-#############################################################################
-# apps/netutils/libwebsockets/Make.defs
+############################################################################
+# apps/examples/lws_echo/Makefile
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -18,16 +18,15 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 #
-#############################################################################
+############################################################################
 
-ifeq ($(CONFIG_NETUTILS_LIBWEBSOCKETS),y)
-CONFIGURED_APPS += $(APPDIR)/netutils/libwebsockets
+include $(APPDIR)/Make.defs
 
-# Allows `<libwebsockets/<>.h>` import.
+PROGNAME  = $(CONFIG_EXAMPLES_LWS_ECHO_PROGNAME)
+PRIORITY  = $(CONFIG_EXAMPLES_LWS_ECHO_PRIORITY)
+STACKSIZE = $(CONFIG_EXAMPLES_LWS_ECHO_STACKSIZE)
+MODULE    = $(CONFIG_EXAMPLES_LWS_ECHO)
 
-CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/netutils/libwebsockets
-CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/netutils/libwebsockets/libwebsockets/include
-CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/netutils/libwebsockets
-CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/netutils/libwebsockets/libwebsockets/include
+MAINSRC = lws_echo_main.c
 
-endif
+include $(APPDIR)/Application.mk

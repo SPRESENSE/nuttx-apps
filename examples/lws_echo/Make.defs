@@ -1,5 +1,5 @@
-#############################################################################
-# apps/netutils/libwebsockets/Make.defs
+############################################################################
+# apps/examples/lws_echo/Make.defs
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -18,16 +18,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 #
-#############################################################################
+############################################################################
 
-ifeq ($(CONFIG_NETUTILS_LIBWEBSOCKETS),y)
-CONFIGURED_APPS += $(APPDIR)/netutils/libwebsockets
-
-# Allows `<libwebsockets/<>.h>` import.
-
-CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/netutils/libwebsockets
-CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/netutils/libwebsockets/libwebsockets/include
-CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/netutils/libwebsockets
-CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/netutils/libwebsockets/libwebsockets/include
-
+ifneq ($(CONFIG_EXAMPLES_LWS_ECHO),)
+CONFIGURED_APPS += $(APPDIR)/examples/lws_echo
 endif

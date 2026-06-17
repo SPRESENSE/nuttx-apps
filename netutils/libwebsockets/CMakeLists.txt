@@ -21,17 +21,24 @@
 if(CONFIG_NETUTILS_LIBWEBSOCKETS)
 
   # ############################################################################
-  # Config and Fetch MbedTLS lib
+  # Config and Fetch libwebsockets
   # ############################################################################
 
   set(LIBWEBSOCKETS_DIR ${CMAKE_CURRENT_LIST_DIR}/libwebsockets)
 
-  if(NOT EXISTS ${LIBWEBSOCKETS_DIR})
+  # Match Makefile: strip kconfig quotes; default when olddefconfig has not run
+  set(LWS_VERSION ${CONFIG_NETUTILS_LIBWEBSOCKETS_VERSION})
+  string(REGEX REPLACE "^\"(.*)\"$" "\\1" LWS_VERSION "${LWS_VERSION}")
+  if(NOT LWS_VERSION)
+    set(LWS_VERSION "4.3.1")
+  endif()
+
+  if(NOT EXISTS "${LIBWEBSOCKETS_DIR}/lib/plat/unix/unix-caps.c")
     set(LIBWEBSOCKETS_URL "https://github.com/warmcat/libwebsockets/archive")
     FetchContent_Declare(
       libwebsockets_fetch
-      URL ${LIBWEBSOCKETS_URL}/v${CONFIG_NETUTILS_LIBWEBSOCKETS_VERSION}.zip
-          SOURCE_DIR ${LIBWEBSOCKETS_DIR} BINARY_DIR
+      URL ${LIBWEBSOCKETS_URL}/v${LWS_VERSION}.zip SOURCE_DIR
+          ${LIBWEBSOCKETS_DIR} BINARY_DIR
           ${CMAKE_BINARY_DIR}/apps/netutils/libwebsockets/libwebsockets
       DOWNLOAD_NO_PROGRESS true
       TIMEOUT 30)
@@ -52,21 +59,31 @@ if(CONFIG_NETUTILS_LIBWEBSOCKETS)
   # Flags
   # ############################################################################
 
-  string(REGEX MATCHALL "[0-9]" versions
-               "${CONFIG_NETUTILS_LIBWEBSOCKETS_VERSION}")
-  list(GET versions 0 VERSION_MAJOR)
-  list(GET versions 1 VERSION_MINOR)
-  list(GET versions 2 VERSION_PATCH)
+  string(REPLACE "." ";" LWS_VERSION_PARTS "${LWS_VERSION}")
+  list(GET LWS_VERSION_PARTS 0 VERSION_MAJOR)
+  list(LENGTH LWS_VERSION_PARTS LWS_VERSION_PARTS_LEN)
+  if(LWS_VERSION_PARTS_LEN GREATER 1)
+    list(GET LWS_VERSION_PARTS 1 VERSION_MINOR)
+  else()
+    set(VERSION_MINOR 0)
+  endif()
+  if(LWS_VERSION_PARTS_LEN GREATER 2)
+    list(GET LWS_VERSION_PARTS 2 VERSION_PATCH)
+  else()
+    set(VERSION_PATCH 0)
+  endif()
+
   set(FLAGS
       -DLWS_LIBRARY_VERSION_MAJOR=${VERSION_MAJOR}
       -DLWS_LIBRARY_VERSION_MINOR=${VERSION_MINOR}
       -DLWS_LIBRARY_VERSION_PATCH=${VERSION_PATCH}
       -DLWS_LIBRARY_VERSION_PATCH_ELABORATED=${VERSION_PATCH}-unknown
-      -DLWS_LIBRARY_VERSION="${CONFIG_NETUTILS_LIBWEBSOCKETS_VERSION}-unknown"
-      -Wno-shadow)
+      -DLWS_LIBRARY_VERSION="${LWS_VERSION}-unknown"
+      -Wno-shadow
+      -Wno-format)
 
   set(INCDIR
-      .
+      ${CMAKE_CURRENT_LIST_DIR}
       ${LIBWEBSOCKETS_DIR}/lib/core
       ${LIBWEBSOCKETS_DIR}/lib/plat/unix
       ${LIBWEBSOCKETS_DIR}/lib/event-libs
@@ -78,9 +95,7 @@ if(CONFIG_NETUTILS_LIBWEBSOCKETS)
       ${LIBWEBSOCKETS_DIR}/lib/roles/h1
       ${LIBWEBSOCKETS_DIR}/lib/roles/h2
       ${LIBWEBSOCKETS_DIR}/lib/roles/ws
-      ${LIBWEBSOCKETS_DIR}/lib/tls
-      ${LIBWEBSOCKETS_DIR}/lib/tls/mbedtls/wrapper/include
-      ${LIBWEBSOCKETS_DIR}/lib/tls/mbedtls/wrapper/include/internal)
+      ${LIBWEBSOCKETS_DIR}/lib/tls)
 
   set(CSRCS
       ${LIBWEBSOCKETS_DIR}/lib/plat/unix/unix-caps.c
@@ -146,7 +161,21 @@ if(CONFIG_NETUTILS_LIBWEBSOCKETS)
       ${LIBWEBSOCKETS_DIR}/lib/roles/raw-skt/ops-raw-skt.c
       ${LIBWEBSOCKETS_DIR}/lib/roles/raw-file/ops-raw-file.c
       ${LIBWEBSOCKETS_DIR}/lib/roles/http/client/client-http.c
-      ${LIBWEBSOCKETS_DIR}/lib/event-libs/poll/poll.c
+      ${LIBWEBSOCKETS_DIR}/lib/event-libs/poll/poll.c)
+
+  if(CONFIG_NETUTILS_LIBWEBSOCKETS_SERVER)
+    list(APPEND INCDIR ${LIBWEBSOCKETS_DIR}/lib/roles/http/server)
+    list(APPEND CSRCS ${LIBWEBSOCKETS_DIR}/lib/roles/ws/server-ws.c
+         ${LIBWEBSOCKETS_DIR}/lib/roles/http/server/server.c
+         ${LIBWEBSOCKETS_DIR}/lib/roles/listen/ops-listen.c)
+  endif()
+
+  if(CONFIG_NETUTILS_LIBWEBSOCKETS_TLS)
+    list(APPEND INCDIR ${LIBWEBSOCKETS_DIR}/lib/tls/mbedtls/wrapper/include
+         ${LIBWEBSOCKETS_DIR}/lib/tls/mbedtls/wrapper/include/internal)
+    list(
+      APPEND
+      CSRCS
       ${LIBWEBSOCKETS_DIR}/lib/tls/tls.c
       ${LIBWEBSOCKETS_DIR}/lib/tls/tls-network.c
       ${LIBWEBSOCKETS_DIR}/lib/tls/tls-sessions.c
@@ -157,6 +186,7 @@ if(CONFIG_NETUTILS_LIBWEBSOCKETS)
       ${LIBWEBSOCKETS_DIR}/lib/tls/mbedtls/mbedtls-ssl.c
       ${LIBWEBSOCKETS_DIR}/lib/tls/mbedtls/mbedtls-session.c
       ${LIBWEBSOCKETS_DIR}/lib/tls/mbedtls/mbedtls-client.c)
+  endif()
 
   if(CONFIG_NETUTILS_MQTTC)
     list(APPEND INCDIR ${LIBWEBSOCKETS_DIR}/lib/roles/mqtt)
@@ -178,7 +208,8 @@ if(CONFIG_NETUTILS_LIBWEBSOCKETS)
   set_property(
     TARGET nuttx
     APPEND
-    PROPERTY NUTTX_INCLUDE_DIRECTORIES ${LIBWEBSOCKETS_DIR}/include)
+    PROPERTY NUTTX_INCLUDE_DIRECTORIES ${LIBWEBSOCKETS_DIR}/include
+             ${CMAKE_CURRENT_LIST_DIR})
 
   nuttx_add_library(libwebsockets STATIC)
   target_sources(libwebsockets PRIVATE ${CSRCS})

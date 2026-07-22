@@ -266,8 +266,7 @@
  * If CONFIG_NSH_TELNET_LOGIN is defined, then these additional
  * options may be specified:
  *
- * CONFIG_NSH_LOGIN_USERNAME - Login user name.  Default: "admin"
- * CONFIG_NSH_LOGIN_PASSWORD - Login password:  Default: "Administrator"
+ * CONFIG_NSH_LOGIN_USERNAME - Login user name.  Default: "root"
  * CONFIG_NSH_LOGIN_FAILCOUNT - Number of login retry attempts.
  *   Default 3.
  */
@@ -275,11 +274,7 @@
 #ifdef CONFIG_NSH_TELNET_LOGIN
 
 #  ifndef CONFIG_NSH_LOGIN_USERNAME
-#    define CONFIG_NSH_LOGIN_USERNAME  "admin"
-#  endif
-
-#  ifndef CONFIG_NSH_LOGIN_PASSWORD
-#    define CONFIG_NSH_LOGIN_PASSWORD  "nuttx"
+#    define CONFIG_NSH_LOGIN_USERNAME  "root"
 #  endif
 
 #  ifndef CONFIG_NSH_LOGIN_FAILCOUNT

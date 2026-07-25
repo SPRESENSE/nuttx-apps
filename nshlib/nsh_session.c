@@ -223,6 +223,12 @@ int nsh_session(FAR struct console_stdio_s *pstate,
 
       write(OUTFD(pstate), nsh_prompt(), strlen(nsh_prompt()));
 
+#if defined(CONFIG_READLINE_TABCOMPLETION) || defined(CONFIG_READLINE_EDIT)
+      /* Set the prompt so readline can redraw it for editing features */
+
+      readline_prompt(nsh_prompt());
+#endif
+
       /* readline() normally returns the number of characters read, but
        * will return EOF on end of file or if an error occurs.  EOF
        * will cause the session to terminate.

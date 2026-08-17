@@ -1,5 +1,5 @@
 ############################################################################
-# apps/examples/hello/Makefile
+# apps/examples/lvgltouch/Makefile
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -22,21 +22,11 @@
 
 include $(APPDIR)/Make.defs
 
-# Hello, World! built-in application info
+PROGNAME = $(CONFIG_EXAMPLES_LVGLTOUCH_PROGNAME)
+PRIORITY = $(CONFIG_EXAMPLES_LVGLTOUCH_PRIORITY)
+STACKSIZE = $(CONFIG_EXAMPLES_LVGLTOUCH_STACKSIZE)
+MODULE = $(CONFIG_EXAMPLES_LVGLTOUCH)
 
-PROGNAME  = $(CONFIG_EXAMPLES_HELLO_PROGNAME)
-PRIORITY  = $(CONFIG_EXAMPLES_HELLO_PRIORITY)
-STACKSIZE = $(CONFIG_EXAMPLES_HELLO_STACKSIZE)
-MODULE    = $(CONFIG_EXAMPLES_HELLO)
-
-ifeq ($(CONFIG_EXAMPLES_HELLO_RESTRICTED),y)
-UID  = 0
-GID  = 0
-MODE = 0744
-endif
-
-# Hello, World! Example
-
-MAINSRC = hello_main.c
+MAINSRC = lvgltouch_main.c
 
 include $(APPDIR)/Application.mk

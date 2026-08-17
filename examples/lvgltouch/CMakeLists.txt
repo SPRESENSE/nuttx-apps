@@ -1,5 +1,5 @@
 # ##############################################################################
-# apps/examples/hello/CMakeLists.txt
+# apps/examples/lvgltouch/CMakeLists.txt
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -20,32 +20,18 @@
 #
 # ##############################################################################
 
-if(CONFIG_EXAMPLES_HELLO)
-  if(CONFIG_EXAMPLES_HELLO_RESTRICTED)
-    nuttx_add_application(
-      NAME
-      ${CONFIG_EXAMPLES_HELLO_PROGNAME}
-      SRCS
-      hello_main.c
-      STACKSIZE
-      ${CONFIG_EXAMPLES_HELLO_STACKSIZE}
-      PRIORITY
-      ${CONFIG_EXAMPLES_HELLO_PRIORITY}
-      UID
-      0
-      GID
-      0
-      MODE
-      484)
-  else()
-    nuttx_add_application(
-      NAME
-      ${CONFIG_EXAMPLES_HELLO_PROGNAME}
-      SRCS
-      hello_main.c
-      STACKSIZE
-      ${CONFIG_EXAMPLES_HELLO_STACKSIZE}
-      PRIORITY
-      ${CONFIG_EXAMPLES_HELLO_PRIORITY})
-  endif()
+if(CONFIG_EXAMPLES_LVGLTOUCH)
+  nuttx_add_application(
+    NAME
+    ${CONFIG_EXAMPLES_LVGLTOUCH_PROGNAME}
+    PRIORITY
+    ${CONFIG_EXAMPLES_LVGLTOUCH_PRIORITY}
+    STACKSIZE
+    ${CONFIG_EXAMPLES_LVGLTOUCH_STACKSIZE}
+    MODULE
+    ${CONFIG_EXAMPLES_LVGLTOUCH}
+    DEPENDS
+    lvgl
+    SRCS
+    lvgltouch_main.c)
 endif()

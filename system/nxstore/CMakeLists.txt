@@ -1,5 +1,5 @@
 # ##############################################################################
-# apps/testing/libc/arch_libc/CMakeLists.txt
+# apps/system/nxstore/CMakeLists.txt
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -20,21 +20,16 @@
 #
 # ##############################################################################
 
-if(CONFIG_TESTING_ARCH_LIBC)
-  if(CONFIG_TESTING_ARCH_LIBC_BENCH)
-    set(bench_srcs arch_libc_bench.c)
-  endif()
-
+if(CONFIG_SYSTEM_NXSTORE)
   nuttx_add_application(
     NAME
-    ${CONFIG_TESTING_ARCH_LIBC_PROGNAME}
+    ${CONFIG_SYSTEM_NXSTORE_PROGNAME}
     PRIORITY
-    ${CONFIG_TESTING_ARCH_LIBC_PRIORITY}
+    ${CONFIG_SYSTEM_NXSTORE_PRIORITY}
     STACKSIZE
-    ${CONFIG_TESTING_ARCH_LIBC_STACKSIZE}
+    ${CONFIG_SYSTEM_NXSTORE_STACKSIZE}
     MODULE
-    ${CONFIG_TESTING_ARCH_LIBC}
+    ${CONFIG_SYSTEM_NXSTORE}
     SRCS
-    arch_libc_test_main.c
-    ${bench_srcs})
+    nxstore_main.c)
 endif()

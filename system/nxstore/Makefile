@@ -1,5 +1,5 @@
 ############################################################################
-# apps/examples/sotest/modprint/Makefile
+# apps/system/nxstore/Makefile
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -22,8 +22,11 @@
 
 include $(APPDIR)/Make.defs
 
-LOCAL_PATH := $(CURDIR)
-LOCAL_MODULE := modprint
-LOCAL_SRC_FILES := modprint.c
+PROGNAME  = $(CONFIG_SYSTEM_NXSTORE_PROGNAME)
+PRIORITY  = $(CONFIG_SYSTEM_NXSTORE_PRIORITY)
+STACKSIZE = $(CONFIG_SYSTEM_NXSTORE_STACKSIZE)
+MODULE    = $(CONFIG_SYSTEM_NXSTORE)
 
-include $(BUILD_SHARED_LIBRARY)
+MAINSRC = nxstore_main.c
+
+include $(APPDIR)/Application.mk

@@ -1,5 +1,5 @@
 ############################################################################
-# apps/graphics/microwindows/Make.defs
+# apps/examples/nanoxcalc/Makefile
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -20,13 +20,16 @@
 #
 ############################################################################
 
-ifneq ($(CONFIG_GRAPHICS_MICROWINDOWS),)
-CONFIGURED_APPS += $(APPDIR)/graphics/microwindows
+include $(APPDIR)/Make.defs
 
-# It allows `microwindows/src/include` import.
+PROGNAME  = $(CONFIG_EXAMPLES_NANOXCALC_PROGNAME)
+PRIORITY  = $(CONFIG_EXAMPLES_NANOXCALC_PRIORITY)
+STACKSIZE = $(CONFIG_EXAMPLES_NANOXCALC_STACKSIZE)
+MODULE    = $(CONFIG_EXAMPLES_NANOXCALC)
 
-EXPORTED_INCLUDES += ${INCDIR_PREFIX}$(APPDIR)/graphics/microwindows/microwindows/src/include
+# Port of the upstream nxcalc demo (src/demos/nanox/nxcalc.c)
+MAINSRC = nxcalc.c
+CFLAGS += -Wno-undef
 
-CFLAGS += -DMWCONFIG_FILE='"mwconfig.nuttx"'
 
-endif
+include $(APPDIR)/Application.mk

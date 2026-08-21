@@ -1,5 +1,5 @@
 ############################################################################
-# apps/graphics/microwindows/Make.defs
+# apps/examples/nanoxterm/Make.defs
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -20,13 +20,6 @@
 #
 ############################################################################
 
-ifneq ($(CONFIG_GRAPHICS_MICROWINDOWS),)
-CONFIGURED_APPS += $(APPDIR)/graphics/microwindows
-
-# It allows `microwindows/src/include` import.
-
-EXPORTED_INCLUDES += ${INCDIR_PREFIX}$(APPDIR)/graphics/microwindows/microwindows/src/include
-
-CFLAGS += -DMWCONFIG_FILE='"mwconfig.nuttx"'
-
+ifneq ($(CONFIG_EXAMPLES_NANOXTERM),)
+CONFIGURED_APPS += $(APPDIR)/examples/nanoxterm
 endif

@@ -1,5 +1,5 @@
 ############################################################################
-# apps/graphics/microwindows/Make.defs
+# apps/system/expat/Make.defs
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -20,13 +20,9 @@
 #
 ############################################################################
 
-ifneq ($(CONFIG_GRAPHICS_MICROWINDOWS),)
-CONFIGURED_APPS += $(APPDIR)/graphics/microwindows
+ifneq ($(CONFIG_LIB_EXPAT),)
+CONFIGURED_APPS += $(APPDIR)/system/expat
 
-# It allows `microwindows/src/include` import.
-
-EXPORTED_INCLUDES += ${INCDIR_PREFIX}$(APPDIR)/graphics/microwindows/microwindows/src/include
-
-CFLAGS += -DMWCONFIG_FILE='"mwconfig.nuttx"'
-
+CFLAGS += ${INCDIR_PREFIX}$(APPDIR)/system/expat/libexpat/expat/lib
+CXXFLAGS += ${INCDIR_PREFIX}$(APPDIR)/system/expat/libexpat/expat/lib
 endif

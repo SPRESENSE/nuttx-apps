@@ -1,5 +1,5 @@
 ############################################################################
-# apps/graphics/microwindows/Make.defs
+# apps/examples/nanoxterm/Makefile
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -20,13 +20,22 @@
 #
 ############################################################################
 
-ifneq ($(CONFIG_GRAPHICS_MICROWINDOWS),)
-CONFIGURED_APPS += $(APPDIR)/graphics/microwindows
+include $(APPDIR)/Make.defs
 
-# It allows `microwindows/src/include` import.
+PROGNAME  = $(CONFIG_EXAMPLES_NANOXTERM_PROGNAME)
+PRIORITY  = $(CONFIG_EXAMPLES_NANOXTERM_PRIORITY)
+STACKSIZE = $(CONFIG_EXAMPLES_NANOXTERM_STACKSIZE)
+MODULE    = $(CONFIG_EXAMPLES_NANOXTERM)
 
-EXPORTED_INCLUDES += ${INCDIR_PREFIX}$(APPDIR)/graphics/microwindows/microwindows/src/include
+# Port of the upstream nxterm demo (src/demos/nanox/nxterm.c).  On NuttX
+# the pty child runs an NSH instance (nsh_consolemain) instead of exec'ing
+# /bin/sh, since flat builds have no filesystem binaries.
+MAINSRC = nxterm.c
+CFLAGS += -Wno-undef
 
-CFLAGS += -DMWCONFIG_FILE='"mwconfig.nuttx"'
-
+ifneq ($(CONFIG_MICROWINDOWS_NANOX_NONETWORK),)
+CFLAGS += -DNONETWORK=1
 endif
+
+
+include $(APPDIR)/Application.mk

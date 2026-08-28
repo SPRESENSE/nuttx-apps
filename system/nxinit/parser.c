@@ -56,10 +56,6 @@ static int init_parse_config_lines(FAR const struct parser_s *parser,
       *(nl++) = '\0';
       *len -= nl - buf;
       init_debug("Line %-3zu '%s'", ++*line, buf);
-      if (*buf == '\0')
-        {
-          continue;
-        }
 
       /* Skip empty lines and lines containing only whitespace */
 
@@ -100,8 +96,8 @@ static int init_parse_config_lines(FAR const struct parser_s *parser,
   return 0;
 }
 
-static int init_parse_config_buffer(FAR const struct parser_s *parser,
-                                    FAR const char *buf, size_t len)
+int init_parse_config_buffer(FAR const struct parser_s *parser,
+                             FAR const char *buf, size_t len)
 {
   char tmp[CONFIG_SYSTEM_NXINIT_RC_LINE_MAX];
   FAR const struct parser_s *cur = NULL;
@@ -113,7 +109,7 @@ static int init_parse_config_buffer(FAR const struct parser_s *parser,
 
   for (; ; )
     {
-      r = MIN(len - off, sizeof(tmp));
+      r = MIN(len - off, sizeof(tmp) - n);
       memcpy(&tmp[n], &buf[off], r);
       if (r == 0)
         {
@@ -273,6 +269,7 @@ int init_parse_config_file(FAR const struct parser_s *parser,
   for (; ; )
     {
       ssize_t r = read(fd, &buf[n], sizeof(buf) - n);
+
       if (r < 0)
         {
           if (errno == EINTR)

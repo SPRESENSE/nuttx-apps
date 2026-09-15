@@ -1,5 +1,7 @@
 /****************************************************************************
- * apps/system/uorb/sensor/temp.h
+ * apps/examples/xrcedds/hello_world.c
+ *
+ * Implements the HelloWorld type described by HelloWorld.idl.
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -20,22 +22,45 @@
  *
  ****************************************************************************/
 
-#ifndef __APPS_SYSTEM_UORB_SENSOR_TEMP_H
-#define __APPS_SYSTEM_UORB_SENSOR_TEMP_H
-
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
-#include <uORB/uORB.h>
+#include <string.h>
+
+#include <ucdr/microcdr.h>
+
+#include "hello_world.h"
 
 /****************************************************************************
- * Public Data
+ * Public Functions
  ****************************************************************************/
 
-/* register this as object request broker structure */
+bool hello_world_serialize_topic(struct ucdrBuffer *writer,
+                                 const struct hello_world_s *topic)
+{
+  ucdr_serialize_uint32_t(writer, topic->index);
+  ucdr_serialize_string(writer, topic->message);
 
-ORB_DECLARE(sensor_temp);
-ORB_DECLARE(sensor_ambient_temp);
+  return !writer->error;
+}
 
-#endif
+bool hello_world_deserialize_topic(struct ucdrBuffer *reader,
+                                   struct hello_world_s *topic)
+{
+  ucdr_deserialize_uint32_t(reader, &topic->index);
+  ucdr_deserialize_string(reader, topic->message, 255);
+
+  return !reader->error;
+}
+
+uint32_t hello_world_topic_size(const struct hello_world_s *topic,
+                                uint32_t size)
+{
+  uint32_t previous_size = size;
+
+  size += ucdr_alignment(size, 4) + 4;
+  size += ucdr_alignment(size, 4) + 4 + strlen(topic->message) + 1;
+
+  return size - previous_size;
+}

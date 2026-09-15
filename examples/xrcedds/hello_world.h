@@ -1,5 +1,7 @@
 /****************************************************************************
- * apps/system/uorb/sensor/temp.h
+ * apps/examples/xrcedds/hello_world.h
+ *
+ * Declares the HelloWorld type described by HelloWorld.idl.
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -20,22 +22,37 @@
  *
  ****************************************************************************/
 
-#ifndef __APPS_SYSTEM_UORB_SENSOR_TEMP_H
-#define __APPS_SYSTEM_UORB_SENSOR_TEMP_H
+#ifndef __APPS_EXAMPLES_XRCEDDS_HELLO_WORLD_H
+#define __APPS_EXAMPLES_XRCEDDS_HELLO_WORLD_H
 
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
-#include <uORB/uORB.h>
+#include <stdbool.h>
+#include <stdint.h>
 
 /****************************************************************************
- * Public Data
+ * Public Types
  ****************************************************************************/
 
-/* register this as object request broker structure */
+struct hello_world_s
+{
+  uint32_t index;
+  char message[255];
+};
 
-ORB_DECLARE(sensor_temp);
-ORB_DECLARE(sensor_ambient_temp);
+struct ucdrBuffer;
 
-#endif
+/****************************************************************************
+ * Public Function Prototypes
+ ****************************************************************************/
+
+bool hello_world_serialize_topic(struct ucdrBuffer *writer,
+                                 const struct hello_world_s *topic);
+bool hello_world_deserialize_topic(struct ucdrBuffer *reader,
+                                   struct hello_world_s *topic);
+uint32_t hello_world_topic_size(const struct hello_world_s *topic,
+                                uint32_t size);
+
+#endif /* __APPS_EXAMPLES_XRCEDDS_HELLO_WORLD_H */

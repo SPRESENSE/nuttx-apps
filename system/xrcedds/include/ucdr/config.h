@@ -1,5 +1,5 @@
 /****************************************************************************
- * apps/system/uorb/sensor/temp.h
+ * apps/system/xrcedds/include/ucdr/config.h
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -17,25 +17,26 @@
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
  * License for the specific language governing permissions and limitations
  * under the License.
- *
  ****************************************************************************/
 
-#ifndef __APPS_SYSTEM_UORB_SENSOR_TEMP_H
-#define __APPS_SYSTEM_UORB_SENSOR_TEMP_H
+#ifndef __APPS_SYSTEM_XRCEDDS_INCLUDE_UCDR_CONFIG_H
+#define __APPS_SYSTEM_XRCEDDS_INCLUDE_UCDR_CONFIG_H
 
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
-#include <uORB/uORB.h>
+#include <nuttx/config.h>
 
-/****************************************************************************
- * Public Data
- ****************************************************************************/
+#define MICROCDR_VERSION_MAJOR 2
+#define MICROCDR_VERSION_MINOR 0
+#define MICROCDR_VERSION_MICRO 2
+#define MICROCDR_VERSION_STR "2.0.2"
 
-/* register this as object request broker structure */
-
-ORB_DECLARE(sensor_temp);
-ORB_DECLARE(sensor_ambient_temp);
-
+#ifdef CONFIG_ENDIAN_BIG
+#  define UCDR_MACHINE_ENDIANNESS UCDR_BIG_ENDIANNESS
+#else
+#  define UCDR_MACHINE_ENDIANNESS UCDR_LITTLE_ENDIANNESS
 #endif
+
+#endif /* __APPS_SYSTEM_XRCEDDS_INCLUDE_UCDR_CONFIG_H */

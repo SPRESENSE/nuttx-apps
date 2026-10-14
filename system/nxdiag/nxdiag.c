@@ -36,6 +36,7 @@
 #include "sysinfo.h"
 #ifdef CONFIG_SYSTEM_NXDIAG_ESPRESSIF_CHIP_WO_TOOL
 #include <fcntl.h>
+#include <stdlib.h>
 #endif
 
 /****************************************************************************
@@ -256,6 +257,7 @@ int main(int argc, char *argv[])
       search_str_in_arr(argc, argv, "--all"))
     {
       char hostname[HOST_NAME_MAX];
+
       gethostname(hostname, HOST_NAME_MAX);
       hostname[HOST_NAME_MAX - 1] = '\0';
 

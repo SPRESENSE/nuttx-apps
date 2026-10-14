@@ -39,6 +39,7 @@
 #include <string.h>
 #include <assert.h>
 #include <errno.h>
+#include <pthread.h>
 #include <nuttx/debug.h>
 
 #ifdef CONFIG_NX_LCDDRIVER
@@ -108,7 +109,7 @@ static int nxterm_initialize(void)
   g_nxterm_vars.hnx = nx_connect();
   if (g_nxterm_vars.hnx)
     {
-       pthread_attr_t attr;
+      pthread_attr_t attr;
 
 #ifdef CONFIG_VNCSERVER
       /* Setup the VNC server to support keyboard/mouse inputs */

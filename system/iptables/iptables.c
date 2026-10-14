@@ -27,6 +27,7 @@
 #include <nuttx/config.h>
 
 #include <fcntl.h>
+#include <stdlib.h>
 #include <arpa/inet.h>
 
 #include <nuttx/net/netfilter/ip_tables.h>
@@ -102,6 +103,7 @@ static FAR char *iptables_addr2str(struct in_addr addr, struct in_addr msk,
                                    FAR char *buf, size_t bufflen)
 {
   unsigned int preflen = popcount(msk.s_addr);
+
   if (preflen != 0)
     {
       snprintf(buf, bufflen, "%s/%d", inet_ntoa(addr), preflen);

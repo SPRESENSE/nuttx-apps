@@ -33,6 +33,7 @@
 #include <netdb.h>
 #include <errno.h>
 #include <mqtt.h>
+#include <pthread.h>
 
 #ifdef MQTT_USE_MBEDTLS
 #  include <inttypes.h>
@@ -175,7 +176,7 @@ static void parsearg(int argc, FAR char *argv[],
                 case 2L:
                   cfg->qos = MQTT_PUBLISH_QOS_2;
                   break;
-                }
+              }
             break;
 
 #ifdef MQTT_USE_MBEDTLS
@@ -304,6 +305,7 @@ static int init_conn(FAR const struct mqttc_cfg_s *cfg,
   for (; ; )
     {
       uint32_t want = 0;
+
       ret = mbedtls_ssl_handshake(ssl_ctx);
       if (ret == MBEDTLS_ERR_SSL_WANT_READ)
         {
@@ -346,6 +348,7 @@ static int init_conn(FAR const struct mqttc_cfg_s *cfg,
           const char *buf = "";
 #else
           char buf[512];
+
           mbedtls_x509_crt_verify_info(buf, sizeof(buf), "\t", result);
 #endif
           printf("Certificate verification failed (%0" PRIx32 ")\n%s\n",

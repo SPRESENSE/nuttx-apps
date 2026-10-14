@@ -38,6 +38,7 @@
 #include <nuttx/sensors/bmi160.h>
 
 #include <cmocka.h>
+#include <unistd.h>
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -80,6 +81,7 @@ static void show_usage(FAR const char *progname,
 static int setup(FAR void **state)
 {
   FAR struct test_state_s *test_state;
+
   test_state = (FAR struct test_state_s *)*state;
   test_state->fd = open(test_state->dev_path, O_RDONLY);
   assert_true(test_state->fd > 0);
@@ -94,6 +96,7 @@ static int setup(FAR void **state)
 static int teardown(FAR void **state)
 {
   FAR struct test_state_s *test_state;
+
   test_state = (FAR struct test_state_s *)*state;
   assert_int_equal(close(test_state->fd), 0);
   return 0;

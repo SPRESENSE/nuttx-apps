@@ -26,6 +26,7 @@
 
 #include <fcntl.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <getopt.h>
 #include <libgen.h>
 #include <pthread.h>
@@ -36,7 +37,7 @@
 #include "ymodem.h"
 
 /****************************************************************************
- * Private Typess
+ * Private Types
  ****************************************************************************/
 
 struct ymodem_priv_s
@@ -284,7 +285,7 @@ static void show_usage(FAR const char *progname)
           "\t-r|--retry <retry>: Number of retries."
           "Will try <retry> times to transmitting, Default:100\n");
   fprintf(stderr,
-          "\t-k <size>: Use a custom size to tansfer, Default: 1kB\n");
+          "\t-k <size>: Use a custom size to transfer, Default: 1kB\n");
 
   exit(EXIT_FAILURE);
 }
@@ -359,7 +360,7 @@ int main(int argc, FAR char *argv[])
           return -errno;
         }
 
-        ctx.sendfd = ctx.recvfd;
+      ctx.sendfd = ctx.recvfd;
     }
   else
     {

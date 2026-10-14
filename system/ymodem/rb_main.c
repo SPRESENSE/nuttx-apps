@@ -26,6 +26,7 @@
 
 #include <fcntl.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <getopt.h>
 #include <pthread.h>
 
@@ -74,6 +75,7 @@ static int flush_data(FAR struct ymodem_priv_s *priv)
       while (i < size)
         {
           ssize_t ret = write(priv->fd, buffer + i, size - i);
+
           if (ret < 0)
             {
               return -errno;
@@ -124,6 +126,7 @@ static int write_data(FAR struct ymodem_priv_s *priv,
       while (i < size)
         {
           ssize_t ret = circbuf_write(&priv->circ, data + i, size - i);
+
           if (ret < 0)
             {
               pthread_mutex_unlock(&priv->mutex);
@@ -156,6 +159,7 @@ static int write_data(FAR struct ymodem_priv_s *priv,
       while (i < size)
         {
           ssize_t ret = write(priv->fd, data + i, size - i);
+
           if (ret < 0)
             {
               return -errno;
@@ -477,7 +481,7 @@ int main(int argc, FAR char *argv[])
           goto out;
         }
 
-        ctx.sendfd = ctx.recvfd;
+      ctx.sendfd = ctx.recvfd;
     }
   else
     {

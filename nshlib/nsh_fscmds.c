@@ -417,14 +417,14 @@ static int ls_handler(FAR struct nsh_vtbl_s *vtbl, FAR const char *dirpath,
         {
           FAR char *fullpath = nsh_getdirpath(vtbl, dirpath, entryp->d_name);
 
-          ret = stat(fullpath, &buf);
+          ret = lstat(fullpath, &buf);
           free(fullpath);
         }
       else
         {
           /* NULL entry signifies that we are running ls on a single file */
 
-          ret = stat(dirpath, &buf);
+          ret = lstat(dirpath, &buf);
         }
 
       if (ret != 0)
@@ -440,8 +440,31 @@ static int ls_handler(FAR struct nsh_vtbl_s *vtbl, FAR const char *dirpath,
 #ifdef CONFIG_FS_LINKS
           if (S_ISLNK(buf.st_mode))
             {
-              details[0] = 'l';  /* Takes precedence over type of the target */
-              isdir = S_ISDIR(buf.st_mode);
+              struct stat target_buf;
+
+              /* Symbolic link is always "lrwxrwxrwx" */
+
+              strcpy(details, "lrwxrwxrwx");
+
+              /* Then stat the target */
+
+              if (entryp != NULL)
+                {
+                  FAR char *fullpath = nsh_getdirpath(vtbl, dirpath,
+                                                      entryp->d_name);
+
+                  ret = stat(fullpath, &target_buf);
+                  free(fullpath);
+                }
+              else
+                {
+                  ret = stat(dirpath, &target_buf);
+                }
+
+              if (ret == 0)
+                {
+                  isdir = S_ISDIR(target_buf.st_mode);
+                }
             }
           else
 #endif
@@ -632,7 +655,7 @@ static int ls_handler(FAR struct nsh_vtbl_s *vtbl, FAR const char *dirpath,
           /* Get the target of the symbolic link */
 
           fullpath = nsh_getdirpath(vtbl, dirpath, entryp->d_name);
-          len = readlink(fullpath, vtbl->iobuffer, IOBUFFERSIZE);
+          len = readlink(fullpath, vtbl->iobuffer, IOBUFFERSIZE - 1);
           free(fullpath);
 
           if (len < 0)
@@ -640,6 +663,10 @@ static int ls_handler(FAR struct nsh_vtbl_s *vtbl, FAR const char *dirpath,
               nsh_error(vtbl, g_fmtcmdfailed, "ls", "readlink", NSH_ERRNO);
               return ERROR;
             }
+
+          /* readlink() does not null-terminate the string, add it here */
+
+          vtbl->iobuffer[len] = '\0';
 
           if (isdir)
             {
@@ -1692,7 +1719,19 @@ int cmd_ln(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv)
 
   /* Get the full path to the link target  */
 
-  tgtpath = nsh_getfullpath(vtbl, argv[ndx]);
+  if (ndx == 1)
+    {
+      /* For hardlink, we need the full path */
+
+      tgtpath = nsh_getfullpath(vtbl, argv[ndx]);
+    }
+  else
+    {
+      /* For symlink, just use the original content */
+
+      tgtpath = argv[ndx];
+    }
+
   if (tgtpath == NULL)
     {
       goto errout_with_nomemory;
@@ -1722,11 +1761,19 @@ int cmd_ln(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv)
     }
 
   nsh_freefullpath(linkpath);
-  nsh_freefullpath(tgtpath);
+  if (ndx == 1)
+    {
+      nsh_freefullpath(tgtpath);
+    }
+
   return ret;
 
 errout_with_tgtpath:
-  nsh_freefullpath(tgtpath);
+  if (ndx == 1)
+    {
+      nsh_freefullpath(tgtpath);
+    }
+
 errout_with_nomemory:
   nsh_error(vtbl, g_fmtcmdoutofmemory, argv[0]);
   return ERROR;
@@ -2554,7 +2601,7 @@ int cmd_readlink(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv)
       return ERROR;
     }
 
-  len = readlink(fullpath, vtbl->iobuffer, IOBUFFERSIZE);
+  len = readlink(fullpath, vtbl->iobuffer, IOBUFFERSIZE - 1);
   nsh_freefullpath(fullpath);
 
   if (len < 0)
@@ -2562,6 +2609,10 @@ int cmd_readlink(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv)
       nsh_error(vtbl, g_fmtcmdfailed, "ls", "readlink", NSH_ERRNO);
       return ERROR;
     }
+
+  /* readlink() does not null-terminate the string, add it here */
+
+  vtbl->iobuffer[len] = '\0';
 
   nsh_output(vtbl, "%s\n", vtbl->iobuffer);
   return OK;

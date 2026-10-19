@@ -23,6 +23,7 @@
  ****************************************************************************/
 
 #include <stdio.h>
+#include <unistd.h>
 
 #include "wireless/wapi.h"
 

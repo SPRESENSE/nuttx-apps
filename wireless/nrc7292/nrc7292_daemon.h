@@ -29,6 +29,7 @@
 #include <stdint.h>
 #include <debug.h>
 #include <errno.h>
+#include <pthread.h>
 
 #include "wireless/wapi.h"
 

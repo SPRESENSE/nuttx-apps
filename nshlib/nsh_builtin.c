@@ -64,9 +64,9 @@
  *               and successfully started.  If CONFIG_SCHED_WAITPID is
  *               defined, this return value also indicates that the
  *               application returned successful status (EXIT_SUCCESS)
- *    1          If CONFIG_SCHED_WAITPID is defined, then this return value
- *               indicates that the application task was spawned successfully
- *               but returned failure exit status.
+ *   >0          If CONFIG_SCHED_WAITPID is defined, the application task
+ *               was spawned successfully and returned this non-zero exit
+ *               status.
  *
  ****************************************************************************/
 
@@ -130,7 +130,7 @@ int nsh_builtin(FAR struct nsh_vtbl_s *vtbl, FAR const char *cmd,
        *     foreground
        */
 
-       vtbl->np.np_lastpid = ret;
+      vtbl->np.np_lastpid = ret;
 #ifdef CONFIG_SCHED_WAITPID
 
       /* CONFIG_SCHED_WAITPID is selected, so we may run the command in
@@ -184,6 +184,7 @@ int nsh_builtin(FAR struct nsh_vtbl_s *vtbl, FAR const char *cmd,
                */
 
               int errcode = errno;
+
               if (errcode == ECHILD)
                 {
                   ret = OK;
@@ -199,17 +200,9 @@ int nsh_builtin(FAR struct nsh_vtbl_s *vtbl, FAR const char *cmd,
 
           else
             {
-              /* We can't return the exact status (nsh has nowhere to put it)
-               * so just pass back zero/nonzero in a fashion that doesn't
-               * look like an error.
-               */
+              /* Return the exit status of the application */
 
-              ret = (rc == 0) ? OK : 1;
-
-              /* TODO:  Set the environment variable '?' to a string
-               * corresponding to WEXITSTATUS(rc) so that $? will expand to
-               * the exit status of the most recently executed task.
-               */
+              ret = WIFEXITED(rc) ? WEXITSTATUS(rc) : 1;
             }
 
           if (vtbl->isctty && tc == 0)
@@ -254,6 +247,7 @@ int nsh_builtin(FAR struct nsh_vtbl_s *vtbl, FAR const char *cmd,
           */
 
           struct sched_param sched;
+
           sched_getparam(ret, &sched);
           nsh_output(vtbl, "%s [%d:%d]\n", cmd, ret, sched.sched_priority);
 

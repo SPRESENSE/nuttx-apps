@@ -240,7 +240,7 @@ int CInput::keyboardOpen(void)
 
               if (errcode == ENOENT || errcode == ENODEV)
                 {
-                  // REVIST: Can we inject a constant string here to let the
+                  // REVISIT: Can we inject a constant string here to let the
                   // user know that we are waiting for a USB keyboard to be
                   // connected?
 
@@ -316,7 +316,7 @@ inline int CInput::mouseOpen(void)
 
               if (errcode == ENOENT || errcode == ENODEV)
                 {
-                  // REVIST: Can we inject a constant string here to let the
+                  // REVISIT: Can we inject a constant string here to let the
                   // user know that we are waiting for a USB mouse to be
                   // connected?
 
@@ -818,8 +818,8 @@ int CInput::session(void)
 
       if ((pfd[KBD_INDEX].revents & (POLLERR | POLLHUP)) != 0)
         {
-          twmerr("ERROR: keyboard poll() failed. revents=%08" PRIx32 "\n",
-                 pfd[KBD_INDEX].revents);
+          twmerr("ERROR: keyboard poll() failed. revents=%08x\n",
+                 (unsigned int)pfd[KBD_INDEX].revents);
           ret = -EIO;
           break;
         }
@@ -840,8 +840,8 @@ int CInput::session(void)
 
       if ((pfd[MOUSE_INDEX].revents & (POLLERR | POLLHUP)) != 0)
         {
-          twmerr("ERROR: Mouse poll() failed. revents=%08" PRIx32 "\n",
-                 pfd[MOUSE_INDEX].revents);
+          twmerr("ERROR: Mouse poll() failed. revents=%08x\n",
+                 (unsigned int)pfd[MOUSE_INDEX].revents);
           ret = -EIO;
           break;
         }

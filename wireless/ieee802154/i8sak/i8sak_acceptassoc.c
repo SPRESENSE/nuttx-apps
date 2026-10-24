@@ -54,10 +54,11 @@ static void acceptassoc_eventcb(FAR struct ieee802154_primitive_s *primitive,
  ****************************************************************************/
 
 /****************************************************************************
- * Name : i8_acceptassoc
+ * Name: i8sak_acceptassoc_cmd
  *
- * Description :
+ * Description:
  *   Start accepting association requests.
+ *
  ****************************************************************************/
 
 void i8sak_acceptassoc_cmd(FAR struct i8sak_s *i8sak, int argc,
@@ -145,6 +146,13 @@ void i8sak_acceptassoc_cmd(FAR struct i8sak_s *i8sak, int argc,
     }
 
   i8sak_requestdaemon(i8sak);
+
+  /* Replace the receiver of a previous acceptassoc */
+
+  if (i8sak_eventlistener_removereceiver(i8sak, acceptassoc_eventcb) == OK)
+    {
+      i8sak_releasedaemon(i8sak);
+    }
 
   /* Register new callback for receiving the association notifications */
 

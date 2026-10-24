@@ -177,6 +177,11 @@ static int xmlrpc_parseparam(struct parsebuf_s *pbuf)
 {
   int type;
 
+  if (g_xmlcall.argsize >= MAX_ARGS)
+    {
+      return XMLRPC_PARSE_ERROR;
+    }
+
   /* Next, we need a <value> tag */
 
   type = xmlrpc_getelement(pbuf, g_data, CONFIG_XMLRPC_STRINGSIZE);
@@ -228,22 +233,22 @@ static int xmlrpc_parseparam(struct parsebuf_s *pbuf)
 
   switch (g_xmlcall.args[g_xmlcall.argsize])
     {
-    case 'i':
-    case 'b':
-      g_xmlcall.arguments[g_xmlcall.argsize].u.i = atoi(g_data);
-      break;
+      case 'i':
+      case 'b':
+        g_xmlcall.arguments[g_xmlcall.argsize].u.i = atoi(g_data);
+        break;
 
-    case 'd':
-      g_xmlcall.arguments[g_xmlcall.argsize].u.d = atof(g_data);
-      break;
+      case 'd':
+        g_xmlcall.arguments[g_xmlcall.argsize].u.d = atof(g_data);
+        break;
 
-    case 's':
-      strlcpy(g_xmlcall.arguments[g_xmlcall.argsize].u.string, g_data,
-              sizeof(g_xmlcall.arguments[g_xmlcall.argsize].u.string));
-      break;
+      case 's':
+        strlcpy(g_xmlcall.arguments[g_xmlcall.argsize].u.string, g_data,
+                sizeof(g_xmlcall.arguments[g_xmlcall.argsize].u.string));
+        break;
 
-    default:
-      return XMLRPC_PARSE_ERROR;
+      default:
+        return XMLRPC_PARSE_ERROR;
     }
 
   g_xmlcall.argsize++;
@@ -293,6 +298,10 @@ static int xmlrpc_parseparams(struct parsebuf_s *pbuf)
           if ((type == TAG) && (!strncmp(g_data, "<param>", 7)))
             {
               ret = xmlrpc_parseparam(pbuf);
+              if (ret < 0)
+                {
+                  return ret;
+                }
             }
           else if ((type == TAG) && (!strncmp(g_data, "</params>", 9)))
             {
@@ -380,16 +389,23 @@ int xmlrpc_parse(int sock, char *buffer)
         {
           /* Parse the remaining tags within the methodCall tag */
 
-          xmlrpc_parsemethod(&pbuf);
-
-          /* Check for the closing /methodCall */
-
-          type = xmlrpc_getelement(&pbuf, g_data, CONFIG_XMLRPC_STRINGSIZE);
-          if ((type == TAG) && (!strncmp(g_data, "</methodCall>", 13)))
+          ret = xmlrpc_parsemethod(&pbuf);
+          if (ret == XMLRPC_NO_ERROR)
             {
-              /* Successful parse, try to call a user function */
+              /* Check for the closing /methodCall */
 
-              ret = xmlrpc_call(&g_xmlcall);
+              type = xmlrpc_getelement(&pbuf, g_data,
+                                       CONFIG_XMLRPC_STRINGSIZE);
+              if ((type == TAG) && (!strncmp(g_data, "</methodCall>", 13)))
+                {
+                  /* Successful parse, try to call a user function */
+
+                  ret = xmlrpc_call(&g_xmlcall);
+                }
+              else
+                {
+                  ret = XMLRPC_PARSE_ERROR;
+                }
             }
         }
     }

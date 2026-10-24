@@ -162,13 +162,13 @@ FAR const char *g_ieee802154_status_string[] =
  ****************************************************************************/
 
 /****************************************************************************
- * Name : i8sak_requestdaemon
+ * Name: i8sak_requestdaemon
  *
- * Description :
+ * Description:
  *
  ****************************************************************************/
 
-int i8sak_requestdaemon(FAR struct i8sak_s *i8sak)
+void i8sak_requestdaemon(FAR struct i8sak_s *i8sak)
 {
   char daemonname[I8SAK_MAX_DAEMONNAME];
   int ret;
@@ -178,7 +178,7 @@ int i8sak_requestdaemon(FAR struct i8sak_s *i8sak)
   if (ret < 0)
     {
       DEBUGASSERT(ret == EINTR);
-      return ret;
+      i8sak_cmd_error(i8sak);
     }
 
   if (++i8sak->daemonusers == 1)
@@ -201,6 +201,7 @@ int i8sak_requestdaemon(FAR struct i8sak_s *i8sak)
 #endif
 
       i8sak->daemon_shutdown = false;
+      i8sak->daemon_failed = false;
       i8sak->daemon_pid = task_create(daemonname,
                                       CONFIG_IEEE802154_I8SAK_PRIORITY,
                                       CONFIG_IEEE802154_I8SAK_STACKSIZE,
@@ -209,8 +210,9 @@ int i8sak_requestdaemon(FAR struct i8sak_s *i8sak)
       if (i8sak->daemon_pid < 0)
         {
           fprintf(stderr, "failed to start daemon\n");
+          i8sak->daemonusers = 0;
           sem_post(&i8sak->daemonlock);
-          return ERROR;
+          i8sak_cmd_error(i8sak);
         }
 
       /* Use the semaphore to wait for daemon to start before returning */
@@ -219,19 +221,47 @@ int i8sak_requestdaemon(FAR struct i8sak_s *i8sak)
       if (ret < 0)
         {
           fprintf(stderr, "i8sak:interrupted while daemon starting\n");
+          i8sak->daemonusers = 0;
           sem_post(&i8sak->daemonlock);
-          return ret;
+          i8sak_cmd_error(i8sak);
+        }
+
+      /* The daemon signals a failed start too */
+
+      if (i8sak->daemon_failed)
+        {
+          i8sak->daemonusers = 0;
+          sem_post(&i8sak->daemonlock);
+          i8sak_cmd_error(i8sak);
         }
     }
 
   sem_post(&i8sak->daemonlock);
-  return 0;
 }
 
 /****************************************************************************
- * Name : i8sak_releasedaemon
+ * Name: i8sak_cmd_abort
  *
- * Description :
+ * Description:
+ *   Remove the receiver of a pending request, release the daemon and exit.
+ *
+ ****************************************************************************/
+
+void i8sak_cmd_abort(FAR struct i8sak_s *i8sak, i8sak_eventcallback_t cb)
+{
+  if (cb != NULL)
+    {
+      i8sak_eventlistener_removereceiver(i8sak, cb);
+    }
+
+  i8sak_releasedaemon(i8sak);
+  i8sak_cmd_error(i8sak);
+}
+
+/****************************************************************************
+ * Name: i8sak_releasedaemon
+ *
+ * Description:
  *
  ****************************************************************************/
 
@@ -259,14 +289,15 @@ int i8sak_releasedaemon(FAR struct i8sak_s *i8sak)
 }
 
 /****************************************************************************
- * Name : i8sak_str2payload
+ * Name: i8sak_str2payload
  *
- * Description :
+ * Description:
  *   Parse string to get buffer of data. Buf is expected to be of size
  *   IEEE802154_MAX_MAC_PAYLOAD_SIZE or larger.
  *
  * Returns:
  *   Positive length value of frame payload
+ *
  ****************************************************************************/
 
 int i8sak_str2payload(FAR const char *str, FAR uint8_t *buf)
@@ -288,7 +319,7 @@ int i8sak_str2payload(FAR const char *str, FAR uint8_t *buf)
   if ((str_len & 1) || (ret > IEEE802154_MAX_MAC_PAYLOAD_SIZE))
     {
       fprintf(stderr, "ERROR: Invalid payload\n");
-      exit(EXIT_FAILURE);
+      i8sak_cmd_error(g_activei8sak);
     }
 
   /* Decode hex packet */
@@ -296,6 +327,7 @@ int i8sak_str2payload(FAR const char *str, FAR uint8_t *buf)
   while (str_len > 0)
     {
       int dat;
+
       if (sscanf(str, "%2x", &dat) == 1)
         {
           buf[i++] = dat;
@@ -305,7 +337,7 @@ int i8sak_str2payload(FAR const char *str, FAR uint8_t *buf)
       else
         {
           fprintf(stderr, "ERROR: Invalid payload\n");
-          exit(EXIT_FAILURE);
+          i8sak_cmd_error(g_activei8sak);
         }
     }
 
@@ -329,14 +361,13 @@ long i8sak_str2long(FAR const char *str)
   if (*endptr != '\0')
     {
       fprintf(stderr, "ERROR: Garbage after numeric argument\n");
-      exit(EXIT_FAILURE);
+      i8sak_cmd_error(g_activei8sak);
     }
 
   if (value > INT_MAX || value < INT_MIN)
     {
       fprintf(stderr, "ERROR: Integer value out of range\n");
-      return LONG_MAX;
-      exit(EXIT_FAILURE);
+      i8sak_cmd_error(g_activei8sak);
     }
 
   return value;
@@ -353,10 +384,11 @@ long i8sak_str2long(FAR const char *str)
 uint8_t i8sak_str2luint8(FAR const char *str)
 {
   long value = i8sak_str2long(str);
+
   if (value < 0 || value > UINT8_MAX)
     {
       fprintf(stderr, "ERROR: 8-bit value out of range\n");
-      exit(EXIT_FAILURE);
+      i8sak_cmd_error(g_activei8sak);
     }
 
   return (uint8_t)value;
@@ -373,10 +405,11 @@ uint8_t i8sak_str2luint8(FAR const char *str)
 uint16_t i8sak_str2luint16(FAR const char *str)
 {
   long value = i8sak_str2long(str);
+
   if (value < 0 || value > UINT16_MAX)
     {
       fprintf(stderr, "ERROR: 16-bit value out of range\n");
-      exit(EXIT_FAILURE);
+      i8sak_cmd_error(g_activei8sak);
     }
 
   return (uint16_t)value;
@@ -407,14 +440,16 @@ uint8_t i8sak_char2nibble(char ch)
   else if (ch == '\0')
     {
       fprintf(stderr, "ERROR: Unexpected end hex\n");
-      exit(EXIT_FAILURE);
+      i8sak_cmd_error(g_activei8sak);
     }
   else
     {
       fprintf(stderr, "ERROR: Unexpected character in hex value: %02x\n",
               ch);
-      exit(EXIT_FAILURE);
+      i8sak_cmd_error(g_activei8sak);
     }
+
+  return 0;
 }
 
 /****************************************************************************
@@ -449,7 +484,7 @@ void i8sak_str2eaddr(FAR const char *str, FAR uint8_t *eaddr)
             {
               fprintf(stderr, "ERROR: Missing colon separator: %s\n", str);
               fprintf(stderr, "       Expected xx:xx:xx:xx:xx:xx:xx:xx\n");
-              exit(EXIT_FAILURE);
+              i8sak_cmd_error(g_activei8sak);
             }
         }
     }
@@ -487,7 +522,7 @@ void i8sak_str2saddr(FAR const char *str, FAR uint8_t *saddr)
             {
               fprintf(stderr, "ERROR: Missing colon separator: %s\n", str);
               fprintf(stderr, "       Expected xx:xx\n");
-              exit(EXIT_FAILURE);
+              i8sak_cmd_error(g_activei8sak);
             }
         }
     }
@@ -525,7 +560,7 @@ void i8sak_str2panid(FAR const char *str, FAR uint8_t *panid)
             {
               fprintf(stderr, "ERROR: Missing colon separator: %s\n", str);
               fprintf(stderr, "       Expected xx:xx\n");
-              exit(EXIT_FAILURE);
+              i8sak_cmd_error(g_activei8sak);
             }
         }
     }
@@ -553,8 +588,10 @@ bool i8sak_str2bool(FAR const char *str)
     {
       fprintf(stderr, "ERROR: Invalid boolean name: %s\n", str);
       fprintf(stderr, "       Expected true or false\n");
-      exit(EXIT_FAILURE);
+      i8sak_cmd_error(g_activei8sak);
     }
+
+  return false;
 }
 
 /****************************************************************************
@@ -563,6 +600,7 @@ bool i8sak_str2bool(FAR const char *str)
 
 static void i8sak_switch_instance(FAR char *ifname)
 {
+  FAR struct i8sak_s *prev = g_activei8sak;
   FAR struct i8sak_s *i8sak;
 
   /* Search list of i8sak instances for one associated with the provided
@@ -602,6 +640,9 @@ static void i8sak_switch_instance(FAR char *ifname)
 
       if (i8sak_setup(i8sak, ifname) < 0)
         {
+          sq_rem((FAR sq_entry_t *)i8sak, &g_i8sak_instances);
+          sq_addlast((FAR sq_entry_t *)i8sak, &g_i8sak_free);
+          g_activei8sak = prev;
           exit(EXIT_FAILURE);
         }
     }
@@ -694,7 +735,7 @@ static int i8sak_setup(FAR struct i8sak_s *i8sak, FAR const char *ifname)
         {
           fprintf(stderr, "ERROR: cannot open %s, errno=%d\n",
                   i8sak->ifname, errno);
-          i8sak_cmd_error(i8sak);
+          return ERROR;
         }
     }
 #ifdef CONFIG_NET_6LOWPAN
@@ -704,13 +745,12 @@ static int i8sak_setup(FAR struct i8sak_s *i8sak, FAR const char *ifname)
       if (fd < 0)
         {
           fprintf(stderr, "ERROR: failed to open socket, errno=%d\n", errno);
-          i8sak_cmd_error(i8sak);
+          return ERROR;
         }
     }
 #endif
   else
     {
-      close(fd);
       return ERROR;
     }
 
@@ -744,10 +784,11 @@ static int i8sak_setup(FAR struct i8sak_s *i8sak, FAR const char *ifname)
 }
 
 /****************************************************************************
- * Name : i8sak_daemon
+ * Name: i8sak_daemon
  *
- * Description :
+ * Description:
  *   Runs command in separate task
+ *
  ****************************************************************************/
 
 static int i8sak_daemon(int argc, FAR char *argv[])
@@ -765,6 +806,8 @@ static int i8sak_daemon(int argc, FAR char *argv[])
           fprintf(stderr, "ERROR: cannot open %s, errno=%d\n",
                   i8sak->ifname, errno);
           ret = errno;
+          i8sak->daemon_failed = true;
+          sem_post(&i8sak->sigsem);
           return ret;
         }
     }
@@ -776,6 +819,8 @@ static int i8sak_daemon(int argc, FAR char *argv[])
         {
           fprintf(stderr, "ERROR: failed to open socket, errno=%d\n", errno);
           ret = errno;
+          i8sak->daemon_failed = true;
+          sem_post(&i8sak->sigsem);
           return ret;
         }
     }
@@ -934,6 +979,7 @@ int main(int argc, FAR char *argv[])
   for (i = 0; i < nitems(g_i8sak_commands); i++)
     {
       FAR const struct i8sak_command_s *cmd = &g_i8sak_commands[i];
+
       if (strcmp(argv[argind], cmd->name) == 0)
         {
           i8sakcmd = cmd;

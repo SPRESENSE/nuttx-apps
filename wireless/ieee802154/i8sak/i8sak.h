@@ -99,6 +99,7 @@ struct i8sak_s
 
   bool initialized      : 1;
   bool daemon_shutdown  : 1;
+  bool daemon_failed    : 1;
   bool verbose          : 1;
   bool acceptall        : 1;
   bool assoc            : 1;
@@ -188,8 +189,9 @@ struct i8sak_s
  * Public Function Prototypes
  ****************************************************************************/
 
-int i8sak_requestdaemon(FAR struct i8sak_s *i8sak);
+void i8sak_requestdaemon(FAR struct i8sak_s *i8sak);
 int i8sak_releasedaemon(FAR struct i8sak_s *i8sak);
+void i8sak_cmd_abort(FAR struct i8sak_s *i8sak, i8sak_eventcallback_t cb);
 
 uint8_t   i8sak_char2nibble (char ch);
 long      i8sak_str2long    (FAR const char *str);

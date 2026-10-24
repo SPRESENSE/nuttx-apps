@@ -52,10 +52,11 @@ static void tx_eventcb(FAR struct ieee802154_primitive_s *primitive,
  ****************************************************************************/
 
 /****************************************************************************
- * Name : i8_tx_cmd
+ * Name: i8sak_tx_cmd
  *
- * Description :
+ * Description:
  *   Transmit a data frame.
+ *
  ****************************************************************************/
 
 void i8sak_tx_cmd(FAR struct i8sak_s *i8sak, int argc, FAR char *argv[])
@@ -114,7 +115,7 @@ void i8sak_tx_cmd(FAR struct i8sak_s *i8sak, int argc, FAR char *argv[])
 
   if (argc == argind + 1)
     {
-      i8sak->payload_len = i8sak_str2payload(argv[1], i8sak->payload);
+      i8sak->payload_len = i8sak_str2payload(argv[argind], i8sak->payload);
     }
 
   if (sendmax)
@@ -259,8 +260,7 @@ void i8sak_tx_cmd(FAR struct i8sak_s *i8sak, int argc, FAR char *argv[])
   if (ret < 0)
     {
       fprintf(stderr, "ERROR: Failed to transmit packet: errno=%d\n", errno);
-      close(fd);
-      i8sak_cmd_error(i8sak);
+      i8sak_cmd_abort(i8sak, tx_eventcb);
     }
 
   close(fd);
@@ -280,8 +280,6 @@ static void tx_eventcb(FAR struct ieee802154_primitive_s *primitive,
       printf("i8sak: frame failed to send: %s\n",
              g_ieee802154_status_string[primitive->u.dataconf.status]);
     }
-
-  sem_post(&i8sak->sigsem);
 
   i8sak_releasedaemon(i8sak);
 }

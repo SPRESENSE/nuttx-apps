@@ -52,10 +52,11 @@ static void assoc_eventcb(FAR struct ieee802154_primitive_s *primitive,
  ****************************************************************************/
 
 /****************************************************************************
- * Name : i8sak_assoc
+ * Name: i8sak_assoc_cmd
  *
- * Description :
+ * Description:
  *   Request association with the Coordinator
+ *
  ****************************************************************************/
 
 void i8sak_assoc_cmd(FAR struct i8sak_s *i8sak, int argc, FAR char *argv[])
@@ -209,7 +210,14 @@ void i8sak_assoc_cmd(FAR struct i8sak_s *i8sak, int argc, FAR char *argv[])
   memset(&filter, 0, sizeof(struct i8sak_eventfilter_s));
   filter.confevents.assoc = true;
 
-  i8sak_eventlistener_addreceiver(i8sak, assoc_eventcb, &filter, false);
+  ret = i8sak_eventlistener_addreceiver(i8sak, assoc_eventcb, &filter,
+                                        false);
+  if (ret < 0)
+    {
+      i8sak_releasedaemon(i8sak);
+      close(fd);
+      return;
+    }
 
   /* Loop for the specified retry count if the association fails.
    */
@@ -253,8 +261,7 @@ void i8sak_assoc_cmd(FAR struct i8sak_s *i8sak, int argc, FAR char *argv[])
       if (ret != OK)
         {
           i8sak->assoc = false;
-          i8sak_cmd_error(i8sak);
-          break;
+          i8sak_cmd_abort(i8sak, assoc_eventcb);
         }
 
       /* Check if the association was successful */

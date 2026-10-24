@@ -44,10 +44,11 @@
  ****************************************************************************/
 
 /****************************************************************************
- * Name : i8sak_reset_cmd
+ * Name: i8sak_reset_cmd
  *
- * Description :
+ * Description:
  *   Reset the MAC layer
+ *
  ****************************************************************************/
 
 void i8sak_reset_cmd(FAR struct i8sak_s *i8sak, int argc, FAR char *argv[])
@@ -70,7 +71,7 @@ void i8sak_reset_cmd(FAR struct i8sak_s *i8sak, int argc, FAR char *argv[])
             optind = -1;
             return;
 
-           case ':':
+          case ':':
             fprintf(stderr, "ERROR: missing argument\n");
 
             /* Must manually reset optind if we are going to exit early */

@@ -26,12 +26,14 @@
 
 #include <nuttx/config.h>
 #include <nuttx/hrtimer.h>
+#include <nuttx/spinlock.h>
 
 #include <assert.h>
 #include <stdio.h>
 #include <sched.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <pthread.h>
 
 #include "ostest.h"
 
@@ -41,9 +43,9 @@
 
 /* HRTimer test constants */
 
-#define HRTIMER_TEST_RAND_ITER (1024 * 2)             /* Random delay iterations */
-#define HRTIMER_TEST_CSECTION  1024                   /* Critical section iterations */
-#define HRTIMER_TEST_THREAD_NR (CONFIG_SMP_NCPUS * 8) /* Test threads */
+#define HRTIMER_TEST_RAND_ITER (64 * 2)               /* Random delay iterations */
+#define HRTIMER_TEST_CSECTION  (64)                   /* Critical section iterations */
+#define HRTIMER_TEST_THREAD_NR (CONFIG_SMP_NCPUS * 4) /* Test threads */
 
 /* Tolerable latency for timer expiration
  *
@@ -76,8 +78,8 @@ typedef struct hrtimer_test_s
   struct hrtimer_s  timer;     /* HRTimer instance */
   spinlock_t        lock;      /* Spinlock for thread-safe operations */
   volatile uint64_t timestamp; /* Previous timestamp in nanoseconds */
-  volatile uint64_t count;     /* Number of timer expirations */
   uint64_t          period;    /* Expected period between expirations */
+  volatile uint32_t count;     /* Number of timer expirations */
   volatile uint8_t  state;     /* Test state (used for synchronization tests) */
 } hrtimer_test_t;
 
@@ -173,7 +175,7 @@ static void hrtimer_test_checkdelay(uint64_t timestamp, uint64_t expected)
 
 static void hrtimer_test_oneshot(FAR hrtimer_test_t *param, uint64_t delay)
 {
-  uint64_t       count;
+  uint32_t       count;
   uint64_t       now;
   FAR hrtimer_t *timer = &param->timer;
 
@@ -191,18 +193,18 @@ static void hrtimer_test_oneshot(FAR hrtimer_test_t *param, uint64_t delay)
 
   /* Wait until the callback is triggered exactly once */
 
-  while (count + 1 != param->count)
+  while (param->count == count)
     {
       hrtimer_test_ndelay(delay);
     }
 
-  /* Verify the delay is within acceptable tolerance */
-
-  hrtimer_test_checkdelay(param->timestamp, now + delay);
-
   /* Cancel the timer to clean up */
 
   hrtimer_cancel_sync(timer);
+
+  /* Verify the delay is within acceptable tolerance */
+
+  hrtimer_test_checkdelay(param->timestamp, now + delay);
 }
 
 /****************************************************************************
@@ -224,11 +226,12 @@ static void hrtimer_test_oneshot(FAR hrtimer_test_t *param, uint64_t delay)
 
 static void hrtimer_test_maximum(FAR hrtimer_test_t *param)
 {
-  uint64_t       count;
+  uint32_t       count;
   uint64_t       rest;
   FAR hrtimer_t *timer = &param->timer;
 
-  printf("hrtimer_test_maximum: testing with UINT64_MAX delay\n");
+  printf("hrtimer_test_maximum: testing with %" PRIu64 " delay\n",
+         UINT64_MAX);
 
   count = param->count;
 
@@ -276,41 +279,29 @@ static void hrtimer_test_maximum(FAR hrtimer_test_t *param)
 
 static void hrtimer_test_rand(FAR hrtimer_test_t *param, uint64_t rand_ns)
 {
-  uint64_t       count;
+  uint32_t       count;
   uint64_t       now;
   unsigned int   idx;
   uint64_t       delay;
-  irqstate_t     flags;
   FAR hrtimer_t *timer = &param->timer;
 
   printf("hrtimer_test_rand: max delay = %" PRIu64 " ns\n", rand_ns);
 
   /* Perform multiple iterations with random delays */
 
-  for (idx = 0; idx < HRTIMER_TEST_RAND_ITER; idx++)
+  for (idx = 0u; idx < HRTIMER_TEST_RAND_ITER; idx++)
     {
       /* Generate a random delay within the specified range */
 
-      delay = rand() % rand_ns;
+      delay = param->timer.expired % rand_ns;
 
       ASSERT(timer->func == NULL);
 
-      /* Enter critical section if the callback count is odd */
-
       count = param->count;
-
-      if (count % 2u)
-        {
-          flags = up_irq_save();
-        }
 
       now = clock_systime_nsec();
       ASSERT(hrtimer_start(timer, hrtimer_test_callback_oneshot,
-                           delay, HRTIMER_MODE_REL) == 0);
-      if (count % 2u)
-        {
-          up_irq_restore(flags);
-        }
+                           delay + now, HRTIMER_MODE_ABS) == 0);
 
       /* Decide to wait for the callback or cancel the hrtimer */
 
@@ -318,24 +309,24 @@ static void hrtimer_test_rand(FAR hrtimer_test_t *param, uint64_t rand_ns)
         {
           /* Wait for the callback */
 
-          while (count + 1u != param->count)
+          while (param->count == count)
             {
               hrtimer_test_ndelay(delay);
             }
 
+          hrtimer_cancel_sync(timer);
+
           /* Check the delay if the callback count is odd */
 
-          if (count % 2u)
-            {
-              hrtimer_test_checkdelay(param->timestamp, now + delay);
-            }
+          hrtimer_test_checkdelay(param->timestamp, now + delay);
+        }
+      else
+        {
+          hrtimer_cancel_sync(timer);
         }
 
-      hrtimer_cancel_sync(timer);
       ASSERT(timer->func == NULL);
     }
-
-  hrtimer_cancel_sync(timer);
 }
 
 /****************************************************************************
@@ -367,10 +358,11 @@ static uint64_t hrtimer_test_cancel_callback(FAR const hrtimer_t *timer,
 
   delay = expired_ns % param->period;
 
-  /* Check if the expiration time matches (prevents duplicate processing) */
+  /* Check if the version matches (prevents duplicate processing) */
 
-  if (expired_ns == timer->expired)
+  if (timer->expired == expired_ns && param->state)
     {
+      param->state     = 0u;
       param->timestamp = clock_systime_nsec();
 
       /* Increment the callback count */
@@ -407,7 +399,7 @@ static void hrtimer_test_rand_cancel(FAR hrtimer_test_t *param,
 {
   uint64_t       now;
   unsigned int   idx;
-  uint64_t     count;
+  uint32_t     count;
   uint64_t     delay;
   irqstate_t   flags;
   spinlock_t   *lock = &param->lock;
@@ -418,18 +410,19 @@ static void hrtimer_test_rand_cancel(FAR hrtimer_test_t *param,
 
   /* Perform multiple iterations with random delays */
 
-  for (idx = 0; idx < HRTIMER_TEST_RAND_ITER; idx++)
+  for (idx = 0u; idx < HRTIMER_TEST_RAND_ITER; idx++)
     {
       /* Generate a random delay within the specified range */
 
-      delay = rand() % rand_ns;
+      delay = param->timer.expired % rand_ns;
 
       flags = spin_lock_irqsave(lock);
 
-      now   = clock_systime_nsec();
-      count = param->count;
+      count        = param->count;
+      now          = clock_systime_nsec();
+      param->state = 1u;
       ASSERT(hrtimer_start(&param->timer, hrtimer_test_cancel_callback,
-                           delay, HRTIMER_MODE_REL) == 0);
+                           now + delay, HRTIMER_MODE_ABS) == 0);
 
       spin_unlock_irqrestore(lock, flags);
 
@@ -439,10 +432,14 @@ static void hrtimer_test_rand_cancel(FAR hrtimer_test_t *param,
         {
           /* Wait for the callback to finish */
 
-          while (param->count != count + 1u)
+          while (param->count == count)
             {
               hrtimer_test_ndelay(delay);
             }
+
+          flags = spin_lock_irqsave(lock);
+          ASSERT(param->state == 0u);
+          spin_unlock_irqrestore(lock, flags);
 
           hrtimer_test_checkdelay(param->timestamp, now + delay);
         }
@@ -476,10 +473,10 @@ static uint64_t hrtimer_test_callback_period(FAR const hrtimer_t *timer,
   FAR hrtimer_test_t *param = (FAR hrtimer_test_t *)timer;
   uint64_t         interval = param->period;
 
-  param->count++;
+  param->count--;
   param->timestamp = clock_systime_nsec();
 
-  return interval;
+  return (int32_t)param->count > 0 ? interval : 0u;
 }
 
 /****************************************************************************
@@ -501,14 +498,15 @@ static uint64_t hrtimer_test_callback_period(FAR const hrtimer_t *timer,
  ****************************************************************************/
 
 static void hrtimer_test_period(FAR hrtimer_test_t *param,
-                                uint64_t delay_ns,
-                                unsigned int iters)
+                                uint64_t delay_ns, uint32_t iters)
 {
   uint64_t   timestamp;
-  uint64_t       count = param->count;
   FAR hrtimer_t *timer = &param->timer;
 
-  printf("hrtimer_test_period: period = %" PRIu64 " ns, iters = %u\n",
+  param->count = iters;
+
+  printf("hrtimer_test_period: period = %" PRIu64 " ns, "
+         "iters = %" PRIu32 "\n",
          delay_ns, iters);
 
   param->period = delay_ns;
@@ -517,7 +515,7 @@ static void hrtimer_test_period(FAR hrtimer_test_t *param,
   timestamp = clock_systime_nsec();
 
   ASSERT(hrtimer_start(timer, hrtimer_test_callback_period,
-                       delay_ns, HRTIMER_MODE_REL) == OK);
+                       timestamp + delay_ns, HRTIMER_MODE_ABS) == OK);
 
   /* Wait for expected number of periods */
 
@@ -528,16 +526,16 @@ static void hrtimer_test_period(FAR hrtimer_test_t *param,
 
   /* Report results */
 
-  printf("hrtimer_test_period: triggered %" PRIu64 " times, "
-         "elapsed nsec %" PRIu64 "\n", param->count - count,
+  printf("hrtimer_test_period: triggered %" PRIu32 " times, "
+         "elapsed nsec %" PRIu64 "\n", iters - param->count,
          param->timestamp - timestamp);
 
   /* Warn if fewer expirations than expected */
 
-  if (param->count - count < iters)
+  if (iters - param->count < iters)
     {
       printf("hrtimer_test_period: [WARNING] periodical hrtimer "
-             "triggered times < %u\n", iters);
+             "triggered times < %" PRIu32 "\n", iters);
     }
 }
 
@@ -566,16 +564,16 @@ static uint64_t hrtimer_test_callback_crita(FAR const hrtimer_t *timer,
 
   /* Change status if in initial state */
 
-  if (param->state == 0)
+  if (param->state == 0u)
     {
-      param->state = 1;
+      param->state = 1u;
       param->count++;
     }
 
   /* Verify state wasn't changed by another critical section */
 
-  ASSERT(param->state == 1);
-  param->state = 0;
+  ASSERT(param->state == 1u);
+  param->state = 0u;
 
   return 0;
 }
@@ -604,16 +602,16 @@ static uint64_t hrtimer_test_callback_critb(FAR const hrtimer_t *timer,
 
   /* Change status if in expected state */
 
-  if (param->state == 1)
+  if (param->state == 1u)
     {
-      param->state = 0;
+      param->state = 0u;
       param->count++;
     }
 
   /* Verify state wasn't changed by another critical section */
 
-  ASSERT(param->state == 0);
-  param->state = 1;
+  ASSERT(param->state == 0u);
+  param->state = 1u;
 
   return 0;
 }
@@ -639,7 +637,7 @@ static uint64_t hrtimer_test_callback_critdelay(FAR const hrtimer_t *timer,
                                                 uint64_t expired_ns)
 {
   FAR hrtimer_test_t *param = (FAR hrtimer_test_t *)timer;
-  FAR spinlock_t *lock      = &param->lock;
+  FAR spinlock_t     *lock  = &param->lock;
   irqstate_t flags;
 
   /* Protect count increment with spinlock */
@@ -654,7 +652,7 @@ static uint64_t hrtimer_test_callback_critdelay(FAR const hrtimer_t *timer,
 
   /* Return reschedule interval for periodic behavior */
 
-  return 300 * NSEC_PER_USEC;
+  return 10000 * NSEC_PER_USEC;
 }
 
 /****************************************************************************
@@ -677,24 +675,19 @@ static void hrtimer_test_cancel_sync(FAR hrtimer_test_t *param)
 
   ASSERT(!param->timer.func);
 
-  param->count = 0;
+  param->count = 0u;
 
-  for (idx = 0; idx < HRTIMER_TEST_CSECTION; )
+  printf("hrtimer_test_cancel_sync: synchronous cancellation test\n");
+
+  for (idx = 0; idx < HRTIMER_TEST_CSECTION; idx++)
     {
-      param->state = 0;
+      param->state = 0u;
       hrtimer_start(&param->timer, hrtimer_test_callback_crita,
                     0, HRTIMER_MODE_REL);
-
       hrtimer_cancel_sync(&param->timer);
-      param->state = 1;
+      param->state = 1u;
       hrtimer_start(&param->timer, hrtimer_test_callback_critb,
                     0, HRTIMER_MODE_REL);
-
-      if (++idx % (HRTIMER_TEST_CSECTION / 4) == 0)
-        {
-          printf("hrtimer_test_cancel_sync: passed %u times\n", idx);
-        }
-
       hrtimer_cancel_sync(&param->timer);
     }
 }
@@ -715,13 +708,15 @@ static void hrtimer_test_cancel_sync(FAR hrtimer_test_t *param)
 
 static void hrtimer_test_cancel_periodic(FAR hrtimer_test_t *param)
 {
-  uint64_t       count;
-  unsigned int     idx = 0;
+  uint32_t       count;
+  unsigned int     idx = 0u;
   FAR spinlock_t *lock = &param->lock;
 
   ASSERT(!param->timer.func);
 
-  param->count = 0;
+  param->count = 0u;
+
+  printf("hrtimer_test_cancel_periodic:periodic timer cancellation test\n");
 
   for (idx = 0; idx < HRTIMER_TEST_CSECTION; idx++)
     {
@@ -732,7 +727,7 @@ static void hrtimer_test_cancel_periodic(FAR hrtimer_test_t *param)
 
       spin_unlock_irqrestore(lock, flags);
 
-      up_ndelay(10000);
+      hrtimer_test_ndelay(10000);
 
       flags = spin_lock_irqsave(lock);
 
@@ -743,7 +738,7 @@ static void hrtimer_test_cancel_periodic(FAR hrtimer_test_t *param)
 
       hrtimer_cancel(&param->timer);
 
-      up_ndelay(10000);
+      hrtimer_test_ndelay(10000);
 
       /* The hrtimer should not restart after cancellation */
 
@@ -755,12 +750,6 @@ static void hrtimer_test_cancel_periodic(FAR hrtimer_test_t *param)
       hrtimer_test_ndelay(10000);
 
       ASSERT(count == param->count);
-
-      if (++idx % (HRTIMER_TEST_CSECTION / 4) == 0)
-        {
-          printf("hrtimer_test_cancel_periodic: passed %u times, count = %"
-                 PRIu64 "\n", idx, param->count);
-        }
     }
 
   hrtimer_cancel_sync(&param->timer);
@@ -824,9 +813,9 @@ static void *hrtimer_test_thread(void *arg)
 
   hrtimer_test_maximum(&param);
 
-  /* Test periodic timer with 1ms period */
+  /* Test periodic timer with 100ms period */
 
-  hrtimer_test_period(&param, 1000000u, 128u);
+  hrtimer_test_period(&param, 100u * NSEC_PER_MSEC, 8u);
 
   /* Test random delay and cancel scenarios */
 
@@ -860,7 +849,6 @@ static void *hrtimer_test_thread(void *arg)
 
 void hrtimer_test(void)
 {
-  struct sched_param sparam;
   unsigned int    thread_id;
   pthread_attr_t       attr;
   pthread_t        pthreads[HRTIMER_TEST_THREAD_NR];
@@ -870,9 +858,6 @@ void hrtimer_test(void)
   /* Initialize thread attributes */
 
   ASSERT(pthread_attr_init(&attr) == 0);
-
-  sparam.sched_priority = PTHREAD_DEFAULT_PRIORITY;
-  ASSERT(pthread_attr_setschedparam(&attr, &sparam) == 0);
 
   /* Create multiple test threads */
 

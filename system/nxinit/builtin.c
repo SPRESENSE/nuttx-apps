@@ -98,6 +98,10 @@ static int cmd_start_cpu(FAR struct action_manager_s *am,
 static int cmd_netinit(FAR struct action_manager_s *am,
                        int argc, FAR char **argv);
 #endif
+#ifdef CONFIG_BOARDCTL_FINALINIT
+static int cmd_board_finalinit(FAR struct action_manager_s *am,
+                               int argc, FAR char **argv);
+#endif
 #ifdef CONFIG_RPTUN
 static int cmd_rptun(FAR struct action_manager_s *am,
                      int argc, FAR char **argv);
@@ -111,19 +115,22 @@ static int cmd_unlink(FAR struct action_manager_s *am,
 
 static const struct cmd_map_s g_builtin[] =
 {
+#ifdef CONFIG_BOARDCTL_FINALINIT
+  {"board_finalinit", 1, 1, cmd_board_finalinit},
+#endif
 #ifdef CONFIG_BOARDCTL_BOOT_IMAGE
   {"boot", 1, 3, cmd_boot},
-#endif
-#ifdef CONFIG_BOARDCTL_START_CPU
-  {"start_cpu", 1, 3, cmd_start_cpu},
-#endif
-#ifdef CONFIG_NETUTILS_NETINIT
-  {"netinit", 1, 1, cmd_netinit},
 #endif
   {"class_start", 2, 2, cmd_class_start},
   {"class_stop", 2, 2, cmd_class_stop},
   {"exec", 3, 99, cmd_exec},
   {"exec_start", 2, 2, cmd_exec_start},
+#ifdef CONFIG_NETUTILS_NETINIT
+  {"netinit", 1, 1, cmd_netinit},
+#endif
+#ifdef CONFIG_RPTUN
+  {"rptun", 3, 3, cmd_rptun},
+#endif
 #ifndef CONFIG_DISABLE_ENVIRON
   {"set", 3, 3, cmd_set},
 #endif
@@ -131,11 +138,11 @@ static const struct cmd_map_s g_builtin[] =
   {"setprop", 3, 3, cmd_setprop},
 #endif
   {"start", 2, 2, cmd_start},
+#ifdef CONFIG_BOARDCTL_START_CPU
+  {"start_cpu", 1, 3, cmd_start_cpu},
+#endif
   {"stop", 2, 2, cmd_stop},
   {"trigger", 2, 2, cmd_trigger},
-#ifdef CONFIG_RPTUN
-  {"rptun", 3, 3, cmd_rptun},
-#endif
   {"unlink", 2, 2, cmd_unlink},
 };
 
@@ -191,6 +198,15 @@ static int cmd_netinit(FAR struct action_manager_s *am,
 {
   UNUSED(am);
   return netinit_bringup();
+}
+#endif
+
+#ifdef CONFIG_BOARDCTL_FINALINIT
+static int cmd_board_finalinit(FAR struct action_manager_s *am,
+                               int argc, FAR char **argv)
+{
+  UNUSED(am);
+  return boardctl(BOARDIOC_FINALINIT, 0);
 }
 #endif
 

@@ -58,11 +58,13 @@ static int init_parse_config_lines(FAR const struct parser_s *parser,
       *len -= nl - buf;
       init_debug("Line %-3zu '%s'", ++*line, buf);
 
-      /* Skip empty lines and lines containing only whitespace */
+      /* Skip empty lines, lines containing only whitespace and comment
+       * lines (the first character that is not whitespace is '#').
+       */
 
       for (ret = 0; buf[ret] && isblank(buf[ret]); ret++);
 
-      if (buf[ret] == '\0')
+      if (buf[ret] == '\0' || buf[ret] == '#')
         {
           memmove(buf, nl, *len);
           continue;
@@ -344,6 +346,11 @@ int init_parse_configs(FAR const struct parser_s *parser)
 #ifdef CONFIG_NETUTILS_NETINIT
     "on netinit\n"
     "   netinit\n"
+#endif
+#if defined(CONFIG_SYSTEM_NXINIT_FINALINIT) && \
+    defined(CONFIG_BOARDCTL_FINALINIT)
+    "on finalinit\n"
+    "   board_finalinit\n"
 #endif
     ;
   FAR const char *path = CONFIG_SYSTEM_NXINIT_RC_FILE_PATH;

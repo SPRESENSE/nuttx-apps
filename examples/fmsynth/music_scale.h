@@ -24,7 +24,7 @@
 #define __APPS_EXAMPLES_FMSYNTH_UTILS_MUSIC_SCALE_H
 
 /****************************************************************************
- * Pre-processor definisions
+ * Pre-processor Definitions
  ****************************************************************************/
 
 #define MUSIC_SCALE_C  (0)
@@ -45,18 +45,13 @@
  * Public Data
  ****************************************************************************/
 
-#undef EXTERN
 #if defined(__cplusplus)
-#define EXTERN extern "C"
 extern "C"
 {
-#else
-#define EXTERN extern
 #endif
 
-EXTERN const float musical_scale[];
+extern const float musical_scale[];
 
-#undef EXTERN
 #if defined(__cplusplus)
 }
 #endif

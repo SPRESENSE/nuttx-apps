@@ -72,17 +72,13 @@
  * Public Data
  ****************************************************************************/
 
-#undef EXTERN
 #if defined(__cplusplus)
-#define EXTERN extern "C"
 extern "C"
 {
-#else
-#define EXTERN extern
 #endif
 
 /****************************************************************************
- * Public Functions
+ * Public Function Prototypes
  ****************************************************************************/
 
 /****************************************************************************
@@ -178,7 +174,7 @@ int tiff_putstring(int fd, FAR const char *string, int len);
  * Name: tiff_wordalign
  *
  * Description:
- *  Pad a file with zeros as necessary to achieve word alignament.
+ *  Pad a file with zeros as necessary to achieve word alignment.
  *
  * Input Parameters:
  *   fd - File descriptor to be used.
@@ -191,7 +187,6 @@ int tiff_putstring(int fd, FAR const char *string, int len);
 
 ssize_t tiff_wordalign(int fd, size_t size);
 
-#undef EXTERN
 #if defined(__cplusplus)
 }
 #endif

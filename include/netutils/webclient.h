@@ -192,7 +192,7 @@ typedef CODE int (*webclient_header_callback_t)(FAR const char *line,
  * "offset" of the data. (similarly to fread(3))
  *
  * An implementation of this callback should perform either of
- * the followings:
+ * the following:
  *
  * - Fill the buffer (specified by buffer and *sizep) with the data
  *
@@ -509,11 +509,8 @@ struct webclient_conn_s
  ****************************************************************************/
 
 #ifdef __cplusplus
-#define EXTERN extern "C"
 extern "C"
 {
-#else
-#define EXTERN extern
 #endif
 
 #ifdef WGET_USE_URLENCODE
@@ -572,7 +569,6 @@ ssize_t webclient_conn_recv(FAR struct webclient_conn_s *conn,
 void webclient_conn_close(FAR struct webclient_conn_s *conn);
 void webclient_conn_free(FAR struct webclient_conn_s *conn);
 
-#undef EXTERN
 #ifdef __cplusplus
 }
 #endif

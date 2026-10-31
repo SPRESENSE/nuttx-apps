@@ -81,6 +81,7 @@ int telnetd_daemon(FAR const struct telnetd_config_s *config)
   socklen_t addrlen;
   int listensd;
   int acceptsd;
+  int nullfd;
 #ifdef CONFIG_NET_SOCKOPTS
   int optval;
 #endif
@@ -114,6 +115,31 @@ int telnetd_daemon(FAR const struct telnetd_config_s *config)
       goto errout;
     }
 #endif /* CONFIG_SCHED_HAVE_PARENT && CONFIG_ENABLE_ALL_SIGNALS */
+
+  /* If the daemon was started without standard streams (e.g. spawned by
+   * nsh_telnetstart() before a USB console exists), descriptors 0..2 are
+   * free and any descriptor created below -- the listen socket, an
+   * accepted socket or a session driver -- could be allocated in the
+   * standard-stream range, where the per-session dup2(0..2) would clobber
+   * it.  Anchor any free slot in 0..2 to /dev/null first so that can
+   * never happen.
+   */
+
+  for (; ; )
+    {
+      nullfd = open("/dev/null", O_RDWR);
+      if (nullfd < 0)
+        {
+          nerr("ERROR: open(/dev/null) failed: %d\n", errno);
+          goto errout;
+        }
+
+      if (nullfd > 2)
+        {
+          close(nullfd);
+          break;
+        }
+    }
 
   /* Create a new TCP socket to use to listen for connections */
 
@@ -190,11 +216,24 @@ int telnetd_daemon(FAR const struct telnetd_config_s *config)
 #endif
       int drvrfd;
 
-      /* Now go silent. */
+      /* Now go silent: detach from the previous session's driver (or the
+       * startup streams) by re-anchoring 0..2 to /dev/null instead of
+       * closing them.  Closing would leave 0..2 free, and accept4() or
+       * open() below could then allocate into the standard-stream range
+       * where the dup2(0..2) for the next session would clobber it.
+       */
 
-      close(0);
-      close(1);
-      close(2);
+      nullfd = open("/dev/null", O_RDWR);
+      if (nullfd >= 0)
+        {
+          dup2(nullfd, 0);
+          dup2(nullfd, 1);
+          dup2(nullfd, 2);
+          if (nullfd > 2)
+            {
+              close(nullfd);
+            }
+        }
 
       ninfo("Accepting connections on port %d\n", ntohs(config->d_port));
 
@@ -202,17 +241,17 @@ int telnetd_daemon(FAR const struct telnetd_config_s *config)
       acceptsd = accept4(listensd, &addr.generic, &addrlen, SOCK_CLOEXEC);
       if (acceptsd < 0)
         {
-          /* Just continue if a signal was received */
+          /* A failed accept (a signal, or a peer that reset before the
+           * accept completed) only affects that one connection: keep
+           * serving.
+           */
 
-          if (errno == EINTR)
-            {
-              continue;
-            }
-          else
+          if (errno != EINTR)
             {
               nerr("ERROR: accept failed: %d\n", errno);
-              goto errout_with_socket;
             }
+
+          continue;
         }
 
 #ifdef CONFIG_NET_SOLINGER
@@ -225,8 +264,13 @@ int telnetd_daemon(FAR const struct telnetd_config_s *config)
       if (setsockopt(acceptsd, SOL_SOCKET, SO_LINGER,
                      &ling, sizeof(struct linger)) < 0)
         {
+          /* Per-connection failure (e.g. the peer already reset the
+           * connection): drop the connection and keep accepting.
+           */
+
           nerr("ERROR: setsockopt failed: %d\n", errno);
-          goto errout_with_acceptsd;
+          close(acceptsd);
+          continue;
         }
 #endif
 
@@ -236,7 +280,8 @@ int telnetd_daemon(FAR const struct telnetd_config_s *config)
       if (drvrfd < 0)
         {
           nerr("ERROR: open(/dev/telnet) failed: %d\n", errno);
-          goto errout_with_acceptsd;
+          close(acceptsd);
+          continue;
         }
 
       /* Create a character device to "wrap" the accepted socket descriptor */
@@ -249,9 +294,10 @@ int telnetd_daemon(FAR const struct telnetd_config_s *config)
       if (ioctl(drvrfd, SIOCTELNET,
                 (unsigned long)((uintptr_t)&session)) < 0)
         {
-          nerr("ERROR: open(/dev/telnet) failed: %d\n", errno);
+          nerr("ERROR: SIOCTELNET failed: %d\n", errno);
           close(drvrfd);
-          goto errout_with_acceptsd;
+          close(acceptsd);
+          continue;
         }
 
       close(drvrfd);
@@ -262,8 +308,12 @@ int telnetd_daemon(FAR const struct telnetd_config_s *config)
       drvrfd = open(session.ts_devpath, O_RDWR);
       if (drvrfd < 0)
         {
+          /* The socket now belongs to the telnet driver instance; just
+           * keep accepting.
+           */
+
           nerr("ERROR: Failed to open %s: %d\n", session.ts_devpath, errno);
-          goto errout_with_socket;
+          continue;
         }
 
       /* Use this driver as stdin, stdout, and stderror */
@@ -291,6 +341,7 @@ int telnetd_daemon(FAR const struct telnetd_config_s *config)
           pid_t pid = task_create("Telnet session",
                                   config->t_priority, config->t_stacksize,
                                   config->t_entry, NULL);
+
           if (pid >= 0)
             {
               continue;
@@ -319,15 +370,11 @@ int telnetd_daemon(FAR const struct telnetd_config_s *config)
           if (ret > 0)
             {
               nerr("ERROR: Failed start the telnet session: %d\n", ret);
-              errno = ret;
-              goto errout_with_socket;
+              continue;
             }
         }
 #endif
     }
-
-errout_with_acceptsd:
-  close(acceptsd);
 
 errout_with_socket:
   close(listensd);

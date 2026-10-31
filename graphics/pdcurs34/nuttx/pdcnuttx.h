@@ -1,5 +1,5 @@
 /****************************************************************************
- * apps/graphics/nuttx/pdcnuttx.h
+ * apps/graphics/pdcurs34/nuttx/pdcnuttx.h
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -182,15 +182,12 @@
 #define PDCURSES_ALIGN_DOWN(n) (((n) & ~PDCURSES_BPP_MASK) >> 3)
 
 /****************************************************************************
- * Private Types
+ * Public Types
  ****************************************************************************/
 
 #if defined(__cplusplus)
 extern "C"
 {
-#  define EXTERN extern "C"
-#else
-#  define EXTERN extern
 #endif
 
 /* Describes one color pair */
@@ -335,10 +332,10 @@ struct pdc_termscreen_s
  * single framebuffer instance in the same address space.
  */
 
-EXTERN struct pdc_fbstate_s g_pdc_fbstate;
+extern struct pdc_fbstate_s g_pdc_fbstate;
 
 /****************************************************************************
- * Public Functions
+ * Public Function Prototypes
  ****************************************************************************/
 
 /****************************************************************************
@@ -376,7 +373,6 @@ int PDC_input_open(FAR struct pdc_fbstate_s *fbstate);
 void PDC_input_close(FAR struct pdc_fbstate_s *fbstate);
 #endif
 
-#undef EXTERN
 #if defined(__cplusplus)
 }
 #endif

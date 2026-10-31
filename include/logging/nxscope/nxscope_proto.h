@@ -34,11 +34,8 @@
  ****************************************************************************/
 
 #ifdef __cplusplus
-#define EXTERN extern "C"
 extern "C"
 {
-#else
-#define EXTERN extern
 #endif
 
 /* Nxscope frame handler */
@@ -46,7 +43,7 @@ extern "C"
 struct nxscope_frame_s
 {
   uint8_t      id;              /* Frame id */
-  size_t       drop;            /* Data to be droped from recv buffer */
+  size_t       drop;            /* Data to be dropped from recv buffer */
   size_t       dlen;            /* Data len (without header and footer) */
   FAR uint8_t *data;            /* A pointer to a frame data */
 };
@@ -112,7 +109,6 @@ int nxscope_proto_ser_init(FAR struct nxscope_proto_s *proto, FAR void *cfg);
 void nxscope_proto_ser_deinit(FAR struct nxscope_proto_s *proto);
 #endif
 
-#undef EXTERN
 #ifdef __cplusplus
 }
 #endif

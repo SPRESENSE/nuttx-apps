@@ -28,6 +28,13 @@ CXXEXT := .cc
 CXXFLAGS += -Wno-shadow -Wno-undef
 CXXSRCS = $(wildcard $(SRCDIR)/source/*.cc)
 
+# Enable JPEG support when libjpeg is enabled.  libjpeg already exports its
+# include directory through graphics/libjpeg/Make.defs.
+
+ifeq ($(CONFIG_LIBJPEG),y)
+CXXFLAGS += -DHAVE_JPEG
+endif
+
 libyuv.tar.gz:
 	$(Q) curl -L https://github.com/NuttX/nuttx/releases/download/libyuv/libyuv-refs_heads_$(CONFIG_LIBYUV_BRANCH).tar.gz -o libyuv.tar.gz
 	$(Q) mkdir -p $(SRCDIR)

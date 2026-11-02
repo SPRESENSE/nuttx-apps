@@ -69,9 +69,13 @@ nxcodec_context_dequeue_buf(FAR nxcodec_context_t *ctx)
   ret = ioctl(codec->fd, VIDIOC_DQBUF, &buf);
   if (ret < 0)
     {
-      printf("nxcodec %s VIDIOC_DQBUF - %s\n",
-             V4L2_TYPE_IS_OUTPUT(ctx->type) ? "output" : "capture",
-             strerror(errno));
+      if (errno != EAGAIN)
+        {
+          printf("nxcodec %s VIDIOC_DQBUF - %s\n",
+                 V4L2_TYPE_IS_OUTPUT(ctx->type) ? "output" : "capture",
+                 strerror(errno));
+        }
+
       return NULL;
     }
 
@@ -123,6 +127,44 @@ static int nxcodec_context_read_yuv_data(FAR nxcodec_context_t *ctx,
     }
 
   *bytesused = ret;
+  return 0;
+}
+
+static int nxcodec_context_read_jpeg_data(FAR nxcodec_context_t *ctx,
+                                          FAR char *buf,
+                                          FAR uint32_t *bytesused)
+{
+  ssize_t total = 0;
+  ssize_t ret;
+
+  /* Read as much as available from the JPEG file.  For a single-image
+   * JPEG file the entire content is one frame.  We read until EOF or
+   * until the buffer is full.
+   */
+
+  for (; ; )
+    {
+      ret = read(ctx->fd, buf + total,
+                 ctx->format.fmt.pix.sizeimage - total);
+      if (ret < 0)
+        {
+          return -errno;
+        }
+
+      if (ret == 0)
+        {
+          break;
+        }
+
+      total += ret;
+    }
+
+  if (total == 0)
+    {
+      return -ENODATA;
+    }
+
+  *bytesused = total;
   return 0;
 }
 
@@ -216,6 +258,17 @@ int nxcodec_context_enqueue_frame(FAR nxcodec_context_t *ctx)
           return ret;
         }
     }
+  else if (ctx->format.fmt.pix.pixelformat == V4L2_PIX_FMT_JPEG ||
+           ctx->format.fmt.pix.pixelformat == V4L2_PIX_FMT_MJPEG)
+    {
+      ret = nxcodec_context_read_jpeg_data(ctx,
+                                           buf->addr,
+                                           &buf->buf.bytesused);
+      if (ret < 0)
+        {
+          return ret;
+        }
+    }
   else if (ctx->format.fmt.pix.pixelformat == V4L2_PIX_FMT_YUV420)
     {
       ret = nxcodec_context_read_yuv_data(ctx,
@@ -225,6 +278,10 @@ int nxcodec_context_enqueue_frame(FAR nxcodec_context_t *ctx)
         {
           return ret;
         }
+    }
+  else
+    {
+      return -EINVAL;
     }
 
   ret = ioctl(codec->fd, VIDIOC_QBUF, &buf->buf);
@@ -270,6 +327,7 @@ int nxcodec_context_get_format(FAR nxcodec_context_t *ctx)
   struct v4l2_fmtdesc fdesc;
   int ret;
 
+  memset(&fdesc, 0, sizeof(fdesc));
   fdesc.type = ctx->type;
   while (true)
     {

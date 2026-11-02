@@ -52,15 +52,21 @@
 
 #ifdef CONFIG_LIBYUV
 #  include <libyuv.h>
-
-#  define CONVERT_TO_ARGB    ConvertToARGB
-#  define CONVERT_FROM_I420  ConvertFromI420
-#  define CONVERT_TO_I420    ConvertToI420
 #endif
 
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
+
+/* Wrap libyuv mixed-case APIs for nxstyle compliance */
+
+#ifdef CONFIG_LIBYUV
+#  define CONVERT_TO_ARGB            ConvertToARGB
+#  define CONVERT_ARGB_TO_RGB24      ARGBToRGB24
+#  define CONVERT_ARGB_TO_RGB565     ARGBToRGB565
+#  define SCALE_ARGB                 ARGBScale
+#  define FILTER_BILINEAR            kFilterBilinear
+#endif
 
 #define NXCAMERA_STATE_IDLE      0
 #define NXCAMERA_STATE_STREAMING 1
@@ -79,6 +85,7 @@ static void pan_display(int fb_device, FAR struct fb_planeinfo_s *plane_info)
 {
   struct pollfd pfd;
   int ret;
+
   pfd.fd = fb_device;
   pfd.events = POLLOUT;
 
@@ -93,101 +100,164 @@ static void pan_display(int fb_device, FAR struct fb_planeinfo_s *plane_info)
 static int show_image(FAR struct nxcamera_s *pcam, FAR v4l2_buffer_t *buf)
 {
 #ifdef CONFIG_LIBYUV
-  if (pcam->display_vinfo.fmt == FB_FMT_RGB32)
+  /* Use bytesused for actual data size. For compressed formats (JPEG),
+   * bytesused is the actual payload size, which is typically much smaller
+   * than buf_sizes (the buffer capacity). This is the correct value to
+   * pass to libyuv convert function as sample_size.
+   */
+
+  uint32_t sample_size = buf->bytesused > 0 ?
+                          buf->bytesused : pcam->buf_sizes[buf->index];
+
+  FAR uint8_t *fbmem = (FAR uint8_t *)pcam->display_pinfo.fbmem;
+  int src_w = pcam->fmt.fmt.pix.width;
+  int src_h = pcam->fmt.fmt.pix.height;
+  int panel_w = pcam->display_vinfo.xres;
+  int panel_h = pcam->display_vinfo.yres;
+  int dst_w;
+  int dst_h;
+  int x_off;
+  int y_off;
+  size_t need_convert;
+  size_t need_scale;
+  int ret;
+
+  if (src_w <= 0 || src_h <= 0 || panel_w <= 0 || panel_h <= 0)
     {
-      return CONVERT_TO_ARGB(pcam->bufs[buf->index],
-                             pcam->buf_sizes[buf->index],
-                             pcam->display_pinfo.fbmem,
-                             pcam->display_pinfo.stride,
-                             0,
-                             0,
-                             pcam->fmt.fmt.pix.width,
-                             pcam->fmt.fmt.pix.height,
-                             pcam->fmt.fmt.pix.width,
-                             pcam->fmt.fmt.pix.height,
-                             0,
-                             pcam->fmt.fmt.pix.pixelformat);
-    }
-  else if (pcam->display_vinfo.fmt == FB_FMT_RGB16_565)
-    {
-      if (pcam->fmt.fmt.pix.pixelformat == V4L2_PIX_FMT_YUV420)
-        {
-          return CONVERT_FROM_I420(pcam->bufs[buf->index],
-                                   pcam->fmt.fmt.pix.width,
-                                   &pcam->bufs[buf->index][
-                                              pcam->fmt.fmt.pix.width *
-                                              pcam->fmt.fmt.pix.height],
-                                   pcam->fmt.fmt.pix.width / 2,
-                                   &pcam->bufs[buf->index][
-                                        pcam->fmt.fmt.pix.width *
-                                        pcam->fmt.fmt.pix.height * 5 / 4],
-                                   pcam->fmt.fmt.pix.width / 2,
-                                   pcam->display_pinfo.fbmem,
-                                   pcam->display_pinfo.stride,
-                                   pcam->fmt.fmt.pix.width,
-                                   pcam->fmt.fmt.pix.height,
-                                   V4L2_PIX_FMT_RGB565);
-        }
-      else
-        {
-          int ret;
-          FAR uint8_t *dst = malloc(pcam->fmt.fmt.pix.width *
-                                    pcam->fmt.fmt.pix.height * 3 / 2);
-          if (!dst)
-            {
-              return -ENOMEM;
-            }
-
-          ret = CONVERT_TO_I420(pcam->bufs[buf->index],
-                                pcam->buf_sizes[buf->index],
-                                dst,
-                                pcam->fmt.fmt.pix.width,
-                                &dst[pcam->fmt.fmt.pix.width *
-                                          pcam->fmt.fmt.pix.height],
-                                pcam->fmt.fmt.pix.width / 2,
-                                &dst[pcam->fmt.fmt.pix.width *
-                                          pcam->fmt.fmt.pix.height * 5 / 4],
-                                pcam->fmt.fmt.pix.width / 2,
-                                0,
-                                0,
-                                pcam->fmt.fmt.pix.width,
-                                pcam->fmt.fmt.pix.height,
-                                pcam->fmt.fmt.pix.width,
-                                pcam->fmt.fmt.pix.height,
-                                0,
-                                pcam->fmt.fmt.pix.pixelformat);
-          if (ret < 0)
-            {
-              goto err;
-            }
-
-          ret = CONVERT_FROM_I420(dst,
-                                  pcam->fmt.fmt.pix.width,
-                                  &dst[pcam->fmt.fmt.pix.width *
-                                              pcam->fmt.fmt.pix.height],
-                                  pcam->fmt.fmt.pix.width / 2,
-                                  &dst[pcam->fmt.fmt.pix.width *
-                                       pcam->fmt.fmt.pix.height * 5 / 4],
-                                  pcam->fmt.fmt.pix.width / 2,
-                                  pcam->display_pinfo.fbmem,
-                                  pcam->display_pinfo.stride,
-                                  pcam->fmt.fmt.pix.width,
-                                  pcam->fmt.fmt.pix.height,
-                                  V4L2_PIX_FMT_RGB565);
-          if (ret < 0)
-            {
-              goto err;
-            }
-
-err:
-          free(dst);
-          return ret;
-        }
+      return -EINVAL;
     }
 
-  return 0;
+  /* Scale the source down/up to fit the panel keeping the aspect ratio,
+   * then centre it with black bars on the under-utilised sides.
+   */
+
+  if (src_w * panel_h > panel_w * src_h)
+    {
+      dst_w = panel_w;
+      dst_h = src_h * panel_w / src_w;
+    }
+  else
+    {
+      dst_h = panel_h;
+      dst_w = src_w * panel_h / src_h;
+    }
+
+  x_off = (panel_w - dst_w) / 2;
+  y_off = (panel_h - dst_h) / 2;
+
+  if (dst_w == 0 || dst_h == 0)
+    {
+      return -EINVAL;
+    }
+
+  /* Lazy-allocate conversion buffers, reused across frames.  conv_buf
+   * holds the full-size ARGB conversion of the source frame, scale_buf
+   * the scaled result (not needed when the panel itself is RGB32, which
+   * consumes the scaled ARGB directly).
+   */
+
+  need_convert = (size_t)src_w * src_h * 4;
+  need_scale = (size_t)dst_w * dst_h * 4;
+
+  if (pcam->conv_buf_size < need_convert)
+    {
+      free(pcam->conv_buf);
+      pcam->conv_buf = malloc(need_convert);
+      if (pcam->conv_buf == NULL)
+        {
+          pcam->conv_buf_size = 0;
+          return -ENOMEM;
+        }
+
+      pcam->conv_buf_size = need_convert;
+    }
+
+  if (pcam->display_vinfo.fmt != FB_FMT_RGB32 &&
+      pcam->scale_buf_size < need_scale)
+    {
+      free(pcam->scale_buf);
+      pcam->scale_buf = malloc(need_scale);
+      if (pcam->scale_buf == NULL)
+        {
+          pcam->scale_buf_size = 0;
+          return -ENOMEM;
+        }
+
+      pcam->scale_buf_size = need_scale;
+    }
+
+  /* Convert the whole source frame into ARGB first.  Keeping crop_width
+   * at the capture width satisfies libyuv's MJpegDecoder, which requires
+   * crop_width to equal the JPEG width.
+   */
+
+  ret = CONVERT_TO_ARGB(pcam->bufs[buf->index],
+                       sample_size,
+                       pcam->conv_buf,
+                       src_w * 4,
+                       0,
+                       0,
+                       src_w,
+                       src_h,
+                       src_w,
+                       src_h,
+                       0,
+                       pcam->fmt.fmt.pix.pixelformat);
+  if (ret != 0)
+    {
+      verr("ConvertToARGB failed: %d for %dx%d\n",
+           ret, src_w, src_h);
+      return -EINVAL;
+    }
+
+  switch (pcam->display_vinfo.fmt)
+    {
+      case FB_FMT_RGB32:
+        return SCALE_ARGB(pcam->conv_buf, src_w * 4, src_w, src_h,
+                         fbmem + y_off * pcam->display_pinfo.stride +
+                         x_off * 4,
+                         pcam->display_pinfo.stride,
+                         dst_w, dst_h, FILTER_BILINEAR);
+
+      case FB_FMT_RGB24:
+        ret = SCALE_ARGB(pcam->conv_buf, src_w * 4, src_w, src_h,
+                        pcam->scale_buf, dst_w * 4,
+                        dst_w, dst_h, FILTER_BILINEAR);
+        if (ret != 0)
+          {
+            return -EINVAL;
+          }
+
+        return CONVERT_ARGB_TO_RGB24(pcam->scale_buf, dst_w * 4,
+                                     fbmem +
+                                     y_off * pcam->display_pinfo.stride +
+                                     x_off * 3,
+                                     pcam->display_pinfo.stride,
+                                     dst_w, dst_h);
+
+      case FB_FMT_RGB16_565:
+        ret = SCALE_ARGB(pcam->conv_buf, src_w * 4, src_w, src_h,
+                        pcam->scale_buf, dst_w * 4,
+                        dst_w, dst_h, FILTER_BILINEAR);
+        if (ret != 0)
+          {
+            return -EINVAL;
+          }
+
+        return CONVERT_ARGB_TO_RGB565(pcam->scale_buf, dst_w * 4,
+                                      fbmem +
+                                      y_off * pcam->display_pinfo.stride +
+                                      x_off * 2,
+                                      pcam->display_pinfo.stride,
+                                      dst_w, dst_h);
+
+      default:
+        return -ENOTSUP;
+    }
 #else
-  FAR uint32_t *pbuf = (FAR uint32_t *)pcam->bufs[buf->index];
+  FAR uint32_t *pbuf;
+
+  pbuf = (FAR uint32_t *)pcam->bufs[buf->index];
   vinfo("show image from %p: %" PRIx32 " %" PRIx32, pbuf, pbuf[0], pbuf[1]);
   return 0;
 #endif
@@ -257,11 +327,19 @@ static int nxcamera_opendevice(FAR struct nxcamera_s *pcam)
               return -errcode;
             }
 
+          memset(pcam->display_pinfo.fbmem, 0, pcam->display_pinfo.fblen);
+
           return OK;
         }
       else
         {
-          /* TODO: Add file output */
+          /* File output mode: no display device needed */
+
+          if (pcam->videopath[0] != '\0' ||
+              pcam->imagepath[0] != '\0')
+            {
+              return OK;
+            }
 
           return -ENOTSUP;
         }
@@ -314,6 +392,7 @@ static void *nxcamera_loopthread(pthread_addr_t pvarg)
   ssize_t                 size;
   struct video_msg_s      msg;
   bool                    streaming = true;
+  int                     output_fd = -1;
   int                     i;
   int                     ret;
   struct v4l2_buffer      buf;
@@ -362,6 +441,22 @@ static void *nxcamera_loopthread(pthread_addr_t pvarg)
    *     VIDEO_MSG_DEQUEUE message.
    */
 
+  /* Open output file before the loop (video mode uses append) */
+
+  if (pcam->videopath[0] != '\0')
+    {
+      output_fd = open(pcam->videopath,
+                       O_WRONLY | O_CREAT | O_APPEND, 0644);
+    }
+  else if (pcam->imagepath[0] != '\0')
+    {
+      output_fd = open(pcam->imagepath,
+                       O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    }
+
+  vinfo("output_fd=%d videopath=%s imagepath=%s\n",
+        output_fd, pcam->videopath, pcam->imagepath);
+
   while (streaming)
     {
       size = mq_receive(pcam->mq, (FAR char *)&msg, sizeof(msg), &prio);
@@ -400,16 +495,55 @@ static void *nxcamera_loopthread(pthread_addr_t pvarg)
           goto err_out;
         }
 
-      ret = show_image(pcam, &buf);
-      if (ret < 0)
+      if (buf.index >= pcam->nbuffers)
         {
-          verr("Fail to show image %d\n", -ret);
+          verr("Invalid buf.index %d\n", buf.index);
           goto err_out;
         }
 
-      if (pcam->display_pinfo.yres_virtual > pcam->display_vinfo.yres)
+      /* Write frame to file if output file is configured */
+
+      if (output_fd >= 0)
         {
-          pan_display(pcam->display_fd, &pcam->display_pinfo);
+          uint32_t frame_size;
+
+          frame_size = buf.bytesused > 0 ?
+                       buf.bytesused : pcam->buf_sizes[buf.index];
+
+          ret = write(output_fd, pcam->bufs[buf.index], frame_size);
+          if (ret != frame_size)
+            {
+              verr("write failed: ret=%d frame_size=%" PRIu32
+                   " errno=%d\n", ret, frame_size, errno);
+            }
+
+          /* Stop after max_frames if specified (0=unlimited) */
+
+          if (pcam->max_frames > 0)
+            {
+              pcam->max_frames--;
+              if (pcam->max_frames == 0)
+                {
+                  streaming = false;
+                  continue;
+                }
+            }
+        }
+      else
+        {
+          ret = show_image(pcam, &buf);
+          if (ret < 0)
+            {
+              verr("Fail to show image %d\n", -ret);
+              goto err_out;
+            }
+
+          if (pcam->display_pinfo.yres_virtual >
+              pcam->display_vinfo.yres)
+            {
+              pan_display(pcam->display_fd,
+                          &pcam->display_pinfo);
+            }
         }
 
       ret = ioctl(pcam->capture_fd, VIDIOC_QBUF, (uintptr_t)&buf);
@@ -424,6 +558,13 @@ static void *nxcamera_loopthread(pthread_addr_t pvarg)
 
 err_out:
   vinfo("Clean-up and exit\n");
+
+  /* Close output file if open */
+
+  if (output_fd >= 0)
+    {
+      close(output_fd);
+    }
 
   /* Cleanup */
 
@@ -575,7 +716,7 @@ int nxcamera_setfile(FAR struct nxcamera_s *pcam, FAR const char *pfile,
 
   /* Try to open the file */
 
-  temp_fd = open(pfile, O_CREAT | O_RDWR, 0666);
+  temp_fd = open(pfile, O_CREAT | O_RDWR, 0644);
   if (temp_fd == -1)
     {
       /* Error opening the file */
@@ -867,6 +1008,46 @@ err_out:
 }
 
 /****************************************************************************
+ * Name: nxcamera_ioctl
+ *
+ *   Open the capture device, issue an ioctl, and close.
+ *
+ ****************************************************************************/
+
+int nxcamera_ioctl(FAR struct nxcamera_s *pcam,
+                   int request, unsigned long arg)
+{
+  bool opened = false;
+  int  ret;
+  int  fd;
+
+  fd = pcam->capture_fd;
+  if (fd < 0)
+    {
+      fd = open(pcam->capturedev, O_RDWR);
+      if (fd < 0)
+        {
+          return -errno;
+        }
+
+      opened = true;
+    }
+
+  ret = ioctl(fd, request, arg);
+  if (ret < 0)
+    {
+      ret = -errno;
+    }
+
+  if (opened)
+    {
+      close(fd);
+    }
+
+  return ret;
+}
+
+/****************************************************************************
  * Name: nxcamera_create
  *
  *   nxcamera_create() allocates and initializes a nxcamera context for
@@ -943,6 +1124,10 @@ void nxcamera_release(FAR struct nxcamera_s *pcam)
 
   if (refcount == 1)
     {
+#ifdef CONFIG_LIBYUV
+      free(pcam->conv_buf);
+      free(pcam->scale_buf);
+#endif
       pthread_mutex_destroy(&pcam->mutex);
       free(pcam);
     }

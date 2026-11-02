@@ -62,6 +62,7 @@ struct nxcamera_s
   struct fb_videoinfo_s display_vinfo;               /* Display video controller info */
   char                  videopath[CONFIG_NAME_MAX];  /* Output video file path */
   char                  imagepath[CONFIG_NAME_MAX];  /* Output image file path */
+  uint32_t              max_frames;                  /* Max frames to save (0=unlimited) */
   int                   crefs;                       /* Number of references */
   pthread_mutex_t       mutex;                       /* Thread sync mutex */
   char                  mqname[14];                  /* Name of display message queue */
@@ -72,6 +73,12 @@ struct nxcamera_s
   size_t                nbuffers;                    /* Number of buffers */
   FAR size_t            *buf_sizes;                  /* Buffer lengths */
   FAR uint8_t           **bufs;                      /* Buffer pointers */
+#ifdef CONFIG_LIBYUV
+  FAR uint8_t           *conv_buf;                   /* Preallocated ARGB conv buffer */
+  size_t                conv_buf_size;               /* Size of conv buffer in bytes */
+  FAR uint8_t           *scale_buf;                  /* Preallocated scaled ARGB buffer */
+  size_t                scale_buf_size;              /* Size of scale buffer in bytes */
+#endif
 };
 
 struct video_msg_s
@@ -85,17 +92,13 @@ struct video_msg_s
 };
 
 /****************************************************************************
- * Public Data
+ * Public Function Prototypes
  ****************************************************************************/
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
-
-/****************************************************************************
- * Public Function Prototypes
- ****************************************************************************/
 
 /****************************************************************************
  * Name: nxcamera_create
@@ -245,6 +248,24 @@ int nxcamera_setfb(FAR struct nxcamera_s *pcam, FAR const char *device);
 
 int nxcamera_setfile(FAR struct nxcamera_s *pcam, FAR const char *pfile,
                      bool isimage);
+
+/****************************************************************************
+ * Name: nxcamera_ioctl
+ *
+ *   Open the capture device, issue an ioctl, and close.
+ *
+ * Input Parameters:
+ *   pcam    - Pointer to the nxcamera context
+ *   request - ioctl request code
+ *   arg     - ioctl argument
+ *
+ * Returned Value:
+ *   OK on success, negated errno on failure.
+ *
+ ****************************************************************************/
+
+int nxcamera_ioctl(FAR struct nxcamera_s *pcam,
+                   int request, unsigned long arg);
 
 #ifdef __cplusplus
 }

@@ -220,7 +220,9 @@ static void xmlrpc_handler(int fd)
                   ret = xmlrpc_getheader(buffer, "Content-Length:", value,
                                          sizeof(value));
                   if (ret > 0)
-                    loadlen = atoi(value);
+                    {
+                      loadlen = atoi(value);
+                    }
                 }
               else
                 {
@@ -243,7 +245,9 @@ static void xmlrpc_handler(int fd)
       if (temp)
         {
           if (strlen(temp) - 4 == loadlen)
-            break;
+            {
+              break;
+            }
         }
     }
   while (1);
@@ -257,7 +261,7 @@ static void xmlrpc_handler(int fd)
     }
   else
     {
-      write(fd, notimplemented, strlen(notimplemented));
+      send(fd, notimplemented, strlen(notimplemented), MSG_NOSIGNAL);
     }
 }
 

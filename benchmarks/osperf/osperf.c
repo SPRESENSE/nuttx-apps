@@ -25,6 +25,7 @@
  ****************************************************************************/
 
 #include <assert.h>
+#include <errno.h>
 #include <limits.h>
 #include <pthread.h>
 #include <sched.h>
@@ -125,6 +126,7 @@ static void performance_end(FAR struct performance_time_s *result)
 static size_t performance_gettime(FAR struct performance_time_s *result)
 {
   struct timespec ts;
+
   perf_convert(result->end - result->start, &ts);
   return ts.tv_sec * NSEC_PER_SEC + ts.tv_nsec;
 }
@@ -137,6 +139,7 @@ static FAR void *pthread_switch_task(FAR void *arg)
 {
   FAR struct performance_thread_s *perf = arg;
   irqstate_t flags = enter_critical_section();
+
   sem_wait(&perf->sem);
   performance_end(&perf->time);
   leave_critical_section(flags);
@@ -166,6 +169,7 @@ static size_t pthread_switch_performance(void)
 static FAR void *pthread_create_task(FAR void *arg)
 {
   FAR struct performance_time_s *time = arg;
+
   performance_end(time);
   return NULL;
 }
@@ -197,6 +201,7 @@ static size_t pthread_create_performance(void)
 static FAR void *context_switch_task(FAR void *arg)
 {
   FAR struct performance_time_s *time = arg;
+
   sched_yield();
   performance_end(time);
   return 0;
@@ -224,6 +229,7 @@ static void work_handle(void *arg)
 {
   FAR struct performance_time_s *time = ((FAR void **)arg)[2];
   FAR sem_t *sem = ((void **)arg)[1];
+
   performance_end(time);
   sem_post(sem);
 }
@@ -300,6 +306,8 @@ static size_t poll_performance(void)
 static size_t pipe_performance(void)
 {
   struct performance_time_s result;
+  ssize_t wret;
+  ssize_t rret;
   int pipefd[2];
   int ret;
   char r;
@@ -308,9 +316,14 @@ static size_t pipe_performance(void)
   DEBUGASSERT(ret == 0);
 
   performance_start(&result);
-  write(pipefd[0], "a", 1);
-  read(pipefd[1], &r, 1);
+  wret = write(pipefd[1], "a", 1);
+  rret = read(pipefd[0], &r, 1);
   performance_end(&result);
+
+  if (wret != 1 || rret != 1)
+    {
+      printf("pipe-rw: write %zd, read %zd, errno %d\n", wret, rret, errno);
+    }
 
   close(pipefd[0]);
   close(pipefd[1]);
@@ -385,6 +398,7 @@ static void performance_run(const FAR struct performance_entry_s *item,
     {
       irqstate_t flags = enter_critical_section();
       size_t time = item->entry();
+
       leave_critical_section(flags);
 
       total += time;

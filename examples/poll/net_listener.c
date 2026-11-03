@@ -144,7 +144,7 @@ static inline bool net_incomingdata(struct net_listener_s *nls, int sd)
 
           for (nbytes = ret, ptr = nls->buffer; nbytes > 0; )
             {
-              ret = send(sd, ptr, nbytes, 0);
+              ret = send(sd, ptr, nbytes, MSG_NOSIGNAL);
               if (ret < 0)
                 {
                   if (errno != EINTR)
@@ -203,7 +203,7 @@ static inline bool net_connection(struct net_listener_s *nls)
           FD_SET(sd, &nls->master);
           if (sd > nls->mxsd)
             {
-               nls->mxsd = sd;
+              nls->mxsd = sd;
             }
 
           return true;

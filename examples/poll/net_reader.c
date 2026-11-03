@@ -169,7 +169,7 @@ static void net_receive(int sd)
                   printf("net_reader: recv failed sd=%d: %d\n", sd, errno);
                   if (errno != EAGAIN)
                     {
-                       return;
+                      return;
                     }
                 }
             }
@@ -187,14 +187,14 @@ static void net_receive(int sd)
 
               for (nbytes = ret, ptr = buffer; nbytes > 0; )
                 {
-                  ret = send(sd, ptr, nbytes, 0);
+                  ret = send(sd, ptr, nbytes, MSG_NOSIGNAL);
                   if (ret < 0)
                     {
                       if (errno != EINTR)
                         {
-                           printf("net_reader: Send failed sd=%d: %d\n",
-                                  sd, errno);
-                           return;
+                          printf("net_reader: Send failed sd=%d: %d\n",
+                                 sd, errno);
+                          return;
                         }
                     }
                   else

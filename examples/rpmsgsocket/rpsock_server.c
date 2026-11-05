@@ -152,6 +152,7 @@ static FAR void *rpsock_thread(FAR void *pvarg)
     }
 
   printf("server Complete ret %zd, errno %d\n", ret, errno);
+  close(args->fd);
   free(args);
   return NULL;
 }
@@ -160,7 +161,7 @@ static int rpsock_stream_server(int argc, FAR char *argv[])
 {
   struct sockaddr_rpmsg myaddr;
   bool nonblock = false;
-  socklen_t addrlen;
+  socklen_t addrlen = sizeof(myaddr);
   int listensd;
   int ret;
 
@@ -245,7 +246,9 @@ static int rpsock_stream_server(int argc, FAR char *argv[])
       new = accept4(listensd, (FAR struct sockaddr *)&myaddr, &addrlen,
                     SOCK_CLOEXEC);
       if (new < 0)
+        {
           break;
+        }
 
       printf("server: Connection accepted -- %d\n", new);
 
@@ -344,6 +347,7 @@ static int rpsock_recv_send_single(FAR struct rpsock_arg_s *args)
 
 end:
   printf("server Complete ret %zd, errno %d\n", ret, errno);
+  close(args->fd);
   free(args);
   return -errno;
 }
@@ -353,7 +357,7 @@ static int rpsock_stream_multi_times_server(FAR char *argv[])
   struct sockaddr_rpmsg myaddr;
   FAR struct rpsock_arg_s *args;
   struct pollfd pfd;
-  socklen_t addrlen;
+  socklen_t addrlen = sizeof(myaddr);
   bool nonblock = false;
   int fd;
   int newfd;
@@ -506,6 +510,7 @@ static int rpsock_dgram_server(int argc, FAR char *argv[])
   if (ret < 0 && errno == EINPROGRESS)
     {
       struct pollfd pfd;
+
       memset(&pfd, 0, sizeof(struct pollfd));
       pfd.fd = fd;
       pfd.events = POLLOUT;
@@ -533,7 +538,6 @@ static int rpsock_dgram_server(int argc, FAR char *argv[])
 
   rpsock_thread(args);
 
-  close(fd);
   return 0;
 }
 

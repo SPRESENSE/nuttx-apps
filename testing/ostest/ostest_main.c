@@ -288,6 +288,12 @@ static int user_main(int argc, char *argv[])
 
   /* Test misc libc functions. */
 
+#ifdef CONFIG_TESTING_OSTEST_POLL_CLOSE
+  printf("\nuser_main: close during poll test\n");
+  poll_close_test();
+  check_test_memory_usage();
+#endif
+
   printf("\nuser_main: libc tests\n");
   memmem_test();
   strto_test();
@@ -700,6 +706,12 @@ static int user_main(int argc, char *argv[])
 #if defined(CONFIG_SMP) && defined(CONFIG_BUILD_FLAT)
       printf("\nuser_main: smp call test\n");
       smp_call_test();
+#endif
+
+#if defined(CONFIG_SMP) && defined(CONFIG_BUILD_FLAT) && \
+    defined(CONFIG_STACK_COLORATION) && CONFIG_ARCH_INTERRUPTSTACK > 3
+      printf("\nuser_main: interrupt stack test\n");
+      intstack_test();
 #endif
 
 #if defined(CONFIG_SCHED_EVENTS) && defined(CONFIG_BUILD_FLAT)

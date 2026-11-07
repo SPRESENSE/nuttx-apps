@@ -101,6 +101,10 @@ int memmem_test(void);
 
 int strto_test(void);
 
+/* poll_close.c *************************************************************/
+
+int poll_close_test(void);
+
 /* setvbuf.c ****************************************************************/
 
 #ifndef CONFIG_STDIO_DISABLE_BUFFERING
@@ -326,6 +330,10 @@ void setjmp_test(void);
 
 #ifdef CONFIG_SMP
 void smp_call_test(void);
+
+/* intstack.c ***************************************************************/
+
+void intstack_test(void);
 #endif
 
 /* spinlock.c ***************************************************************/

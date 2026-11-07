@@ -24,6 +24,10 @@ if(CONFIG_TESTING_OSTEST)
 
   set(SRCS getopt.c libc_memmem.c libc_strto.c restart.c sighelper.c)
 
+  if(CONFIG_TESTING_OSTEST_POLL_CLOSE)
+    list(APPEND SRCS poll_close.c)
+  endif()
+
   if(CONFIG_ENABLE_ALL_SIGNALS)
     list(APPEND SRCS sighand.c signest.c)
   endif()
@@ -171,7 +175,7 @@ if(CONFIG_TESTING_OSTEST)
   endif()
 
   if(CONFIG_SMP)
-    list(APPEND SRCS smp_call.c)
+    list(APPEND SRCS smp_call.c intstack.c)
   endif()
 
   if(CONFIG_SCHED_EVENTS AND CONFIG_BUILD_FLAT)

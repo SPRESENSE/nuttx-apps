@@ -199,6 +199,7 @@ static int iperf_get_socket_error_code(int sockfd)
 static int iperf_show_socket_error_reason(FAR const char *str, int sockfd)
 {
   int err = errno;
+
   if (err != 0)
     {
       printf("%s error, error code: %d, reason: %s\n",
@@ -224,6 +225,7 @@ static void iperf_print_addr(FAR const char *str, FAR struct sockaddr *addr)
       case AF_INET:
         {
           FAR struct sockaddr_in *inaddr = (FAR struct sockaddr_in *)addr;
+
           printf("%s: %s:%d\n", str,
                  inet_ntoa(inaddr->sin_addr), htons(inaddr->sin_port));
           return;
@@ -233,6 +235,7 @@ static void iperf_print_addr(FAR const char *str, FAR struct sockaddr *addr)
       case AF_LOCAL:
         {
           FAR struct sockaddr_un *unaddr = (FAR struct sockaddr_un *)addr;
+
           printf("%s: path=%s\n", str, unaddr->sun_path);
           return;
         }
@@ -241,6 +244,7 @@ static void iperf_print_addr(FAR const char *str, FAR struct sockaddr *addr)
         {
           FAR struct sockaddr_rpmsg *rpaddr =
                                           (FAR struct sockaddr_rpmsg *)addr;
+
           printf("%s: cpu=%s,name=%s\n", str,
                  rpaddr->rp_cpu, rpaddr->rp_name);
           return;
@@ -494,7 +498,7 @@ static int iperf_tcp_server(FAR struct iperf_ctrl_t *ctrl,
   int listen_socket;
   struct timeval t;
   int sockfd;
-  int opt;
+  int opt = 1;
 
   listen_socket = socket(addr->sa_family, SOCK_STREAM, IPPROTO_TCP);
   if (listen_socket < 0)
@@ -607,7 +611,7 @@ static int iperf_udp_server(FAR struct iperf_ctrl_t *ctrl,
   int want_recv = 0;
   FAR uint8_t *buffer;
   int sockfd;
-  int opt;
+  int opt = 1;
   bool udp_recv_start = true;
 
   sockfd = socket(addr->sa_family, SOCK_DGRAM, IPPROTO_UDP);
@@ -691,7 +695,7 @@ static int iperf_udp_client(FAR struct iperf_ctrl_t *ctrl,
   int want_send = 0;
   uint8_t *buffer;
   int sockfd;
-  int opt;
+  int opt = 1;
   int err;
   int id;
 

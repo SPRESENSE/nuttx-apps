@@ -35,6 +35,17 @@ config TESTING_NET_TCP_PORT
 
 endif
 
+config TESTING_NET_UDP
+	bool "Enable cmocka net udp test"
+	depends on NET_UDP && !NET_UDP_NO_STACK
+	depends on NET_IPv4 && NET_IPv6 && NET_LOOPBACK && NET_SOCKOPTS
+	default y
+	---help---
+		Test UDP sockets of AF_INET and AF_INET6 on one port over the
+		loopback device: IPV6_V6ONLY (also on TCP sockets), the delivery
+		of IPv4 and IPv6 datagrams, and EADDRINUSE from bind()
+		(cmocka_net_udp).
+
 config TESTING_NET_LOCAL
 	bool "Enable cmocka net local test"
 	depends on NET_LOCAL && NET_LOCAL_SCM
@@ -55,7 +66,11 @@ config TESTING_NET_LOCAL_DGRAM
 
 config TESTING_NET_OTHERS
 	bool "Enable cmocka net other test"
+	depends on BUILD_FLAT
 	default y
+	---help---
+		The test calls functions of the network stack directly
+		(net_bufpool_*() and chksum_iob()), so it needs a flat build.
 
 config TESTING_NET_MCAST
 	bool "Enable cmocka net multicast test"
@@ -64,9 +79,36 @@ config TESTING_NET_MCAST
 	depends on NET_IGMP || NET_MLD
 	default y
 
+config TESTING_NET_RADIO
+	bool "Enable cmocka net radio socket test"
+	depends on NET_BLUETOOTH || NET_IEEE802154
+	default y
+	---help---
+		Test that recvfrom() on a Bluetooth or IEEE 802.15.4 socket with
+		no radio device fails with ENODEV and leaves the socket usable
+		(cmocka_net_radio).
+
 config TESTING_NET_TIMESTAMP
 	bool "Enable cmocka net timestamp test"
 	depends on NET_TIMESTAMP && NET_PKT
 	default n
+
+config TESTING_NET_CAN
+	bool "Enable cmocka net CAN socket test"
+	depends on NET_CAN && NET_LOOPBACK && NETDEV_IFINDEX
+	default y
+	---help---
+		Test that a CAN_RAW socket binds only to a CAN device or to
+		index 0 (all CAN devices), and that an unbound socket cannot send
+		(cmocka_net_can).
+
+config TESTING_NET_PKT
+	bool "Enable cmocka net packet socket test"
+	depends on NET_PKT && NET_LOOPBACK && NET_IPv4
+	default y
+	---help---
+		Test packet sockets bound to the loopback device: a frame sent on
+		lo comes back, and the reassembly timeout of an IPv4 fragment sent
+		on lo does not stop the kernel (cmocka_net_pkt).
 
 endif

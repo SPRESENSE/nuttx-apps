@@ -50,6 +50,29 @@ if(CONFIG_TESTING_NET_TEST)
       ${SRCS})
   endif()
 
+  if(CONFIG_TESTING_NET_UDP)
+    set(SRCS
+        ${CMAKE_CURRENT_LIST_DIR}/udp/test_udp.c
+        ${CMAKE_CURRENT_LIST_DIR}/udp/test_udp_common.c
+        ${CMAKE_CURRENT_LIST_DIR}/udp/test_udp_v6only.c
+        ${CMAKE_CURRENT_LIST_DIR}/udp/test_udp_family.c
+        ${CMAKE_CURRENT_LIST_DIR}/udp/test_udp_bind.c)
+
+    nuttx_add_application(
+      NAME
+      cmocka_net_udp
+      PRIORITY
+      ${CONFIG_TESTING_NET_TEST_PRIORITY}
+      STACKSIZE
+      ${CONFIG_TESTING_NET_TEST_STACKSIZE}
+      MODULE
+      ${CONFIG_TESTING_NET_TEST}
+      DEPENDS
+      cmocka
+      SRCS
+      ${SRCS})
+  endif()
+
   if(CONFIG_TESTING_NET_LOCAL)
     set(SRCS
         ${CMAKE_CURRENT_LIST_DIR}/local/test_local.c
@@ -117,6 +140,7 @@ if(CONFIG_TESTING_NET_TEST)
       cmocka
       INCLUDE_DIRECTORIES
       ${CMAKE_CURRENT_LIST_DIR}/utils
+      ${NUTTX_DIR}/net
       SRCS
       ${SRCS})
   endif()
@@ -148,6 +172,33 @@ if(CONFIG_TESTING_NET_TEST)
       ${SRCS})
   endif()
 
+  if(CONFIG_TESTING_NET_RADIO)
+    set(SRCS ${CMAKE_CURRENT_LIST_DIR}/radio/test_radio.c
+             ${CMAKE_CURRENT_LIST_DIR}/radio/test_radio_common.c)
+
+    if(CONFIG_NET_BLUETOOTH)
+      list(APPEND SRCS ${CMAKE_CURRENT_LIST_DIR}/radio/test_radio_bluetooth.c)
+    endif()
+
+    if(CONFIG_NET_IEEE802154)
+      list(APPEND SRCS ${CMAKE_CURRENT_LIST_DIR}/radio/test_radio_ieee802154.c)
+    endif()
+
+    nuttx_add_application(
+      NAME
+      cmocka_net_radio
+      PRIORITY
+      ${CONFIG_TESTING_NET_TEST_PRIORITY}
+      STACKSIZE
+      ${CONFIG_TESTING_NET_TEST_STACKSIZE}
+      MODULE
+      ${CONFIG_TESTING_NET_TEST}
+      DEPENDS
+      cmocka
+      SRCS
+      ${SRCS})
+  endif()
+
   if(CONFIG_TESTING_NET_TIMESTAMP)
     set(SRCS ${CMAKE_CURRENT_LIST_DIR}/timestamp/test_timestamp.c
              ${CMAKE_CURRENT_LIST_DIR}/timestamp/test_timestamp_common.c)
@@ -155,6 +206,44 @@ if(CONFIG_TESTING_NET_TEST)
     nuttx_add_application(
       NAME
       cmocka_net_timestamp
+      PRIORITY
+      ${CONFIG_TESTING_NET_TEST_PRIORITY}
+      STACKSIZE
+      ${CONFIG_TESTING_NET_TEST_STACKSIZE}
+      MODULE
+      ${CONFIG_TESTING_NET_TEST}
+      DEPENDS
+      cmocka
+      SRCS
+      ${SRCS})
+  endif()
+
+  if(CONFIG_TESTING_NET_CAN)
+    set(SRCS ${CMAKE_CURRENT_LIST_DIR}/can/test_can.c
+             ${CMAKE_CURRENT_LIST_DIR}/can/test_can_bind.c)
+
+    nuttx_add_application(
+      NAME
+      cmocka_net_can
+      PRIORITY
+      ${CONFIG_TESTING_NET_TEST_PRIORITY}
+      STACKSIZE
+      ${CONFIG_TESTING_NET_TEST_STACKSIZE}
+      MODULE
+      ${CONFIG_TESTING_NET_TEST}
+      DEPENDS
+      cmocka
+      SRCS
+      ${SRCS})
+  endif()
+
+  if(CONFIG_TESTING_NET_PKT)
+    set(SRCS ${CMAKE_CURRENT_LIST_DIR}/pkt/test_pkt.c
+             ${CMAKE_CURRENT_LIST_DIR}/pkt/test_pkt_lo.c)
+
+    nuttx_add_application(
+      NAME
+      cmocka_net_pkt
       PRIORITY
       ${CONFIG_TESTING_NET_TEST_PRIORITY}
       STACKSIZE

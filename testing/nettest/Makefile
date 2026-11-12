@@ -45,6 +45,13 @@ endif
 
 endif
 
+ifeq ($(CONFIG_TESTING_NET_UDP),y)
+MAINSRC  += udp/test_udp.c
+PROGNAME += cmocka_net_udp
+CSRCS    += udp/test_udp_common.c udp/test_udp_v6only.c
+CSRCS    += udp/test_udp_family.c udp/test_udp_bind.c
+endif
+
 ifeq ($(CONFIG_TESTING_NET_LOCAL),y)
 MAINSRC  += local/test_local.c
 PROGNAME += cmocka_net_local
@@ -64,6 +71,7 @@ MAINSRC  += others/test_others.c
 PROGNAME += cmocka_net_others
 CSRCS    += others/test_others_common.c others/test_others_bufpool.c \
             others/test_others_chksum.c
+CFLAGS   += -I$(TOPDIR)/net
 endif
 
 ifeq ($(CONFIG_TESTING_NET_MCAST),y)
@@ -81,10 +89,37 @@ endif
 
 endif
 
+ifeq ($(CONFIG_TESTING_NET_RADIO),y)
+MAINSRC  += radio/test_radio.c
+PROGNAME += cmocka_net_radio
+CSRCS    += radio/test_radio_common.c
+
+ifeq ($(CONFIG_NET_BLUETOOTH),y)
+CSRCS    += radio/test_radio_bluetooth.c
+endif
+
+ifeq ($(CONFIG_NET_IEEE802154),y)
+CSRCS    += radio/test_radio_ieee802154.c
+endif
+
+endif
+
 ifeq ($(CONFIG_TESTING_NET_TIMESTAMP),y)
 MAINSRC  += timestamp/test_timestamp.c
 PROGNAME += cmocka_net_timestamp
 CSRCS    += timestamp/test_timestamp_common.c
+endif
+
+ifeq ($(CONFIG_TESTING_NET_CAN),y)
+MAINSRC  += can/test_can.c
+PROGNAME += cmocka_net_can
+CSRCS    += can/test_can_bind.c
+endif
+
+ifeq ($(CONFIG_TESTING_NET_PKT),y)
+MAINSRC  += pkt/test_pkt.c
+PROGNAME += cmocka_net_pkt
+CSRCS    += pkt/test_pkt_lo.c
 endif
 
 endif

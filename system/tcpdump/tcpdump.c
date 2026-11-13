@@ -33,6 +33,7 @@
 #include <netinet/if_ether.h>
 #include <netinet/in.h>
 #include <netpacket/packet.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <sys/ioctl.h>
@@ -223,6 +224,7 @@ static uint32_t get_linktype(FAR const char *ifname)
   struct ifreq req;
   uint32_t ret = LINKTYPE_RAW;
   int sockfd = socket(NET_SOCK_FAMILY, NET_SOCK_TYPE, NET_SOCK_PROTOCOL);
+
   if (sockfd >= 0)
     {
       strlcpy(req.ifr_name, ifname, IFNAMSIZ);

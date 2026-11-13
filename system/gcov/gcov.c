@@ -26,6 +26,7 @@
 
 #include <fcntl.h>
 #include <gcov.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -47,11 +48,10 @@ static void show_usage(FAR const char *progname)
 {
   printf("\nUsage: %s [-d path] [-t strip] [-r] [-h]\n", progname);
   printf("\nWhere:\n");
-  printf("  -d dump the coverage, path is the path to the coverage file, "
-         "the default output is to stdout\n");
+  printf("  -d dump coverage data to path (e.g. /dev/console)\n");
   printf("  -t strip the path prefix number\n");
   printf("  -r reset the coverage\n");
-  printf("  -h show this text and exits.\n");
+  printf("  -h show this help\n");
   exit(EXIT_FAILURE);
 }
 
@@ -64,30 +64,38 @@ int main(int argc, FAR char *argv[])
   FAR const char *strip = CONFIG_COVERAGE_DEFAULT_PREFIX_STRIP;
   FAR const char *path = NULL;
   int option;
+  bool reset = false;
 
   while ((option = getopt(argc, argv, "d::t:orh")) != ERROR)
     {
       switch (option)
         {
-        case 'd':
-          path = optarg;
-          break;
+          case 'd':
+            path = optarg;
+            break;
 
-        case 't':
-          strip = optarg;
-          break;
+          case 't':
+            strip = optarg;
+            break;
 
-        case 'r':
-          __gcov_reset();
-          break;
+          case 'r':
+            reset = true;
+            break;
 
-        case '?':
-        default:
-          fprintf(stderr, "ERROR: Unrecognized option\n");
+          case '?':
+          default:
+            fprintf(stderr, "ERROR: Unrecognized option\n");
 
-        case 'h':
-          show_usage(argv[0]);
+          case 'h':
+            show_usage(argv[0]);
         }
+    }
+
+  if (reset)
+    {
+      __gcov_reset();
+      printf("reset done\n");
+      return 0;
     }
 
   setenv("GCOV_PREFIX_STRIP", strip, 1);

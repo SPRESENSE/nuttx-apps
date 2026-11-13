@@ -273,6 +273,7 @@ static void
 signal_handler(int signum, FAR siginfo_t *info, FAR void *context)
 {
   FAR volatile sig_atomic_t *running = info->si_user;
+
   *running = 0;
 }
 
@@ -296,6 +297,7 @@ static void run_event_loop(FAR struct input_devices_ctx_s *ctx)
   sigemptyset(&sa.sa_mask);
   sa.sa_user = (FAR void *)&running;
   sigaction(SIGINT, &sa, NULL);
+  sigaction(SIGTERM, &sa, NULL);
 
   for (dev = ctx->head; dev; dev = dev->next)
     {
@@ -503,20 +505,21 @@ static int parse_commandline(FAR struct input_devices_ctx_s *ctx,
     {
       switch (ch)
         {
-        case 'm':
-          ret = add_input_device(ctx, NULL, read_mouse_event, optarg);
-          break;
-        case 't':
-          ret = add_input_device(ctx, touch_init, read_touch_event, optarg);
-          break;
-        case 'k':
-          ret = add_input_device(ctx, NULL, read_keyboard_event, optarg);
-          break;
-        case '?':
-        case 'h':
-        default:
-          show_usage();
-          break;
+          case 'm':
+            ret = add_input_device(ctx, NULL, read_mouse_event, optarg);
+            break;
+          case 't':
+            ret = add_input_device(ctx, touch_init, read_touch_event,
+                                   optarg);
+            break;
+          case 'k':
+            ret = add_input_device(ctx, NULL, read_keyboard_event, optarg);
+            break;
+          case '?':
+          case 'h':
+          default:
+            show_usage();
+            break;
         }
 
       if (ret < 0)

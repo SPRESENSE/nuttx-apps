@@ -28,6 +28,7 @@
 #include <errno.h>
 #include <pthread.h>
 #include <sched.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <unistd.h>
 
@@ -258,8 +259,8 @@ static void test_timeout(void)
     }
 #endif /* CONFIG_TLS_NCLEANUP > 0 && CONFIG_CANCELLATION_POINTS */
 
-    pthread_rwlock_destroy(&write_lock);
-    pthread_rwlock_destroy(&read_lock);
+  pthread_rwlock_destroy(&write_lock);
+  pthread_rwlock_destroy(&read_lock);
 }
 
 /****************************************************************************

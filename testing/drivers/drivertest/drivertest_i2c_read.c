@@ -28,6 +28,7 @@
 #include <nuttx/i2c/i2c_master.h>
 #include <sys/ioctl.h>
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -148,15 +149,15 @@ static void parse_commandline(FAR struct i2c_state_s *i2c_state,
             break;
 
           case 4:
-          converted = atoi(argv[4]);
-          if (converted < 1 || converted > INT_MAX)
-            {
-              printf("signal out of range: %d\n", converted);
-              show_usage(argv[4], i2c_state, EXIT_FAILURE);
-            }
+            converted = atoi(argv[4]);
+            if (converted < 1 || converted > INT_MAX)
+              {
+                printf("signal out of range: %d\n", converted);
+                show_usage(argv[4], i2c_state, EXIT_FAILURE);
+              }
 
-          i2c_state->addr = (uint16_t)converted;
-          break;
+            i2c_state->addr = (uint16_t)converted;
+            break;
 
           default:
             printf("input error parameter\n");
@@ -275,6 +276,7 @@ static FAR void *slave_write_thread(FAR void *arg)
       while (true)
         {
           int n = poll(&rfds, 1, -1);
+
           if (n == 0)
             {
               printf("time out\n");
@@ -319,6 +321,7 @@ int main(int argc, FAR char *argv[])
 {
   pthread_t t_id1;
   pthread_t t_id2;
+
   if (argc != 5)
     {
       printf("Error input\n");

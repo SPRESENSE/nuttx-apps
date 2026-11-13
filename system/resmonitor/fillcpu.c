@@ -26,6 +26,7 @@
 
 #include <fcntl.h>
 #include <signal.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -74,6 +75,7 @@ static float get_cpu(int pid)
   float cpu = 0;
   char filepath[20];
   int ret;
+
   if (pid <= 0)
     {
       ret = snprintf(filepath, 20, "%s/%s", PATH, CPULOAD);
@@ -91,12 +93,14 @@ static float get_cpu(int pid)
     }
 
   FILE *fp = fopen(filepath, "r");
+
   if (!fp)
     {
       return cpu;
     }
 
   char buf[8];
+
   if (fgets(buf, 8, fp) != NULL)
     {
       sscanf(buf, "%f", &cpu);
@@ -117,6 +121,7 @@ static int writefile(char *filepath, char *buffer1, char *buffer2)
   else
     {
       int fd;
+
       memset(buffer1, '*', 1024);
       if ((fd = open(filepath, O_WRONLY | O_CREAT, 0700)) <= 0)
         {

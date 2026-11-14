@@ -1687,10 +1687,10 @@ static void ls_child(int argc, char **argv)
             }
           else
             {
+              names     = RENEW(names, char, maxnames * PATH_MAX,
+                                2 * maxnames * PATH_MAX);
+              nameptrs  = RENEW(nameptrs, char *, maxnames, 2 * maxnames);
               maxnames *= 2;
-              names     = RENEW(names, char, oldmax * PATH_MAX,
-                                maxnames * PATH_MAX);
-              nameptrs  = RENEW(nameptrs, char *, oldmax, maxnames);
             }
 
           if (!names || !nameptrs)
@@ -1874,7 +1874,7 @@ static int ls(httpd_conn *hc)
   DIR *dirp;
   int child;
   char arg[16];
-  char *argv[1];
+  char *argv[2];
 #if CONFIG_THTTPD_CGI_TIMELIMIT > 0
   clientdata client_data;
 #endif
@@ -1911,6 +1911,7 @@ static int ls(httpd_conn *hc)
 
       snprintf(arg, 16, "%p", hc); /* task_create doesn't handle binary arguments. */
       argv[0] = arg;
+      argv[1] = NULL;
 
       child = task_create("CGI child", CONFIG_THTTPD_CGI_PRIORITY,
                           CONFIG_THTTPD_CGI_STACKSIZE, (main_t)ls_child,
@@ -1966,9 +1967,8 @@ static int check_referer(httpd_conn *hc)
 #ifdef CONFIG_THTTPD_URLPATTERN
   char *cp;
   int r;
-  int child;
 
-  child = really_check_referer(hc);
+  r = really_check_referer(hc);
 
   if (!r)
     {

@@ -145,21 +145,22 @@ static void sleep_and_display(int n, int us)
  *
  ****************************************************************************/
 
-static int adversary(int argc, FAR char *argv[])
+static FAR void *adversary(FAR void *parameter)
 {
-  int index        = atoi(argv[1]);
-  int inital_delay = atoi(argv[2]);
-  int hold_delay   = atoi(argv[3]);
+  int index        = (uintptr_t)parameter;
+  int inital_delay = index * 10000;
+  int hold_delay   = index == 0 ? 100000 : 1000;
 
   sleep_and_display(index, inital_delay);
   printf("priority_inheritance: "
-         "%s Started, waiting %d uS to take count\n", argv[0], inital_delay);
+         "Task%1d Started, waiting %d uS to take count\n", index,
+         inital_delay);
   sem_wait(&g_sem);
   sleep_and_display(index,  hold_delay);
   sem_post(&g_sem);
-  printf("priority_inheritance: %s Posted\n", argv[0]);
+  printf("priority_inheritance: Task%1d Posted\n", index);
   sleep_and_display(index, 0);
-  return 0;
+  return NULL;
 }
 
 /****************************************************************************
@@ -271,6 +272,7 @@ static inline void hog_cpu(void)
    */
 
   volatile int i;
+
   for (i = 0; i < INT_MAX; i++);
 #endif
 }
@@ -352,8 +354,8 @@ static FAR void *lowpri_thread(FAR void *parameter)
       while (g_middlestate == NOTSTARTED &&
              nhighpri_waiting() < NHIGHPRI_THREADS)
         {
-          printf("lowpri_thread-%d: Waiting for the midle pri task to run\n",
-                 threadno);
+          printf("lowpri_thread-%d: "
+                 "Waiting for the middle pri task to run\n", threadno);
           printf("    g_middlestate:  %d\n", (int)g_middlestate);
           for (i = 0; i < NHIGHPRI_THREADS; i++)
             {
@@ -403,7 +405,7 @@ static FAR void *lowpri_thread(FAR void *parameter)
            */
 
           printf("lowpri_thread-%d: %s the middle priority task has already"
-                 " exitted!\n",
+                 " exited!\n",
                  threadno, count >= 0 ? "SUCCESS" : "ERROR");
           ASSERT(count >= 0);
           printf("               g_middlestate:  %d sem count=%d\n",
@@ -498,18 +500,22 @@ void priority_inheritance(void)
   int my_pri;
   int status;
   int i;
-  pid_t pids[NUMBER_OF_COMPETING_THREADS];
-  char args[3][32];
-  FAR char *argv[4];
-  char name[32];
+  pthread_t competing[NUMBER_OF_COMPETING_THREADS];
   int priority;
   int restoration_result;
 
   printf("priority_inheritance: Started\n");
 
   g_middlestate = NOTSTARTED;
-  for (i = 0; i < NHIGHPRI_THREADS; i++) g_highstate[i] = NOTSTARTED;
-  for (i = 0; i < NLOWPRI_THREADS; i++)  g_lowstate[i]  = NOTSTARTED;
+  for (i = 0; i < NHIGHPRI_THREADS; i++)
+    {
+      g_highstate[i] = NOTSTARTED;
+    }
+
+  for (i = 0; i < NLOWPRI_THREADS; i++)
+    {
+      g_lowstate[i] = NOTSTARTED;
+    }
 
   status = sched_getparam(gettid(), &sparam);
   if (status != 0)
@@ -535,6 +541,7 @@ void priority_inheritance(void)
   for (i = 0; i < NLOWPRI_THREADS; i++)
     {
       int threadno = i + 1;
+
       printf("priority_inheritance: "
              "Starting lowpri_thread-%d (of %d) at %d\n",
              threadno, NLOWPRI_THREADS, g_lowpri);
@@ -623,6 +630,7 @@ void priority_inheritance(void)
   for (i = 0; i < NHIGHPRI_THREADS; i++)
     {
       int threadno = i + 1;
+
       printf("priority_inheritance: "
              "Starting highpri_thread-%d (of %d) at %d\n",
              threadno, NHIGHPRI_THREADS, g_highpri);
@@ -657,7 +665,7 @@ void priority_inheritance(void)
       if (status != 0)
         {
           printf("priority_inheritance: "
-                 "ERRROR pthread_create failed, status=%d\n", status);
+                 "ERROR pthread_create failed, status=%d\n", status);
           ASSERT(false);
         }
     }
@@ -694,23 +702,29 @@ void priority_inheritance(void)
 
   printf("priority_inheritance: Restoration Test:\n");
 
+  /* The competing threads are threads, not tasks: a task of its own
+   * would not share g_sem and g_priority_tracking in a kernel build.
+   */
+
   sem_init(&g_sem, 0, 1);
   priority = COMPETING_THREAD_START_PRIORITY;
-  argv[0] = args[0];
-  argv[1] = args[1];
-  argv[2] = args[2];
-  argv[3] = NULL;
 
   for (i = 0; i < NUMBER_OF_COMPETING_THREADS; i++)
     {
       g_priority_tracking[i] = 0;
-      snprintf(name, sizeof(name), "Task%1d", i);
-      snprintf(args[0], sizeof(args[0]), "%d", i);
-      snprintf(args[1], sizeof(args[1]), "%d", i * 10000);
-      snprintf(args[2], sizeof(args[2]), "%d", i == 0 ? 100000 : 1000);
 
-      pids[i] = task_create(name, priority, CONFIG_DEFAULT_TASK_STACKSIZE,
-                            adversary, argv);
+      status = pthread_attr_init(&attr);
+      sparam.sched_priority = priority;
+      status |= pthread_attr_setschedparam(&attr, &sparam);
+      status |= pthread_create(&competing[i], &attr, adversary,
+                               (FAR void *)((uintptr_t)i));
+      if (status != 0)
+        {
+          printf("priority_inheritance: "
+                 "ERROR Task%1d not started, status=%d\n", i, status);
+          ASSERT(false);
+        }
+
       priority += PRIORIY_SPREED;
     }
 
@@ -721,7 +735,7 @@ void priority_inheritance(void)
       printf("priority_inheritance: "
              "Waiting for Task-%d to complete\n", i);
 
-      waitpid(pids[i], &status, 0);
+      pthread_join(competing[i], &result);
       if (priority != g_priority_tracking[i])
         {
           printf("priority_inheritance: "

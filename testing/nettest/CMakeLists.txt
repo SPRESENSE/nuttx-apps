@@ -26,7 +26,8 @@ if(CONFIG_TESTING_NET_TEST)
         ${CMAKE_CURRENT_LIST_DIR}/utils/nettest_tcpserver.c)
 
     if(CONFIG_NET_IPv4)
-      list(APPEND SRCS ${CMAKE_CURRENT_LIST_DIR}/tcp/test_tcp_connect_ipv4.c)
+      list(APPEND SRCS ${CMAKE_CURRENT_LIST_DIR}/tcp/test_tcp_connect_ipv4.c
+           ${CMAKE_CURRENT_LIST_DIR}/tcp/test_tcp_bind_listen.c)
     endif()
 
     if(CONFIG_NET_IPv6)
@@ -79,6 +80,10 @@ if(CONFIG_TESTING_NET_TEST)
         ${CMAKE_CURRENT_LIST_DIR}/local/test_local_common.c
         ${CMAKE_CURRENT_LIST_DIR}/local/test_local_scm_rights.c)
 
+    if(CONFIG_TESTING_NET_LOCAL_PEERCRED)
+      list(APPEND SRCS ${CMAKE_CURRENT_LIST_DIR}/local/test_local_peercred.c)
+    endif()
+
     nuttx_add_application(
       NAME
       cmocka_net_local
@@ -103,7 +108,9 @@ if(CONFIG_TESTING_NET_TEST)
         ${CMAKE_CURRENT_LIST_DIR}/local/test_local_dgram_connect.c
         ${CMAKE_CURRENT_LIST_DIR}/local/test_local_dgram_poll.c
         ${CMAKE_CURRENT_LIST_DIR}/local/test_local_dgram_pollext.c
-        ${CMAKE_CURRENT_LIST_DIR}/local/test_local_dgram_regress.c)
+        ${CMAKE_CURRENT_LIST_DIR}/local/test_local_dgram_regress.c
+        ${CMAKE_CURRENT_LIST_DIR}/local/test_local_dgram_pair.c
+        ${CMAKE_CURRENT_LIST_DIR}/local/test_local_dgram_wait.c)
 
     nuttx_add_application(
       NAME

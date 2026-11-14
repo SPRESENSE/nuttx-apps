@@ -36,7 +36,7 @@ PROGNAME += cmocka_net_tcp
 CSRCS    += tcp/test_tcp_common.c utils/nettest_tcpserver.c
 
 ifeq ($(CONFIG_NET_IPv4), y)
-CSRCS    += tcp/test_tcp_connect_ipv4.c
+CSRCS    += tcp/test_tcp_connect_ipv4.c tcp/test_tcp_bind_listen.c
 endif
 
 ifeq ($(CONFIG_NET_IPv6), y)
@@ -56,6 +56,9 @@ ifeq ($(CONFIG_TESTING_NET_LOCAL),y)
 MAINSRC  += local/test_local.c
 PROGNAME += cmocka_net_local
 CSRCS    += local/test_local_common.c local/test_local_scm_rights.c
+ifeq ($(CONFIG_TESTING_NET_LOCAL_PEERCRED),y)
+CSRCS    += local/test_local_peercred.c
+endif
 endif
 
 ifeq ($(CONFIG_TESTING_NET_LOCAL_DGRAM),y)
@@ -63,7 +66,8 @@ MAINSRC  += local/test_local_dgram.c
 PROGNAME += cmocka_net_local_dgram
 CSRCS    += local/test_local_dgram_common.c local/test_local_dgram_connect.c \
             local/test_local_dgram_poll.c local/test_local_dgram_pollext.c \
-            local/test_local_dgram_regress.c
+            local/test_local_dgram_regress.c local/test_local_dgram_pair.c \
+            local/test_local_dgram_wait.c
 endif
 
 ifeq ($(CONFIG_TESTING_NET_OTHERS),y)

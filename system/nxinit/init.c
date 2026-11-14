@@ -55,6 +55,8 @@
                            : ((ts)->tv_sec = (ms) / 1000, \
                               (ts)->tv_nsec = ((ms) % 1000) * 1000000, (ts)))
 
+#define INIT_POLLER_RETRY_MS 100
+
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
@@ -274,6 +276,8 @@ int main(int argc, FAR char *argv[])
       poller[i].sm = &sm;
       poller[i].am = &am;
       poller[i].pfd = &pfds[i];
+      pfds[i].fd = -1;
+      pfds[i].events = 0;
       r = poller[i].init(&poller[i]);
       if (r < 0)
         {
@@ -306,6 +310,15 @@ int main(int argc, FAR char *argv[])
       struct timespec timeout;
       int t = MIN(t1, t2);
 
+      for (i = 0; t > INIT_POLLER_RETRY_MS && i < nitems(poller); i++)
+        {
+          if (poller[i].pfd->fd < 0 && poller[i].pfd->events)
+            {
+              t = INIT_POLLER_RETRY_MS;
+              break;
+            }
+        }
+
       r = ppoll(pfds, nitems(pfds), MS2TIMESPEC(&timeout, t), &mask);
       if (r < 0 && errno != EINTR)
         {
@@ -315,7 +328,9 @@ int main(int argc, FAR char *argv[])
 
       for (i = 0; i < nitems(poller); i++)
         {
-          if (poller[i].pfd->revents & poller[i].pfd->events)
+          if (poller[i].pfd->fd < 0 ||
+              (poller[i].pfd->revents &
+               (poller[i].pfd->events | POLLHUP | POLLERR)))
             {
               poller[i].handle(&poller[i]);
             }

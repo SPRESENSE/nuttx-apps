@@ -105,6 +105,7 @@ void test_nuttx_fs_fstat02(FAR void **state);
  * ************************************************/
 
 void test_nuttx_fs_fstatfs01(FAR void **state);
+void test_nuttx_fs_fstatfs02(FAR void **state);
 
 /* cases/fs_fsync_test.c
  * ************************************************/
@@ -225,6 +226,8 @@ void test_nuttx_fs_append01(FAR void **state);
 
 void test_nuttx_fs_sendfile01(FAR void **state);
 void test_nuttx_fs_sendfile02(FAR void **state);
+void test_nuttx_fs_sendfile03(FAR void **state);
+void test_nuttx_fs_sendfile04(FAR void **state);
 
 /* cases/fs_stream_test.c
  * ************************************************/

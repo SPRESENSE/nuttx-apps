@@ -213,7 +213,7 @@ static int critmon_process_directory(FAR struct dirent *entryp)
       ret = -errno;
       fprintf(stderr, "Csection Monitor: Failed to read from %s: %d\n",
               filepath, ret);
-      goto errout_with_filepath;
+      goto errout_with_stream;
     }
 
   /* Input Format:   X.XXXXXXXXX,X.XXXXXXXXX,X.XXXXXXXXX
@@ -447,6 +447,7 @@ static int critmon_list_once(void)
   for (; ; )
     {
       FAR struct dirent *entryp = readdir(dirp);
+
       if (entryp == NULL)
         {
           /* Finished with this directory */
@@ -549,6 +550,7 @@ int critmon_start_main(int argc, char **argv)
       if (ret < 0)
         {
           int errcode = errno;
+
           printf("Csection Monitor ERROR: "
                  "Failed to start the stack monitor: %d\n",
                  errcode);

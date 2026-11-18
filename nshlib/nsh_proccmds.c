@@ -238,6 +238,7 @@ static void nsh_parse_statusline(FAR char *line,
   else if (strncmp(line, g_priority, strlen(g_priority)) == 0)
     {
       FAR char *ptr = nsh_trimspaces(&line[12]);
+
       status->td_priority = ptr;
 
       /* If priority inheritance is enabled, use current pri, ignore base */
@@ -330,26 +331,23 @@ ssize_t ps_readprocfs(FAR struct nsh_vtbl_s *vtbl, FAR const char *basepath,
                       FAR const struct dirent *entryp,
                       FAR struct nsh_taskstatus_s *status)
 {
-  FAR char *filepath = NULL;
+  char filepath[PATH_MAX];
   int ret;
 
-  ret = asprintf(&filepath, "%s/%s/%s", dirpath, entryp->d_name, basepath);
-  if (ret < 0 || filepath == NULL)
+  ret = snprintf(filepath, sizeof(filepath), "%s/%s/%s",
+                 dirpath, entryp->d_name, basepath);
+  if (ret < 0 || ret >= sizeof(filepath))
     {
-      nsh_error(vtbl, g_fmtcmdfailed, "ps", "asprintf", NSH_ERRNO);
-      status->td_buf[status->td_bufpos] = '\0';
+      nsh_error(vtbl, g_fmtcmdfailed, "ps", "snprintf", NSH_ERRNO);
+      return -ENAMETOOLONG;
     }
-  else
-    {
-      ret = nsh_readfile(vtbl, "ps", filepath,
-                         status->td_buf + status->td_bufpos,
-                         status->td_bufsize - status->td_bufpos);
-      if (ret >= 0)
-        {
-          ret = strlen(status->td_buf + status->td_bufpos) + 1;
-        }
 
-      free(filepath);
+  ret = nsh_readfile(vtbl, "ps", filepath,
+                     status->td_buf + status->td_bufpos,
+                     status->td_bufsize - status->td_bufpos);
+  if (ret >= 0)
+    {
+      ret = strlen(status->td_buf + status->td_bufpos) + 1;
     }
 
   return ret;
@@ -791,15 +789,21 @@ static int top_callback(FAR struct nsh_vtbl_s *vtbl, FAR const char *dirpath,
     }
   else if (topstatus->index >= topstatus->size)
     {
-      topstatus->status =
+      FAR struct nsh_taskstatus_s **newstatus =
         realloc(topstatus->status,
                 sizeof(topstatus->status[0]) * topstatus->size * 2);
-      if (topstatus->status == NULL)
+
+      if (newstatus == NULL)
         {
+          /* Keep the original topstatus->status valid on failure so the
+           * cleanup path in cmd_top() can still free it.
+           */
+
           nsh_error(vtbl, g_fmtcmdfailed, "top", "realloc", NSH_ERRNO);
           return -ENOMEM;
         }
 
+      topstatus->status = newstatus;
       memset(&topstatus->status[topstatus->index], 0,
              sizeof(topstatus->status[0]) * topstatus->size);
       topstatus->size *= 2;
@@ -820,14 +824,14 @@ static int top_callback(FAR struct nsh_vtbl_s *vtbl, FAR const char *dirpath,
         }
 
       topstatus->status[index] = status;
-      status->td_buf = zalloc(IOBUFFERSIZE);
+      status->td_buf = zalloc(CONFIG_NSH_TOP_TASKBUF_SIZE);
       if (status->td_buf == NULL)
         {
           nsh_error(vtbl, g_fmtcmdfailed, "top", "zalloc", NSH_ERRNO);
           return -ENOMEM;
         }
 
-      status->td_bufsize = IOBUFFERSIZE;
+      status->td_bufsize = CONFIG_NSH_TOP_TASKBUF_SIZE;
     }
 
   ret = ps_record(vtbl, dirpath, entryp, topstatus->heap, status);
@@ -1044,6 +1048,7 @@ int cmd_ps(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv)
       for (i = 1; i < argc; i++)
         {
           struct dirent entry;
+
           if (!isdigit(*argv[i]))
             {
               continue;
@@ -1178,18 +1183,18 @@ int cmd_kill(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv)
 
   switch (errno)
     {
-    case EINVAL:
-      goto invalid_arg;
+      case EINVAL:
+        goto invalid_arg;
 
-    case ESRCH:
-      nsh_error(vtbl, g_fmtnosuch, argv[0], "task", argv[2]);
-      return ERROR;
+      case ESRCH:
+        nsh_error(vtbl, g_fmtnosuch, argv[0], "task", argv[2]);
+        return ERROR;
 
-    case EPERM:
-    case ENOSYS:
-    default:
-      nsh_error(vtbl, g_fmtcmdfailed, argv[0], "kill", NSH_ERRNO);
-      return ERROR;
+      case EPERM:
+      case ENOSYS:
+      default:
+        nsh_error(vtbl, g_fmtcmdfailed, argv[0], "kill", NSH_ERRNO);
+        return ERROR;
     }
 
 invalid_arg:
@@ -1276,18 +1281,18 @@ int cmd_pkill(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv)
         {
           switch (errno)
             {
-            case EINVAL:
-              goto invalid_arg;
+              case EINVAL:
+                goto invalid_arg;
 
-            case ESRCH:
-              nsh_error(vtbl, g_fmtnosuch, argv[0], "task", argv[2]);
-              return ERROR;
+              case ESRCH:
+                nsh_error(vtbl, g_fmtnosuch, argv[0], "task", argv[2]);
+                return ERROR;
 
-            case EPERM:
-            case ENOSYS:
-            default:
-              nsh_error(vtbl, g_fmtcmdfailed, argv[0], "kill", NSH_ERRNO);
-              return ERROR;
+              case EPERM:
+              case ENOSYS:
+              default:
+                nsh_error(vtbl, g_fmtcmdfailed, argv[0], "kill", NSH_ERRNO);
+                return ERROR;
             }
         }
     }
@@ -1535,6 +1540,7 @@ int cmd_top(FAR struct nsh_vtbl_s *vtbl, int argc, FAR char **argv)
           while (pid != NULL && ret >= 0)
             {
               struct dirent entry;
+
               entry.d_type = DT_DIR;
               strlcpy(entry.d_name, pid, sizeof(entry.d_name));
               ret = top_callback(vtbl, CONFIG_NSH_PROC_MOUNTPOINT,

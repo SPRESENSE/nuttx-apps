@@ -43,6 +43,11 @@ PROGNAME += aescbc
 MAINSRC  += aescbc.c
 endif
 
+ifeq ($(CONFIG_TESTING_CRYPTO_AES_GCM),y)
+PROGNAME += aesgcm
+MAINSRC  += aesgcm.c
+endif
+
 ifeq ($(CONFIG_TESTING_CRYPTO_HMAC),y)
 PROGNAME += hmac
 MAINSRC  += hmac.c
@@ -106,6 +111,11 @@ endif
 ifeq ($(CONFIG_TESTING_CRYPTO_BLF_CBC),y)
 PROGNAME += blfcbc
 MAINSRC  += blfcbc.c
+endif
+
+ifeq ($(CONFIG_TESTING_CRYPTO_CLONE),y)
+PROGNAME += clone
+MAINSRC  += clone.c
 endif
 
 PRIORITY = $(CONFIG_TESTING_CRYPTO_PRIORITY)

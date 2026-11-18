@@ -218,6 +218,7 @@ config NSH_NESTDEPTH
 config NSH_DISABLEBG
 	bool "Disable background commands"
 	default DEFAULT_SMALL
+	depends on !NSH_BUILTIN_AS_COMMAND
 	---help---
 		This can be set to 'y' to suppress support for background
 		commands.  This setting disables the 'nice' command prefix and
@@ -247,6 +248,7 @@ config NSH_PIPELINE
 	bool "Enable pipeline support"
 	default !DEFAULT_SMALL
 	depends on PIPES
+	depends on !NSH_DISABLEBG
 	---help---
 		Enable pipeline support for nsh.
 
@@ -268,7 +270,9 @@ config NSH_BUILTIN_AS_COMMAND
 	depends on BUILTIN
 	---help---
 		Enable to run builtin application directly without creating
-		a separate thread.
+		a separate thread.  This is incompatible with background
+		command execution (&) because builtin apps bypass the
+		nsh_fileapp/task_spawn path required for background jobs.
 
 config NSH_FILE_APPS
 	bool "Enable execution of program files"
@@ -719,6 +723,21 @@ config NSH_DISABLE_TOP
 	bool "Disable top"
 	default DEFAULT_SMALL
 	depends on !NSH_DISABLE_PS
+
+config NSH_TOP_TASKBUF_SIZE
+	int "top per-task I/O buffer size"
+	default 512
+	depends on !NSH_DISABLE_TOP
+	---help---
+		The 'top' command keeps one I/O buffer alive per task
+		simultaneously (all tasks are collected, sorted, then printed),
+		so peak heap usage is roughly (number of tasks) * this value.
+
+		Each buffer only needs to hold the concatenation of a single
+		task's status + loadavg + cmdline, which is typically a few
+		hundred bytes, so this can be much smaller than NSH_FILEIOSIZE.
+		If a task's combined output exceeds this size it will be
+		truncated (fields may be missing) but will not overflow.
 
 config NSH_DISABLE_TRUNCATE
 	bool "Disable truncate"

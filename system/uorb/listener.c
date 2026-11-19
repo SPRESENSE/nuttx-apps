@@ -84,7 +84,7 @@ static int listener_print(FAR const struct orb_metadata *meta, int fd);
 static void listener_monitor(FAR struct listen_list_s *objlist,
                              int nb_objects, float topic_rate,
                              int topic_latency, int nb_msgs,
-                             int timeout, bool record, bool nonwakeup);
+                             int timeout, bool record, bool wakeup);
 static int listener_update(FAR struct listen_list_s *objlist,
                            FAR struct orb_object *object);
 static void listener_top(FAR struct listen_list_s *objlist,
@@ -140,7 +140,8 @@ listener <command> [arguments...]\n\
 \t[-l       ]  Top only execute once.\n\
 \t[-i       ]  Get sensor device information based on topic.\n\
 \t[-f       ]  Flush sensor drive data.\n\
-\t[-u       ]  Subscribe in non-wakeup mode to save power.\n\
+\t[-w       ]  Subscribe in wakeup mode.\n\
+\t[-k       ]  Unlink the nodes registered on the device.\n\
   ");
 }
 
@@ -187,28 +188,26 @@ static int listener_create_dir(FAR char *dir, size_t size)
  * Name: listener_subscribe
  *
  * Description:
- *   Subscribe topic according to non wakeup mode.
+ *   Subscribe topic according to wakeup mode.
  *
  * Input Parameters:
  *   tmp          Given object
- *   nonwakeup    State of nonwakeup.
+ *   wakeup       State of wakeup.
  *
  * Returned Value:
  *   fd on success, otherwise -1.
  ****************************************************************************/
 
 static int listener_subscribe(FAR struct listen_object_s *tmp,
-                              bool nonwakeup)
+                              bool wakeup)
 {
-  if (nonwakeup)
+  if (wakeup)
     {
-      return orb_subscribe_multi_nonwakeup(tmp->object.meta,
-                                           tmp->object.instance);
+      return orb_subscribe_multi_wakeup(tmp->object.meta,
+                                        tmp->object.instance);
     }
-  else
-    {
-      return orb_subscribe_multi(tmp->object.meta, tmp->object.instance);
-    }
+
+  return orb_subscribe_multi(tmp->object.meta, tmp->object.instance);
 }
 
 /****************************************************************************
@@ -332,6 +331,7 @@ static int listener_update(FAR struct listen_list_s *objlist,
       delta_generation = state.generation - old->generation;
 
       unsigned long frequency = 0;
+
       if (delta_generation && delta_time)
         {
           frequency = (state.max_frequency ? state.max_frequency : 1000000)
@@ -504,6 +504,7 @@ static int listener_generate_object_list(FAR struct listen_list_s *objlist,
            */
 
           FAR const char *str = strstr(filter, name);
+
           if (!str || (str[len] && str[len] != ',' &&
                        str[len] != object.instance + '0'))
             {
@@ -563,6 +564,36 @@ static int listener_print(FAR const struct orb_metadata *meta, int fd)
 }
 
 /****************************************************************************
+ * Name: listener_unlink_topic
+ *
+ * Description:
+ *   Unlink the device nodes of the topics in the list.
+ *
+ * Input Parameters:
+ *   objlist      Topic object list.
+ *
+ * Returned Value:
+ *   void
+ ****************************************************************************/
+
+static void listener_unlink_topic(FAR const struct listen_list_s *objlist)
+{
+  FAR struct listen_object_s *tmp;
+
+  SLIST_FOREACH(tmp, objlist, node)
+    {
+      int ret = orb_unlink_multi(tmp->object.meta, tmp->object.instance);
+
+      if (ret < 0)
+        {
+          uorbinfo_raw("%s%d unlink failed: %d", tmp->object.meta->o_name,
+                       tmp->object.instance, ret);
+          return;
+        }
+    }
+}
+
+/****************************************************************************
  * Name: listener_flush_topic
  *
  * Description:
@@ -572,17 +603,18 @@ static int listener_print(FAR const struct orb_metadata *meta, int fd)
  *   objlist      Topic object list.
  *   nb_objects   Length of objects list.
  *   timeout      Maximum poll waiting time(microsecond).
- *   nonwakeup    The state of non wakeup
+ *   wakeup       The state of wakeup
  *
  * Returned Value:
  *   void
  ****************************************************************************/
 
 static void listener_flush_topic(FAR const struct listen_list_s *objlist,
-                                 int nb_objects, int timeout, bool nonwakeup)
+                                 int nb_objects, int timeout, bool wakeup)
 {
   FAR struct listen_object_s *tmp;
   FAR struct pollfd *fds;
+  FAR orb_abstime *times;
   unsigned int events;
   FAR int8_t *result;
   int nb_flush = 0;
@@ -595,10 +627,20 @@ static void listener_flush_topic(FAR const struct listen_list_s *objlist,
       return;
     }
 
+  /* 0: success, 1: wait timeout, 2: sub failed, Negative errno on failure */
+
   result = calloc(nb_objects, sizeof(int8_t));
   if (result == NULL)
     {
       free(fds);
+      return;
+    }
+
+  times = calloc(nb_objects, sizeof(orb_abstime));
+  if (!times)
+    {
+      free(fds);
+      free(result);
       return;
     }
 
@@ -608,32 +650,40 @@ static void listener_flush_topic(FAR const struct listen_list_s *objlist,
     {
       int fd;
 
-      fd = listener_subscribe(tmp, nonwakeup);
+      fd = listener_subscribe(tmp, wakeup);
       if (fd < 0)
         {
           fds[i].fd     = -1;
           fds[i].events = 0;
+          result[i]     = 2; /* sub failed */
         }
       else
         {
           fds[i].fd     = fd;
           fds[i].events = POLLPRI;
-          i++;
         }
+
+      i++;
     }
 
   i = 0;
   SLIST_FOREACH(tmp, objlist, node)
     {
+      times[i] = orb_absolute_time();
       ret = orb_flush(fds[i].fd);
       if (ret < 0)
         {
           result[i] = ret;
-          uorbinfo_raw("topic [%s%d] call flush failed! return:%d\n",
-                       tmp->object.meta->o_name, tmp->object.instance, ret);
+          uorbinfo_raw("topic [%s%d] call flush(%" PRIu64 "us) failed! "
+                       "return:%d", tmp->object.meta->o_name,
+                       tmp->object.instance, orb_elapsed_time(&times[i]),
+                       ret);
         }
       else
         {
+          /* Set to non-zero value to wait for flush event */
+
+          result[i] = 1;
           nb_flush++;
         }
 
@@ -657,6 +707,8 @@ static void listener_flush_topic(FAR const struct listen_list_s *objlist,
                   else if (events & SENSOR_EVENT_FLUSH_COMPLETE)
                     {
                       nb_flush--;
+                      result[i] = 0;
+                      times[i] = orb_elapsed_time(&times[i]);
                     }
                 }
 
@@ -677,14 +729,16 @@ static void listener_flush_topic(FAR const struct listen_list_s *objlist,
     {
       if (result[i] == 0)
         {
-          uorbinfo_raw("\tTopic [%s%d] flush: SUCCESS.",
-                      tmp->object.meta->o_name, tmp->object.instance);
+          uorbinfo_raw("\tTopic [%s%d] flush: SUCCESS(%" PRIu64 "us ).",
+                       tmp->object.meta->o_name, tmp->object.instance,
+                       times[i]);
         }
       else
         {
-          uorbinfo_raw("\tTopic [%s%d] flush: FAILURE. [%d]",
-                      tmp->object.meta->o_name,  tmp->object.instance,
-                      result[i]);
+          times[i] = orb_elapsed_time(&times[i]);
+          uorbinfo_raw("\tTopic [%s%d] flush: FAILURE(%" PRIu64 "us). [%d]",
+                       tmp->object.meta->o_name,  tmp->object.instance,
+                       times[i], result[i]);
         }
 
       orb_unsubscribe(fds[i].fd);
@@ -694,6 +748,7 @@ static void listener_flush_topic(FAR const struct listen_list_s *objlist,
   uorbinfo_raw("Total number of flush topics: %d", nb_objects);
   free(fds);
   free(result);
+  free(times);
 }
 
 /****************************************************************************
@@ -704,32 +759,36 @@ static void listener_flush_topic(FAR const struct listen_list_s *objlist,
  *
  * Input Parameters:
  *   objlist      topic object list.
- *   nonwakeup    The state of non wakeup
+ *   wakeup       The state of wakeup
  *
  * Returned Value:
  *   void
  ****************************************************************************/
 
 static void listener_print_info(FAR const struct listen_list_s *objlist,
-                                bool nonwakeup)
+                                bool wakeup)
 {
   FAR struct listen_object_s *tmp;
+  orb_abstime info_time;
   orb_info_t info;
   int ret;
   int fd;
 
   SLIST_FOREACH(tmp, objlist, node)
     {
-      fd = listener_subscribe(tmp, nonwakeup);
+      fd = listener_subscribe(tmp, wakeup);
       if (fd < 0)
         {
           continue;
         }
 
+      info_time = orb_absolute_time();
       ret = orb_get_info(fd, &info);
+      info_time = orb_elapsed_time(&info_time);
       orb_unsubscribe(fd);
-      uorbinfo_raw("Topic [%s%d] info:", tmp->object.meta->o_name,
-                   tmp->object.instance);
+      uorbinfo_raw("Topic [%s%d] info(%" PRIu64 "us):",
+                   tmp->object.meta->o_name, tmp->object.instance,
+                   info_time);
       if (ret < 0)
         {
           uorbinfo_raw("\t NULL");
@@ -808,7 +867,7 @@ static int listener_record(FAR const struct orb_metadata *meta, int fd,
 static void listener_monitor(FAR struct listen_list_s *objlist,
                              int nb_objects, float topic_rate,
                              int topic_latency, int nb_msgs,
-                             int timeout, bool record, bool nonwakeup)
+                             int timeout, bool record, bool wakeup)
 {
   FAR struct pollfd *fds;
   char path[PATH_MAX];
@@ -839,7 +898,7 @@ static void listener_monitor(FAR struct listen_list_s *objlist,
     {
       int fd;
 
-      fd = listener_subscribe(tmp, nonwakeup);
+      fd = listener_subscribe(tmp, wakeup);
       if (fd < 0)
         {
           fds[i].fd     = -1;
@@ -1080,8 +1139,9 @@ int main(int argc, FAR char *argv[])
   bool info         = false;
   bool flush        = false;
   bool record       = false;
-  bool nonwakeup    = false;
+  bool wakeup       = false;
   bool only_once    = false;
+  bool unlink_topic = false;
   FAR char *filter  = NULL;
   int ret;
   int ch;
@@ -1094,71 +1154,75 @@ int main(int argc, FAR char *argv[])
 
   /* Pasrse Argument */
 
-  while ((ch = getopt(argc, argv, "r:b:n:t:Tfslhiu")) != EOF)
+  while ((ch = getopt(argc, argv, "r:b:n:t:Tfslhiwk")) != EOF)
     {
       switch (ch)
-      {
-        case 'r':
-          topic_rate = atof(optarg);
-          if (topic_rate < 0)
-            {
-              goto error;
-            }
-          break;
+        {
+          case 'r':
+            topic_rate = atof(optarg);
+            if (topic_rate < 0)
+              {
+                goto error;
+              }
+            break;
 
-        case 'b':
-          topic_latency = strtol(optarg, NULL, 0);
-          if (topic_latency < 0)
-            {
-              goto error;
-            }
-          break;
+          case 'b':
+            topic_latency = strtol(optarg, NULL, 0);
+            if (topic_latency < 0)
+              {
+                goto error;
+              }
+            break;
 
-        case 'n':
-          nb_msgs = strtol(optarg, NULL, 0);
-          if (nb_msgs < 0)
-            {
-              goto error;
-            }
-          break;
+          case 'n':
+            nb_msgs = strtol(optarg, NULL, 0);
+            if (nb_msgs < 0)
+              {
+                goto error;
+              }
+            break;
 
-        case 't':
-          timeout = strtol(optarg, NULL, 0);
-          if (timeout < 0)
-            {
-              goto error;
-            }
-          break;
+          case 't':
+            timeout = strtol(optarg, NULL, 0);
+            if (timeout < 0)
+              {
+                goto error;
+              }
+            break;
 
-#ifdef CONFIG_UORB_FORMAT
-        case 's':
-          record = true;
-          break;
-#endif
+  #ifdef CONFIG_UORB_FORMAT
+          case 's':
+            record = true;
+            break;
+  #endif
 
-        case 'f':
-          flush = true;
-          break;
+          case 'f':
+            flush = true;
+            break;
 
-        case 'T':
-          top = true;
-          break;
+          case 'T':
+            top = true;
+            break;
 
-        case 'l':
-          only_once = true;
-          break;
+          case 'l':
+            only_once = true;
+            break;
 
-        case 'i':
-          info = true;
-          break;
+          case 'i':
+            info = true;
+            break;
 
-        case 'u':
-          nonwakeup = true;
-          break;
+          case 'w':
+            wakeup = true;
+            break;
 
-        case 'h':
-        default:
-          goto error;
+          case 'k':
+            unlink_topic = true;
+            break;
+
+          case 'h':
+          default:
+            goto error;
         }
     }
 
@@ -1178,13 +1242,19 @@ int main(int argc, FAR char *argv[])
 
   if (flush)
     {
-      listener_flush_topic(&objlist, ret, timeout, nonwakeup);
+      listener_flush_topic(&objlist, ret, timeout, wakeup);
       goto exit;
     }
 
   if (info)
     {
-      listener_print_info(&objlist, nonwakeup);
+      listener_print_info(&objlist, wakeup);
+      goto exit;
+    }
+
+  if (unlink_topic)
+    {
+      listener_unlink_topic(&objlist);
       goto exit;
     }
 
@@ -1203,7 +1273,7 @@ int main(int argc, FAR char *argv[])
         }
 
       listener_monitor(&objlist, ret, topic_rate, topic_latency,
-                       nb_msgs, timeout, record, nonwakeup);
+                       nb_msgs, timeout, record, wakeup);
     }
 
 exit:

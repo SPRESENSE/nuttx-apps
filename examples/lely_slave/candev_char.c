@@ -27,6 +27,7 @@
 #include <nuttx/config.h>
 
 #include <stdio.h>
+#include <string.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <unistd.h>
@@ -55,6 +56,7 @@ static int g_candev_fd;
 int coslave_candev_init(void)
 {
   struct canioc_bittiming_s bt;
+  unsigned int msgalign;
   int ret;
 
   /* Non-blocking so the main loop keeps servicing the CANopen timers */
@@ -66,6 +68,21 @@ int coslave_candev_init(void)
       ret = -errno;
       printf("ERROR: open %s failed %d\n",
              CONFIG_EXAMPLES_LELYSLAVE_DEVPATH, errno);
+      return ret;
+    }
+
+  /* read() returns all queued messages that fit into the buffer by
+   * default.  Get exactly one message per read() instead, so that no
+   * message is lost.
+   */
+
+  msgalign = 0;
+  ret = ioctl(g_candev_fd, CANIOC_SET_MSGALIGN, &msgalign);
+  if (ret < 0)
+    {
+      ret = -errno;
+      printf("ERROR: CANIOC_SET_MSGALIGN failed %d\n", errno);
+      close(g_candev_fd);
       return ret;
     }
 
@@ -96,16 +113,18 @@ int coslave_candev_send(FAR const struct can_msg *msg)
   ssize_t          nwritten;
   int              i;
 
+  /* Lely CANopen sends classic CAN frames only.  Clear the whole header,
+   * so that all other fields (e.g. the CAN FD flags) are zero.
+   */
+
+  memset(&txmsg.cm_hdr, 0, sizeof(txmsg.cm_hdr));
+
   txmsg.cm_hdr.ch_id    = msg->id;
   txmsg.cm_hdr.ch_rtr   = (msg->flags & CAN_FLAG_RTR) != 0;
   txmsg.cm_hdr.ch_dlc   = msg->len;
 #ifdef CONFIG_CAN_EXTID
   txmsg.cm_hdr.ch_extid = (msg->flags & CAN_FLAG_IDE) != 0;
 #endif
-#ifdef CONFIG_CAN_ERRORS
-  txmsg.cm_hdr.ch_error = 0;
-#endif
-  txmsg.cm_hdr.ch_tcf   = 0;
 
   for (i = 0; i < msg->len; i++)
     {

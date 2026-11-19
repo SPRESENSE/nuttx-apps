@@ -66,7 +66,7 @@
  *   flag         The open flag.
  *   instance     Instance number to open.
  *   queue_size   Maximum number of buffered elements.
- *   non_wakeup   The non wakeup flag.
+ *   wakeup       The wakeup flag.
  *
  * Returned Value:
  *   fd on success, otherwise returns a negated errno value on failure.
@@ -74,7 +74,7 @@
 
 static int orb_advsub_open(FAR const struct orb_metadata *meta, int flags,
                            int instance, unsigned int queue_size,
-                           FAR orb_info_t *info, bool non_wakeup)
+                           FAR orb_info_t *info, bool wakeup)
 {
   char path[ORB_PATH_MAX];
   int fd;
@@ -140,9 +140,9 @@ static int orb_advsub_open(FAR const struct orb_metadata *meta, int flags,
       ioctl(fd, SNIOC_SET_BUFFER_NUMBER, (unsigned long)queue_size);
     }
 
-  if (non_wakeup)
+  if (wakeup)
     {
-      ioctl(fd, SNIOC_SET_NONWAKEUP, (unsigned long)non_wakeup);
+      ioctl(fd, SNIOC_SET_WAKEUP, (unsigned long)wakeup);
     }
 
   return fd;
@@ -219,6 +219,32 @@ int orb_close(int fd)
   return ret;
 }
 
+int orb_unlink_multi(FAR const struct orb_metadata *meta, int instance)
+{
+  char path[ORB_PATH_MAX];
+  int ret;
+  int fd;
+
+  snprintf(path, ORB_PATH_MAX, ORB_SENSOR_PATH"%s%d", meta->o_name,
+           instance);
+  fd = open(ORB_USENSOR_PATH, O_WRONLY | O_CLOEXEC);
+  if (fd < 0)
+    {
+      return -errno;
+    }
+
+  ret = ioctl(fd, SNIOC_UNREGISTER, (unsigned long)(uintptr_t)path);
+  if (ret < 0)
+    {
+      ret = -errno;
+      uorberr("topic:%s%d unregister failed! return:%d",
+              meta->o_name, instance, ret);
+    }
+
+  close(fd);
+  return ret;
+}
+
 int orb_advertise_multi_queue_info(FAR const struct orb_metadata *meta,
                                    FAR const void *data, FAR int *instance,
                                    unsigned int queue_size,
@@ -258,8 +284,8 @@ int orb_subscribe_multi(FAR const struct orb_metadata *meta,
   return orb_advsub_open(meta, O_RDONLY, instance, 0, NULL, false);
 }
 
-int orb_subscribe_multi_nonwakeup(FAR const struct orb_metadata *meta,
-                                  unsigned instance)
+int orb_subscribe_multi_wakeup(FAR const struct orb_metadata *meta,
+                               unsigned instance)
 {
   return orb_advsub_open(meta, O_RDONLY, instance, 0, NULL, true);
 }
@@ -427,16 +453,24 @@ void orb_info(FAR const char *format, FAR const char *name,
   vaf.va  = (va_list *)data;
 
   lib_stdoutstream(&stdoutstream, stdout);
+
+  flockfile(stdout);
   lib_sprintf(&stdoutstream.common, "%s(now:%" PRIu64 "):%pB\n",
               name, orb_absolute_time(), &vaf);
+  funlockfile(stdout);
 }
 
 int orb_fprintf(FAR FILE *stream, FAR const char *format,
                 FAR const void *data)
 {
   struct lib_stdoutstream_s stdoutstream;
+  int ret;
 
   lib_stdoutstream(&stdoutstream, stream);
-  return lib_bsprintf(&stdoutstream.common, format, data);
+
+  flockfile(stream);
+  ret = lib_bsprintf(&stdoutstream.common, format, data);
+  funlockfile(stream);
+  return ret;
 }
 #endif

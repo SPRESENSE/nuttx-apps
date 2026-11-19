@@ -41,7 +41,7 @@
 #include <unistd.h>
 
 static int syscrypt(FAR const unsigned char *key, size_t klen,
-                    FAR const unsigned char *iv,
+                    FAR const unsigned char *iv, size_t ivlen,
                     FAR const unsigned char *in, FAR unsigned char *out,
                     size_t len, int encrypt)
 {
@@ -66,6 +66,7 @@ static int syscrypt(FAR const unsigned char *key, size_t klen,
   session.cipher = CRYPTO_3DES_CBC;
   session.key = (caddr_t) key;
   session.keylen = klen;
+  session.op = encrypt ? COP_ENCRYPT : COP_DECRYPT;
   if (ioctl(cryptodev_fd, CIOCGSESSION, &session) == -1)
     {
       warn("CIOCGSESSION");
@@ -77,6 +78,8 @@ static int syscrypt(FAR const unsigned char *key, size_t klen,
   cryp.op = encrypt ? COP_ENCRYPT : COP_DECRYPT;
   cryp.flags = 0;
   cryp.len = len;
+  cryp.olen = len;
+  cryp.ivlen = ivlen;
   cryp.src = (caddr_t) in;
   cryp.dst = (caddr_t) out;
   cryp.iv = (caddr_t) iv;
@@ -180,14 +183,14 @@ int main(int argc, FAR char **argv)
   memset(b2, 0, sizeof(b2));
   memcpy(iv, iv0, sizeof(iv0));
 
-  if (syscrypt(key, sizeof(key), iv, b1, b2, sizeof(b1), 1) < 0)
+  if (syscrypt(key, sizeof(key), iv, sizeof(iv), b1, b2, sizeof(b1), 1) < 0)
     {
       warnx("encrypt with /dev/crypto failed");
       fail++;
     }
 
   memcpy(iv, iv0, sizeof(iv0));
-  if (syscrypt(key, sizeof(key), iv, b2, b2, sizeof(b1), 0) < 0)
+  if (syscrypt(key, sizeof(key), iv, sizeof(iv), b2, b2, sizeof(b1), 0) < 0)
     {
       warnx("decrypt with /dev/crypto failed");
       fail++;

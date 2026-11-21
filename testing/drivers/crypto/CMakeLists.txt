@@ -118,6 +118,34 @@ if(CONFIG_TESTING_CRYPTO)
       hash.c)
   endif()
 
+  if(CONFIG_TESTING_CRYPTO_CRC8)
+    nuttx_add_application(
+      NAME
+      crc8
+      PRIORITY
+      ${CONFIG_TESTING_CRYPTO_PRIORITY}
+      STACKSIZE
+      ${CONFIG_TESTING_CRYPTO_STACKSIZE}
+      MODULE
+      ${CONFIG_TESTING_CRYPTO}
+      SRCS
+      crc8.c)
+  endif()
+
+  if(CONFIG_TESTING_CRYPTO_CRC16)
+    nuttx_add_application(
+      NAME
+      crc16
+      PRIORITY
+      ${CONFIG_TESTING_CRYPTO_PRIORITY}
+      STACKSIZE
+      ${CONFIG_TESTING_CRYPTO_STACKSIZE}
+      MODULE
+      ${CONFIG_TESTING_CRYPTO}
+      SRCS
+      crc16.c)
+  endif()
+
   if(CONFIG_TESTING_CRYPTO_CRC32)
     nuttx_add_application(
       NAME
@@ -172,6 +200,18 @@ if(CONFIG_TESTING_CRYPTO)
       ${CONFIG_TESTING_CRYPTO}
       SRCS
       dhm.c)
+
+    nuttx_add_application(
+      NAME
+      ecdh
+      PRIORITY
+      ${CONFIG_TESTING_CRYPTO_PRIORITY}
+      STACKSIZE
+      ${CONFIG_TESTING_CRYPTO_STACKSIZE}
+      MODULE
+      ${CONFIG_TESTING_CRYPTO}
+      SRCS
+      ecdh.c)
   endif()
 
   if(CONFIG_TESTING_CRYPTO_RSA)
@@ -284,6 +324,20 @@ if(CONFIG_TESTING_CRYPTO)
       ${CONFIG_TESTING_CRYPTO}
       SRCS
       clone.c)
+  endif()
+
+  if(CONFIG_TESTING_CRYPTO_ASYNC)
+    nuttx_add_application(
+      NAME
+      async
+      PRIORITY
+      ${CONFIG_TESTING_CRYPTO_PRIORITY}
+      STACKSIZE
+      ${CONFIG_TESTING_CRYPTO_STACKSIZE}
+      MODULE
+      ${CONFIG_TESTING_CRYPTO}
+      SRCS
+      async.c)
   endif()
 
 endif()

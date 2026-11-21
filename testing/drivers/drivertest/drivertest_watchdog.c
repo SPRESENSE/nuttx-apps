@@ -89,10 +89,12 @@ struct wdg_state_s
   uint32_t pingdelay;
   uint32_t timeout;
   uint32_t deviation;
+  uint32_t reset_cause;
   int test_case;
   bool test_getstatus;
 #ifdef CONFIG_BOARDCTL_RESET_CAUSE
   sem_t semaphore;
+  volatile bool capture_seen;
 #endif
 #ifdef CONFIG_WATCHDOG_TIMEOUT_NOTIFIER
   unsigned int notifier_calls;
@@ -148,6 +150,7 @@ static uint32_t get_timestamp(void)
 {
   struct timespec ts;
   uint32_t ms;
+
   clock_gettime(CLOCK_MONOTONIC, &ts);
   ms = ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
   return ms;
@@ -213,7 +216,8 @@ static void show_usage(FAR const char *progname,
                        FAR struct wdg_state_s *wdg_state, int exitcode)
 {
   printf("Usage: %s -d <devpath> -r <test case> -t <pingtime>"
-         "-l <pingdelay> -o <timeout> -a <deviation> -g\n", progname);
+         "-l <pingdelay> -o <timeout> -a <deviation> -c <reset_cause> -g\n",
+         progname);
   printf("  [-d devpath] selects the WATCHDOG device.\n"
          "  Default: %s Current: %s\n", WDG_DEFAULT_DEV_PATH,
          wdg_state->devpath);
@@ -232,6 +236,9 @@ static void show_usage(FAR const char *progname,
   printf("  [-a deviation] Watchdog getstatus precision.\n"
          "  Default: %d Current: %" PRIu32 "\n",
          WDG_DEFAULT_DEVIATION, wdg_state->deviation);
+  printf("  [-c reset_cause] Expected BOARDIOC_RESETCAUSE value.\n"
+         "  Default: %d Current: %" PRIu32 "\n",
+         BOARDIOC_RESETCAUSE_SYS_RWDT, wdg_state->reset_cause);
   printf("  [-g] don't test getstatus\n");
   printf("  [-h] = Shows this message and exits\n");
 
@@ -248,7 +255,7 @@ static void parse_commandline(FAR struct wdg_state_s *wdg_state, int argc,
   int ch;
   int converted;
 
-  while ((ch = getopt(argc, argv, "d:r:t:l:o:a:gh")) != ERROR)
+  while ((ch = getopt(argc, argv, "d:r:t:l:o:a:c:gh")) != ERROR)
     {
       switch (ch)
         {
@@ -310,6 +317,12 @@ static void parse_commandline(FAR struct wdg_state_s *wdg_state, int argc,
               }
 
             wdg_state->deviation = (uint32_t)converted;
+            break;
+
+          case 'c':
+            OPTARG_TO_VALUE(converted, uint32_t, 0);
+            wdg_state->reset_cause = (uint32_t)converted;
+            break;
 
           case 'g':
             wdg_state->test_getstatus = false;
@@ -332,6 +345,7 @@ static void parse_commandline(FAR struct wdg_state_s *wdg_state, int argc,
 static int capture_callback(int irq, FAR void *context, FAR void *arg)
 {
   DEBUGASSERT(g_capture_test_state != NULL);
+  g_capture_test_state->capture_seen = true;
   sem_post(&g_capture_test_state->semaphore);
   return OK;
 }
@@ -603,7 +617,7 @@ static void drivertest_watchdog_interrupts(FAR void **state)
     }
 
   boardctl(BOARDIOC_RESET_CAUSE, (uintptr_t)&reset_cause);
-  assert_int_equal(reset_cause.cause, BOARDIOC_RESETCAUSE_SYS_RWDT);
+  assert_int_equal(reset_cause.cause, wdg_state->reset_cause);
 
   wdg_init(wdg_state);
 
@@ -648,7 +662,7 @@ static void drivertest_watchdog_loop(FAR void **state)
     }
 
   boardctl(BOARDIOC_RESET_CAUSE, (uintptr_t)&reset_cause);
-  assert_int_equal(reset_cause.cause, BOARDIOC_RESETCAUSE_SYS_RWDT);
+  assert_int_equal(reset_cause.cause, wdg_state->reset_cause);
 
   wdg_init(wdg_state);
 
@@ -685,7 +699,7 @@ static void drivertest_watchdog_api(FAR void **state)
   assert_int_equal(wdg_state->test_case, 3);
 
   boardctl(BOARDIOC_RESET_CAUSE, (uintptr_t)&reset_cause);
-  assert_int_equal(reset_cause.cause, BOARDIOC_RESETCAUSE_SYS_RWDT);
+  assert_int_equal(reset_cause.cause, wdg_state->reset_cause);
 
   dev_fd = wdg_init(wdg_state);
 
@@ -697,11 +711,18 @@ static void drivertest_watchdog_api(FAR void **state)
 
   while (get_time_elaps(start_ms) < wdg_state->pingtime)
     {
+      uint32_t elapsed_max;
+      uint32_t elapsed_min;
+      uint32_t ping_elapsed;
+      uint32_t ping_start;
+
       /* Sleep for the requested amount of time, use up_udelay prevent
        * system into low power mode and watchdog be pause stop count.
        */
 
+      ping_start = get_timestamp();
       up_udelay(wdg_state->pingdelay * 1000);
+      ping_elapsed = get_time_elaps(ping_start);
 
       if (wdg_state->test_getstatus)
         {
@@ -711,10 +732,15 @@ static void drivertest_watchdog_api(FAR void **state)
           assert_return_code(ret, OK);
 
           assert_int_equal(status.timeout, wdg_state->timeout);
+          assert_true(status.timeleft <= status.timeout);
+
+          elapsed_min = ping_elapsed > wdg_state->deviation ?
+                        ping_elapsed - wdg_state->deviation : 0;
+          elapsed_max = ping_elapsed + wdg_state->deviation;
           assert_in_range(
             status.timeout - status.timeleft,
-            wdg_state->pingdelay - wdg_state->deviation,
-            wdg_state->pingdelay + wdg_state->deviation);
+            elapsed_min,
+            elapsed_max);
         }
 
       /* Then ping */
@@ -728,6 +754,7 @@ static void drivertest_watchdog_api(FAR void **state)
   ret = sem_init(&wdg_state->semaphore, 0, 0);
   assert_return_code(ret, OK);
 
+  wdg_state->capture_seen = false;
   g_capture_test_state = wdg_state;
   watchdog_capture.newhandler = capture_callback;
   ret = ioctl(dev_fd, WDIOC_CAPTURE, &watchdog_capture);
@@ -736,6 +763,8 @@ static void drivertest_watchdog_api(FAR void **state)
   /* Prevent the os entering pm then turn off watchdog. */
 
   up_udelay(2 * wdg_state->timeout * 1000);
+
+  assert_true(wdg_state->capture_seen);
 
   sem_wait(&wdg_state->semaphore);
 
@@ -775,6 +804,7 @@ int main(int argc, FAR char *argv[])
     .timeout = WDG_DEFAULT_TIMEOUT,
     .test_case = WDG_DEFAULT_TESTCASE,
     .deviation = WDG_DEFAULT_DEVIATION,
+    .reset_cause = BOARDIOC_RESETCAUSE_SYS_RWDT,
     .test_getstatus = true
   };
 

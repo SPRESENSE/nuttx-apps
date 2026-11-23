@@ -59,6 +59,70 @@ int test_tcp_group_teardown(FAR void **state);
 
 int test_tcp_common_teardown(FAR void **state);
 
+#ifdef CONFIG_NET_IPv4
+/****************************************************************************
+ * Name: test_tcp_closewait_setup
+ ****************************************************************************/
+
+int test_tcp_closewait_setup(FAR void **state);
+
+/****************************************************************************
+ * Name: test_tcp_closewait_teardown
+ ****************************************************************************/
+
+int test_tcp_closewait_teardown(FAR void **state);
+
+/****************************************************************************
+ * Name: test_tcp_closewait_accept_data
+ ****************************************************************************/
+
+void test_tcp_closewait_accept_data(FAR void **state);
+
+/****************************************************************************
+ * Name: test_tcp_closewait_accept
+ ****************************************************************************/
+
+void test_tcp_closewait_accept(FAR void **state);
+
+/****************************************************************************
+ * Name: test_tcp_closewait_accept_half
+ ****************************************************************************/
+
+void test_tcp_closewait_accept_half(FAR void **state);
+
+/****************************************************************************
+ * Name: test_tcp_closewait_connect
+ ****************************************************************************/
+
+void test_tcp_closewait_connect(FAR void **state);
+
+#  ifdef CONFIG_NET_SOLINGER
+/****************************************************************************
+ * Name: test_tcp_closewait_rst_accept
+ ****************************************************************************/
+
+void test_tcp_closewait_rst_accept(FAR void **state);
+
+/****************************************************************************
+ * Name: test_tcp_closewait_rst_accept_data
+ ****************************************************************************/
+
+void test_tcp_closewait_rst_accept_data(FAR void **state);
+
+/****************************************************************************
+ * Name: test_tcp_closewait_rst_connect
+ ****************************************************************************/
+
+void test_tcp_closewait_rst_connect(FAR void **state);
+
+/****************************************************************************
+ * Name: test_tcp_closewait_rst_race
+ ****************************************************************************/
+
+void test_tcp_closewait_rst_race(FAR void **state);
+#  endif
+#endif
+
 /****************************************************************************
  * Name: test_tcp_connect_ipv4_setup
  ****************************************************************************/
@@ -85,6 +149,26 @@ int test_tcp_bind_listen_setup(FAR void **state);
 int test_tcp_bind_listen_teardown(FAR void **state);
 
 /****************************************************************************
+ * Name: test_tcp_sndlimit_setup
+ ****************************************************************************/
+
+#  ifdef CONFIG_NET_SOCKOPTS
+int test_tcp_sndlimit_setup(FAR void **state);
+
+/****************************************************************************
+ * Name: test_tcp_sndlimit_teardown
+ ****************************************************************************/
+
+int test_tcp_sndlimit_teardown(FAR void **state);
+
+/****************************************************************************
+ * Name: test_tcp_send_limit_wakeup
+ ****************************************************************************/
+
+void test_tcp_send_limit_wakeup(FAR void **state);
+#  endif
+
+/****************************************************************************
  * Name: test_tcp_bind_reuseaddr_timewait
  ****************************************************************************/
 
@@ -108,6 +192,26 @@ void test_tcp_bind_reuseaddr_listener(FAR void **state);
  ****************************************************************************/
 
 void test_tcp_accept_inherit(FAR void **state);
+
+#    ifdef CONFIG_NET_TCP_WRITE_BUFFERS
+/****************************************************************************
+ * Name: test_tcp_sndtimeo_setup
+ ****************************************************************************/
+
+int test_tcp_sndtimeo_setup(FAR void **state);
+
+/****************************************************************************
+ * Name: test_tcp_sndtimeo_teardown
+ ****************************************************************************/
+
+int test_tcp_sndtimeo_teardown(FAR void **state);
+
+/****************************************************************************
+ * Name: test_tcp_sndtimeo_iob
+ ****************************************************************************/
+
+void test_tcp_sndtimeo_iob(FAR void **state);
+#    endif
 #  endif
 
 /****************************************************************************
@@ -117,10 +221,62 @@ void test_tcp_accept_inherit(FAR void **state);
 void test_tcp_listen_again(FAR void **state);
 
 /****************************************************************************
+ * Name: test_tcp_listen_recv
+ ****************************************************************************/
+
+void test_tcp_listen_recv(FAR void **state);
+
+/****************************************************************************
  * Name: test_tcp_listen_connected
  ****************************************************************************/
 
 void test_tcp_listen_connected(FAR void **state);
+
+/****************************************************************************
+ * Name: test_tcp_close_setup
+ ****************************************************************************/
+
+int test_tcp_close_setup(FAR void **state);
+
+/****************************************************************************
+ * Name: test_tcp_close_teardown
+ ****************************************************************************/
+
+int test_tcp_close_teardown(FAR void **state);
+
+/****************************************************************************
+ * Name: test_tcp_close_shutdown_queued
+ ****************************************************************************/
+
+void test_tcp_close_shutdown_queued(FAR void **state);
+
+/****************************************************************************
+ * Name: test_tcp_close_shutdown_close
+ ****************************************************************************/
+
+#  ifdef CONFIG_NET_SOLINGER
+void test_tcp_close_shutdown_close(FAR void **state);
+#  endif
+
+/****************************************************************************
+ * Name: test_tcp_close_netdown
+ ****************************************************************************/
+
+#  if defined(CONFIG_NET_LOOPBACK) && defined(CONFIG_NET_SOLINGER)
+void test_tcp_close_netdown(FAR void **state);
+#  endif
+
+/****************************************************************************
+ * Name: test_tcp_close_unread
+ ****************************************************************************/
+
+void test_tcp_close_unread(FAR void **state);
+
+/****************************************************************************
+ * Name: test_tcp_close_timewait
+ ****************************************************************************/
+
+void test_tcp_close_timewait(FAR void **state);
 #endif
 
 /****************************************************************************
@@ -135,6 +291,24 @@ int test_tcp_connect_ipv6_setup(FAR void **state);
  ****************************************************************************/
 
 void test_tcp_connect_ipv6(FAR void **state);
+
+/****************************************************************************
+ * Name: test_tcp_peername_setup
+ ****************************************************************************/
+
+int test_tcp_peername_setup(FAR void **state);
+
+/****************************************************************************
+ * Name: test_tcp_peername_teardown
+ ****************************************************************************/
+
+int test_tcp_peername_teardown(FAR void **state);
+
+/****************************************************************************
+ * Name: test_tcp_peername_ipv6
+ ****************************************************************************/
+
+void test_tcp_peername_ipv6(FAR void **state);
 #endif
 
 #ifdef CONFIG_NET_IPv4
@@ -187,5 +361,29 @@ void test_tcp_reset_poll(FAR void **state);
 #  ifdef CONFIG_NET_SOCKOPTS
 void test_tcp_reset_refused(FAR void **state);
 #  endif
+
+/****************************************************************************
+ * Name: test_tcp_iov_setup
+ ****************************************************************************/
+
+int test_tcp_iov_setup(FAR void **state);
+
+/****************************************************************************
+ * Name: test_tcp_iov_teardown
+ ****************************************************************************/
+
+int test_tcp_iov_teardown(FAR void **state);
+
+/****************************************************************************
+ * Name: test_tcp_recv_iov_empty
+ ****************************************************************************/
+
+void test_tcp_recv_iov_empty(FAR void **state);
+
+/****************************************************************************
+ * Name: test_tcp_recv_iov_nowait
+ ****************************************************************************/
+
+void test_tcp_recv_iov_nowait(FAR void **state);
 #endif
 #endif /* __APPS_TESTING_NETTEST_TCP_TEST_TCP_H */

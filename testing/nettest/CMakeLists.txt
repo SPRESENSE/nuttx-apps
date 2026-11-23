@@ -25,17 +25,34 @@ if(CONFIG_TESTING_NET_TEST)
         ${CMAKE_CURRENT_LIST_DIR}/tcp/test_tcp_common.c
         ${CMAKE_CURRENT_LIST_DIR}/utils/nettest_tcpserver.c)
 
+    if(CONFIG_NET_IPv4 AND CONFIG_NET_SOCKOPTS)
+      list(APPEND SRCS ${CMAKE_CURRENT_LIST_DIR}/tcp/test_tcp_sndlimit.c)
+    endif()
+
+    if(CONFIG_NET_IPv4)
+      list(APPEND SRCS ${CMAKE_CURRENT_LIST_DIR}/tcp/test_tcp_closewait.c)
+    endif()
+
     if(CONFIG_NET_IPv4)
       list(APPEND SRCS ${CMAKE_CURRENT_LIST_DIR}/tcp/test_tcp_connect_ipv4.c
-           ${CMAKE_CURRENT_LIST_DIR}/tcp/test_tcp_bind_listen.c)
+           ${CMAKE_CURRENT_LIST_DIR}/tcp/test_tcp_bind_listen.c
+           ${CMAKE_CURRENT_LIST_DIR}/tcp/test_tcp_close.c)
     endif()
 
     if(CONFIG_NET_IPv6)
-      list(APPEND SRCS ${CMAKE_CURRENT_LIST_DIR}/tcp/test_tcp_connect_ipv6.c)
+      list(APPEND SRCS ${CMAKE_CURRENT_LIST_DIR}/tcp/test_tcp_connect_ipv6.c
+           ${CMAKE_CURRENT_LIST_DIR}/tcp/test_tcp_peername.c)
     endif()
 
     if(CONFIG_NET_IPv4)
-      list(APPEND SRCS ${CMAKE_CURRENT_LIST_DIR}/tcp/test_tcp_reset.c)
+      list(APPEND SRCS ${CMAKE_CURRENT_LIST_DIR}/tcp/test_tcp_reset.c
+           ${CMAKE_CURRENT_LIST_DIR}/tcp/test_tcp_iov.c)
+    endif()
+
+    if(CONFIG_NET_IPv4
+       AND CONFIG_NET_SOCKOPTS
+       AND CONFIG_NET_TCP_WRITE_BUFFERS)
+      list(APPEND SRCS ${CMAKE_CURRENT_LIST_DIR}/tcp/test_tcp_sndtimeo.c)
     endif()
 
     nuttx_add_application(

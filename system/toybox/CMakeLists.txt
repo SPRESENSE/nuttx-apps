@@ -25,6 +25,7 @@ if(CONFIG_SYSTEM_TOYBOX)
   set(TOYBOX_DIR ${CMAKE_CURRENT_LIST_DIR}/toybox)
   set(TOYBOX_VERSION "${CONFIG_SYSTEM_TOYBOX_VERSION}")
   set(TOYBOX_STAMP ${TOYBOX_DIR}/.nuttx_patched-${TOYBOX_VERSION})
+  set(TOYBOX_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/toybox)
 
   # ############################################################################
   # Download and patch the pinned release
@@ -44,7 +45,7 @@ if(CONFIG_SYSTEM_TOYBOX)
             SOURCE_DIR
             ${TOYBOX_DIR}
             BINARY_DIR
-            ${NUTTX_BINARY_DIR}/apps/system/toybox/toybox
+            ${TOYBOX_BINARY_DIR}
             SUBBUILD_DIR
             ${TOYBOX_SUBBUILD_DIR}
         DOWNLOAD_NO_PROGRESS true
@@ -90,14 +91,14 @@ if(CONFIG_SYSTEM_TOYBOX)
     PROPERTY CMAKE_CONFIGURE_DEPENDS ${TOYBOX_NUTTX_CONFIG})
 
   file(READ ${TOYBOX_NUTTX_CONFIG} TOYBOX_NUTTX_CONFIG_TEXT)
-  string(REGEX MATCHALL "CONFIG_SYSTEM_TOYBOX_CMD_[A-Z0-9_]+"
+  string(REGEX MATCHALL "CONFIG_SYSTEM_TOYBOX_CMD_[A-Z0-9_]+=y"
                TOYBOX_ENABLED_CMDS ${TOYBOX_NUTTX_CONFIG_TEXT})
 
   set(TOYBOX_ALLCONFIG_TEXT "")
 
   foreach(cmd ${TOYBOX_ENABLED_CMDS})
     string(REPLACE "CONFIG_SYSTEM_TOYBOX_CMD_" "CONFIG_" cmd "${cmd}")
-    string(APPEND TOYBOX_ALLCONFIG_TEXT "${cmd}=y\n")
+    string(APPEND TOYBOX_ALLCONFIG_TEXT "${cmd}\n")
   endforeach()
 
   string(APPEND TOYBOX_ALLCONFIG_TEXT "CONFIG_TOYBOX_FLOAT=y\n")
@@ -126,6 +127,8 @@ if(CONFIG_SYSTEM_TOYBOX)
   if(TOYBOX_REGENERATE)
     file(WRITE ${TOYBOX_ALLCONFIG} ${TOYBOX_ALLCONFIG_TEXT})
 
+    file(MAKE_DIRECTORY ${TOYBOX_BINARY_DIR})
+
     find_program(TOYBOX_HOSTCC NAMES cc gcc REQUIRED)
 
     message(STATUS "Generating Toybox headers for NuttX (${TOYBOX_VERSION})")
@@ -133,8 +136,8 @@ if(CONFIG_SYSTEM_TOYBOX)
     execute_process(
       COMMAND
         ${CMAKE_COMMAND} -E env "KCONFIG_ALLCONFIG=${TOYBOX_ALLCONFIG}"
-        "CC=${TOYBOX_HOSTCC}" "HOSTCC=${TOYBOX_HOSTCC}" "CROSS_COMPILE=" bash
-        scripts/genconfig.sh -n
+        "KCONFIG_CONFIG=${TOYBOX_BINARY_DIR}/.config" "CC=${TOYBOX_HOSTCC}"
+        "HOSTCC=${TOYBOX_HOSTCC}" "CROSS_COMPILE=" bash scripts/genconfig.sh -n
       WORKING_DIRECTORY ${TOYBOX_DIR}
       RESULT_VARIABLE TOYBOX_GENCONFIG_RESULT)
 
@@ -149,9 +152,10 @@ if(CONFIG_SYSTEM_TOYBOX)
 
     execute_process(
       COMMAND
-        ${CMAKE_COMMAND} -E env "CC=${TOYBOX_HOSTCC}" "HOSTCC=${TOYBOX_HOSTCC}"
-        "CROSS_COMPILE=" "NOBUILD=1"
-        "NUTTX_TOYBOX_MULTIPLEX_NAME=toybox_multiplex" bash scripts/make.sh
+        ${CMAKE_COMMAND} -E env "KCONFIG_CONFIG=${TOYBOX_BINARY_DIR}/.config"
+        "CC=${TOYBOX_HOSTCC}" "HOSTCC=${TOYBOX_HOSTCC}" "CROSS_COMPILE="
+        "NOBUILD=1" "NUTTX_TOYBOX_MULTIPLEX_NAME=toybox_multiplex" bash
+        scripts/make.sh
       WORKING_DIRECTORY ${TOYBOX_DIR}
       RESULT_VARIABLE TOYBOX_MAKESH_RESULT)
 
@@ -190,19 +194,25 @@ if(CONFIG_SYSTEM_TOYBOX)
   list(TRANSFORM TOYBOX_APPLET_SRCS PREPEND ${TOYBOX_DIR}/)
   file(GLOB TOYBOX_LIB_SRCS ${TOYBOX_DIR}/lib/*.c)
 
+  set(TOYBOX_GLUE_SRCS ${TOYBOX_DIR}/toybox_entry.c ${TOYBOX_DIR}/main.c)
+
   set(TOYBOX_DEFINITIONS __NuttX__ "TOYBOX_VERSION=\"${TOYBOX_VERSION}-nuttx\"")
+
+  # strstart and show_help leak as globals and collide with other apps in a flat
+  # link (e.g. quickjs's strstart); rename them in toybox's compile
+  list(APPEND TOYBOX_DEFINITIONS strstart=toybox_strstart
+       show_help=toybox_show_help)
 
   if(CONFIG_SYSTEM_TOYBOX_BUILTIN_BRIDGE)
     list(APPEND TOYBOX_DEFINITIONS CONFIG_SYSTEM_TOYBOX_BUILTIN_BRIDGE=1)
+    list(APPEND TOYBOX_GLUE_SRCS ${TOYBOX_DIR}/nuttx_bridge.c)
   endif()
 
   nuttx_add_application(
     NAME
     toybox
     SRCS
-    ${TOYBOX_DIR}/toybox_entry.c
-    ${TOYBOX_DIR}/nuttx_bridge.c
-    ${TOYBOX_DIR}/main.c
+    ${TOYBOX_GLUE_SRCS}
     ${TOYBOX_LIB_SRCS}
     ${TOYBOX_APPLET_SRCS}
     STACKSIZE

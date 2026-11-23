@@ -39,10 +39,41 @@ int main(int argc, FAR char *argv[])
   const struct CMUnitTest tcp_tests[] =
     {
 #ifdef CONFIG_NET_IPv4
+      cmocka_unit_test_setup_teardown(test_tcp_closewait_accept_data,
+                                      test_tcp_closewait_setup,
+                                      test_tcp_closewait_teardown),
+      cmocka_unit_test_setup_teardown(test_tcp_closewait_accept,
+                                      test_tcp_closewait_setup,
+                                      test_tcp_closewait_teardown),
+      cmocka_unit_test_setup_teardown(test_tcp_closewait_accept_half,
+                                      test_tcp_closewait_setup,
+                                      test_tcp_closewait_teardown),
+      cmocka_unit_test_setup_teardown(test_tcp_closewait_connect,
+                                      test_tcp_closewait_setup,
+                                      test_tcp_closewait_teardown),
+#  ifdef CONFIG_NET_SOLINGER
+      cmocka_unit_test_setup_teardown(test_tcp_closewait_rst_accept,
+                                      test_tcp_closewait_setup,
+                                      test_tcp_closewait_teardown),
+      cmocka_unit_test_setup_teardown(test_tcp_closewait_rst_accept_data,
+                                      test_tcp_closewait_setup,
+                                      test_tcp_closewait_teardown),
+      cmocka_unit_test_setup_teardown(test_tcp_closewait_rst_connect,
+                                      test_tcp_closewait_setup,
+                                      test_tcp_closewait_teardown),
+      cmocka_unit_test_setup_teardown(test_tcp_closewait_rst_race,
+                                      test_tcp_closewait_setup,
+                                      test_tcp_closewait_teardown),
+#  endif
+#endif
+#ifdef CONFIG_NET_IPv4
       cmocka_unit_test_setup_teardown(test_tcp_connect_ipv4,
                                       test_tcp_connect_ipv4_setup,
                                       test_tcp_common_teardown),
 #  ifdef CONFIG_NET_SOCKOPTS
+      cmocka_unit_test_setup_teardown(test_tcp_send_limit_wakeup,
+                                      test_tcp_sndlimit_setup,
+                                      test_tcp_sndlimit_teardown),
       cmocka_unit_test_setup_teardown(test_tcp_bind_reuseaddr_timewait,
                                       test_tcp_bind_listen_setup,
                                       test_tcp_bind_listen_teardown),
@@ -55,18 +86,48 @@ int main(int argc, FAR char *argv[])
       cmocka_unit_test_setup_teardown(test_tcp_accept_inherit,
                                       test_tcp_bind_listen_setup,
                                       test_tcp_bind_listen_teardown),
+#    ifdef CONFIG_NET_TCP_WRITE_BUFFERS
+      cmocka_unit_test_setup_teardown(test_tcp_sndtimeo_iob,
+                                      test_tcp_sndtimeo_setup,
+                                      test_tcp_sndtimeo_teardown),
+#    endif
 #  endif
       cmocka_unit_test_setup_teardown(test_tcp_listen_again,
+                                      test_tcp_bind_listen_setup,
+                                      test_tcp_bind_listen_teardown),
+      cmocka_unit_test_setup_teardown(test_tcp_listen_recv,
                                       test_tcp_bind_listen_setup,
                                       test_tcp_bind_listen_teardown),
       cmocka_unit_test_setup_teardown(test_tcp_listen_connected,
                                       test_tcp_bind_listen_setup,
                                       test_tcp_bind_listen_teardown),
+      cmocka_unit_test_setup_teardown(test_tcp_close_shutdown_queued,
+                                      test_tcp_close_setup,
+                                      test_tcp_close_teardown),
+#  ifdef CONFIG_NET_SOLINGER
+      cmocka_unit_test_setup_teardown(test_tcp_close_shutdown_close,
+                                      test_tcp_close_setup,
+                                      test_tcp_close_teardown),
+#  endif
+#  if defined(CONFIG_NET_LOOPBACK) && defined(CONFIG_NET_SOLINGER)
+      cmocka_unit_test_setup_teardown(test_tcp_close_netdown,
+                                      test_tcp_close_setup,
+                                      test_tcp_close_teardown),
+#  endif
+      cmocka_unit_test_setup_teardown(test_tcp_close_unread,
+                                      test_tcp_close_setup,
+                                      test_tcp_close_teardown),
+      cmocka_unit_test_setup_teardown(test_tcp_close_timewait,
+                                      test_tcp_close_setup,
+                                      test_tcp_close_teardown),
 #endif
 #ifdef CONFIG_NET_IPv6
       cmocka_unit_test_setup_teardown(test_tcp_connect_ipv6,
                                       test_tcp_connect_ipv6_setup,
                                       test_tcp_common_teardown),
+      cmocka_unit_test_setup_teardown(test_tcp_peername_ipv6,
+                                      test_tcp_peername_setup,
+                                      test_tcp_peername_teardown),
 #endif
 #ifdef CONFIG_NET_IPv4
       cmocka_unit_test_setup_teardown(test_tcp_reset_recv,
@@ -89,6 +150,12 @@ int main(int argc, FAR char *argv[])
                                       test_tcp_reset_setup,
                                       test_tcp_reset_teardown),
 #  endif
+      cmocka_unit_test_setup_teardown(test_tcp_recv_iov_empty,
+                                      test_tcp_iov_setup,
+                                      test_tcp_iov_teardown),
+      cmocka_unit_test_setup_teardown(test_tcp_recv_iov_nowait,
+                                      test_tcp_iov_setup,
+                                      test_tcp_iov_teardown),
 #endif
     };
 

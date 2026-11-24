@@ -46,7 +46,8 @@ if(CONFIG_TESTING_NET_TEST)
 
     if(CONFIG_NET_IPv4)
       list(APPEND SRCS ${CMAKE_CURRENT_LIST_DIR}/tcp/test_tcp_reset.c
-           ${CMAKE_CURRENT_LIST_DIR}/tcp/test_tcp_iov.c)
+           ${CMAKE_CURRENT_LIST_DIR}/tcp/test_tcp_iov.c
+           ${CMAKE_CURRENT_LIST_DIR}/tcp/test_tcp_halfclose.c)
     endif()
 
     if(CONFIG_NET_IPv4
@@ -272,6 +273,25 @@ if(CONFIG_TESTING_NET_TEST)
     nuttx_add_application(
       NAME
       cmocka_net_pkt
+      PRIORITY
+      ${CONFIG_TESTING_NET_TEST_PRIORITY}
+      STACKSIZE
+      ${CONFIG_TESTING_NET_TEST_STACKSIZE}
+      MODULE
+      ${CONFIG_TESTING_NET_TEST}
+      DEPENDS
+      cmocka
+      SRCS
+      ${SRCS})
+  endif()
+
+  if(CONFIG_TESTING_NET_TUN)
+    set(SRCS ${CMAKE_CURRENT_LIST_DIR}/tun/test_tun.c
+             ${CMAKE_CURRENT_LIST_DIR}/tun/test_tun_tcp.c)
+
+    nuttx_add_application(
+      NAME
+      cmocka_net_tun
       PRIORITY
       ${CONFIG_TESTING_NET_TEST_PRIORITY}
       STACKSIZE

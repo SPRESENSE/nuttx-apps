@@ -54,6 +54,7 @@ endif
 
 ifeq ($(CONFIG_NET_IPv4), y)
 CSRCS    += tcp/test_tcp_reset.c tcp/test_tcp_iov.c
+CSRCS    += tcp/test_tcp_halfclose.c
 endif
 
 ifeq ($(CONFIG_NET_IPv4)$(CONFIG_NET_SOCKOPTS)$(CONFIG_NET_TCP_WRITE_BUFFERS),yyy)
@@ -141,6 +142,12 @@ ifeq ($(CONFIG_TESTING_NET_PKT),y)
 MAINSRC  += pkt/test_pkt.c
 PROGNAME += cmocka_net_pkt
 CSRCS    += pkt/test_pkt_lo.c
+endif
+
+ifeq ($(CONFIG_TESTING_NET_TUN),y)
+MAINSRC  += tun/test_tun.c
+PROGNAME += cmocka_net_tun
+CSRCS    += tun/test_tun_tcp.c
 endif
 
 endif

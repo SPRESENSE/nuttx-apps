@@ -93,7 +93,7 @@ static bool dumpfile_is_valid(FAR const char *name)
     }
 
   suffix = name + name_len - COREDUMP_FILE_SUFFIX_LEN;
-  return !!memcmp(suffix, COREDUMP_FILE_SUFFIX, COREDUMP_FILE_SUFFIX_LEN);
+  return !memcmp(suffix, COREDUMP_FILE_SUFFIX, COREDUMP_FILE_SUFFIX_LEN);
 }
 
 static int dumpfile_iterate(FAR char *path, dumpfile_cb_t cb, FAR void *arg)
@@ -198,7 +198,7 @@ static int dumpfile_get_info(int fd, FAR struct coredump_info_s *info)
     }
 
   if (read(fd, name, nhdr.n_namesz) != nhdr.n_namesz ||
-      strcmp(name, "NuttX") != 0)
+      strncmp(name, "NuttX", 6) != 0)
     {
       return -EINVAL;
     }
@@ -229,9 +229,9 @@ static void coredump_restore(FAR char *savepath, size_t maxfile)
   off_t off;
   int ret;
   Elf_Nhdr nhdr =
-    {
-      0
-    };
+  {
+    0
+  };
 
   blkfd = open(CONFIG_SYSTEM_COREDUMP_DEVPATH, O_RDWR);
   if (blkfd < 0)
@@ -293,7 +293,13 @@ static void coredump_restore(FAR char *savepath, size_t maxfile)
   lseek(blkfd, 0, SEEK_SET);
   while (offset < info.size)
     {
-      readsize = read(blkfd, swap, CONFIG_SYSTEM_COREDUMP_SWAPBUFFER_SIZE);
+      readsize = info.size - offset;
+      if (readsize > CONFIG_SYSTEM_COREDUMP_SWAPBUFFER_SIZE)
+        {
+          readsize = CONFIG_SYSTEM_COREDUMP_SWAPBUFFER_SIZE;
+        }
+
+      readsize = read(blkfd, swap, readsize);
       if (readsize < 0)
         {
           printf("Read %s fail\n", CONFIG_SYSTEM_COREDUMP_DEVPATH);
@@ -452,9 +458,9 @@ static int coredump_now(int pid, FAR char *filename)
 
   setlogmask(logmask);
 #  ifdef CONFIG_BOARD_COREDUMP_COMPRESSION
-  printf("Finish coredump (Compression Enabled).\n");
+  printf("Coredump finish (Compression Enabled).\n");
 #  else
-  printf("Finish coredump.\n");
+  printf("Coredump finish.\n");
 #  endif
 
   free(hstream);

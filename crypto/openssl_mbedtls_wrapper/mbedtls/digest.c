@@ -25,6 +25,7 @@
  ****************************************************************************/
 
 #include <mbedtls/md.h>
+#include <mbedtls/platform.h>
 #include <openssl/digest.h>
 #include <stdlib.h>
 
@@ -35,7 +36,8 @@
 EVP_MD_CTX *EVP_MD_CTX_new(void)
 {
   mbedtls_md_context_t *ctx =
-      (mbedtls_md_context_t *)malloc(sizeof(mbedtls_md_context_t));
+      (mbedtls_md_context_t *)mbedtls_calloc(1,
+                                            sizeof(mbedtls_md_context_t));
   EVP_MD_CTX_init((EVP_MD_CTX *)ctx);
   return (EVP_MD_CTX *)ctx;
 }
@@ -45,7 +47,7 @@ void EVP_MD_CTX_free(EVP_MD_CTX *ctx)
   if (ctx != NULL)
     {
       EVP_MD_CTX_cleanup(ctx);
-      free(ctx);
+      mbedtls_free(ctx);
     }
 }
 
@@ -84,7 +86,8 @@ int EVP_DigestUpdate(EVP_MD_CTX *ctx, const void *data, size_t len)
 int EVP_DigestFinal_ex(EVP_MD_CTX *ctx, uint8_t *md_out,
                        unsigned int *size)
 {
-  const mbedtls_md_info_t *md_info = ((mbedtls_md_context_t *)ctx)->md_info;
+  const mbedtls_md_info_t *md_info =
+      mbedtls_md_info_from_ctx((mbedtls_md_context_t *)ctx);
   if (md_info == NULL)
     {
       return 0;

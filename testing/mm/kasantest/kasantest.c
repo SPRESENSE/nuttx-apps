@@ -42,6 +42,18 @@
 #include <nuttx/mm/kasan.h>
 
 /****************************************************************************
+ * Pre-processor Definitions
+ ****************************************************************************/
+
+#if defined(CONFIG_MM_KASAN_GLOBAL) || defined(CONFIG_MM_KASAN_SIM)
+#  define KASANTEST_GLOBAL
+#endif
+
+#if defined(CONFIG_MM_KASAN_SIM)
+#  define KASANTEST_STACK
+#endif
+
+/****************************************************************************
  * Private Types Prototypes
  ****************************************************************************/
 
@@ -115,9 +127,14 @@ static bool test_heap_legal_strrchr(FAR struct mm_heap_s *heap, size_t size);
 static bool test_insert_perf(FAR struct mm_heap_s *heap, size_t size);
 static bool test_algorithm_perf(FAR struct mm_heap_s *heap, size_t size);
 
-#ifdef CONFIG_MM_KASAN_GLOBAL
+#ifdef KASANTEST_GLOBAL
 static bool test_global_underflow(FAR struct mm_heap_s *heap, size_t size);
 static bool test_global_overflow(FAR struct mm_heap_s *heap, size_t size);
+#endif
+
+#ifdef KASANTEST_STACK
+static bool test_stack_underflow(FAR struct mm_heap_s *heap, size_t size);
+static bool test_stack_overflow(FAR struct mm_heap_s *heap, size_t size);
 #endif
 
 /****************************************************************************
@@ -161,15 +178,19 @@ const static testcase_t g_kasan_test[] =
   {test_heap_legal_strrchr, true, "heap legal strrchr"},
   {test_insert_perf, false, "Kasan insert performance"},
   {test_algorithm_perf, false, "Kasan algorithm performance"},
-#ifdef CONFIG_MM_KASAN_GLOBAL
+#ifdef KASANTEST_GLOBAL
   {test_global_underflow, true, "globals underflow"},
   {test_global_overflow, true, "globals overflow"},
+#endif
+#ifdef KASANTEST_STACK
+  {test_stack_underflow, true, "stack underflow"},
+  {test_stack_overflow, true, "stack overflow"},
 #endif
 };
 
 static char g_kasan_heap[10240] aligned_data(8);
 
-#ifdef CONFIG_MM_KASAN_GLOBAL
+#ifdef KASANTEST_GLOBAL
 static char g_kasan_globals[32];
 #endif
 
@@ -207,6 +228,7 @@ static void timespec_sub(struct timespec *dest,
 static bool test_heap_underflow(FAR struct mm_heap_s *heap, size_t size)
 {
   FAR uint8_t *mem = mm_malloc(heap, size);
+
   *(mem - 1) = 0x12;
   return false;
 }
@@ -214,6 +236,7 @@ static bool test_heap_underflow(FAR struct mm_heap_s *heap, size_t size)
 static bool test_heap_overflow(FAR struct mm_heap_s *heap, size_t size)
 {
   FAR uint8_t *mem = mm_malloc(heap, size);
+
   size = mm_malloc_size(heap, mem);
 
   mem[size + 1] = 0x11;
@@ -232,6 +255,7 @@ static bool test_heap_use_after_free(FAR struct mm_heap_s *heap, size_t size)
 static bool test_heap_invalid_free(FAR struct mm_heap_s *heap, size_t size)
 {
   int x;
+
   mm_free(heap, &x);
   return false;
 }
@@ -248,6 +272,7 @@ static bool test_heap_double_free(FAR struct mm_heap_s *heap, size_t size)
 static bool test_heap_poison(FAR struct mm_heap_s *heap, size_t size)
 {
   FAR uint8_t *mem = mm_malloc(heap, size);
+
   size = mm_malloc_size(heap, mem);
 
   kasan_poison(mem, size);
@@ -269,6 +294,7 @@ static bool test_heap_unpoison(FAR struct mm_heap_s *heap, size_t size)
 static bool test_heap_illegal_memchr(FAR struct mm_heap_s *heap, size_t size)
 {
   FAR uint8_t *mem = mm_malloc(heap, size);
+
   size = mm_malloc_size(heap, mem);
 
   return memchr(mem, 0x00, size + 1) == NULL;
@@ -292,6 +318,7 @@ static bool test_heap_illegal_memcpy(FAR struct mm_heap_s *heap, size_t size)
 static bool test_heap_illegal_memcmp(FAR struct mm_heap_s *heap, size_t size)
 {
   FAR uint8_t *mem = mm_malloc(heap, size);
+
   size = mm_malloc_size(heap, mem);
 
   return memcmp(mem, mem + size, 1) < 0;
@@ -316,6 +343,7 @@ static bool test_heap_illegal_memmove(FAR struct mm_heap_s *heap,
 static bool test_heap_illegal_memset(FAR struct mm_heap_s *heap, size_t size)
 {
   FAR uint8_t *mem = mm_malloc(heap, size);
+
   size = mm_malloc_size(heap, mem);
 
   memset(mem, 0x11, size + 1);
@@ -325,6 +353,7 @@ static bool test_heap_illegal_memset(FAR struct mm_heap_s *heap, size_t size)
 static bool test_heap_illegal_strcmp(FAR struct mm_heap_s *heap, size_t size)
 {
   FAR char *mem = mm_malloc(heap, size);
+
   size = mm_malloc_size(heap, mem);
 
   *(int *)mem = rand();
@@ -336,6 +365,7 @@ static bool test_heap_illegal_strcpy(FAR struct mm_heap_s *heap, size_t size)
   FAR char *dst = mm_malloc(heap, 16);
   FAR char *src;
   int i;
+
   size = mm_malloc_size(heap, dst);
   src = mm_malloc(heap, size + 16);
 
@@ -351,6 +381,7 @@ static bool test_heap_illegal_strcpy(FAR struct mm_heap_s *heap, size_t size)
 static bool test_heap_illegal_strlen(FAR struct mm_heap_s *heap, size_t size)
 {
   FAR char *mem = mm_malloc(heap, size);
+
   size = mm_malloc_size(heap, mem);
 
   return strlen(mem + size) < 0;
@@ -370,6 +401,7 @@ static bool test_heap_illegal_strncpy(FAR struct mm_heap_s *heap,
 static bool test_heap_illegal_strchr(FAR struct mm_heap_s *heap, size_t size)
 {
   FAR char *mem = mm_malloc(heap, size);
+
   size = mm_malloc_size(heap, mem);
 
   return strchr(mem + size, 0x00) == NULL;
@@ -380,6 +412,7 @@ static bool test_heap_illegal_strncmp(FAR struct mm_heap_s *heap,
 {
   FAR char *mem1 = mm_malloc(heap, size / 2);
   FAR char *mem2 = mm_malloc(heap, size / 2);
+
   size = mm_malloc_size(heap, mem2);
 
   *(int *)mem1 = rand();
@@ -390,6 +423,7 @@ static bool test_heap_illegal_strnlen(FAR struct mm_heap_s *heap,
                                       size_t size)
 {
   FAR char *mem = mm_malloc(heap, size);
+
   size = mm_malloc_size(heap, mem);
 
   return strnlen(mem + size, size) < 0;
@@ -399,6 +433,7 @@ static bool test_heap_illegal_strrchr(FAR struct mm_heap_s *heap,
                                       size_t size)
 {
   FAR char *mem = mm_malloc(heap, size);
+
   size = mm_malloc_size(heap, mem);
 
   return strrchr(mem + size, 0x00) == NULL;
@@ -407,6 +442,7 @@ static bool test_heap_illegal_strrchr(FAR struct mm_heap_s *heap,
 static bool test_heap_legal_memchr(FAR struct mm_heap_s *heap, size_t size)
 {
   FAR char *mem = mm_malloc(heap, size);
+
   size = mm_malloc_size(heap, mem);
 
   memset(mem, 0, size);
@@ -451,6 +487,7 @@ static bool test_heap_legal_memmove(FAR struct mm_heap_s *heap, size_t size)
 static bool test_heap_legal_memset(FAR struct mm_heap_s *heap, size_t size)
 {
   FAR char *des = mm_malloc(heap, size / 2);
+
   size = mm_malloc_size(heap, des);
 
   return memset(des, 0xef, size);
@@ -517,6 +554,7 @@ static bool test_heap_legal_strncmp(FAR struct mm_heap_s *heap, size_t size)
 static bool test_heap_legal_strnlen(FAR struct mm_heap_s *heap, size_t size)
 {
   FAR char *mem = mm_malloc(heap, size);
+
   size = mm_malloc_size(heap, mem);
 
   mem[size - 1] = 0x00;
@@ -526,6 +564,7 @@ static bool test_heap_legal_strnlen(FAR struct mm_heap_s *heap, size_t size)
 static bool test_heap_legal_strrchr(FAR struct mm_heap_s *heap, size_t size)
 {
   FAR char *mem = mm_malloc(heap, size);
+
   size = mm_malloc_size(heap, mem);
 
   mem[size - 1] = 0;
@@ -580,7 +619,7 @@ static bool test_algorithm_perf(FAR struct mm_heap_s *heap, size_t size)
   return true;
 }
 
-#ifdef CONFIG_MM_KASAN_GLOBAL
+#ifdef KASANTEST_GLOBAL
 static bool test_global_underflow(FAR struct mm_heap_s *heap, size_t size)
 {
   memset(g_kasan_globals - 1, 0x12, sizeof(g_kasan_globals));
@@ -590,6 +629,24 @@ static bool test_global_underflow(FAR struct mm_heap_s *heap, size_t size)
 static bool test_global_overflow(FAR struct mm_heap_s *heap, size_t size)
 {
   memset(g_kasan_globals + sizeof(g_kasan_globals), 0xef, 1);
+  return false;
+}
+#endif
+
+#ifdef KASANTEST_STACK
+static bool test_stack_underflow(FAR struct mm_heap_s *heap, size_t size)
+{
+  char stack[0];
+
+  memset(stack - 16, 0xef, 16);
+  return false;
+}
+
+static bool test_stack_overflow(FAR struct mm_heap_s *heap, size_t size)
+{
+  char stack[0];
+
+  memset(stack, 0xef, 16);
   return false;
 }
 #endif

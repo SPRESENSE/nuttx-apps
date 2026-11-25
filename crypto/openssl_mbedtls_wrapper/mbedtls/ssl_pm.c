@@ -65,18 +65,6 @@ struct ssl_pm
   SSL *owner;
 };
 
-struct x509_pm
-{
-  mbedtls_x509_crt x509_crt;
-  mbedtls_x509_crt *ex_crt;
-};
-
-struct pkey_pm
-{
-  mbedtls_pk_context *pkey;
-  mbedtls_pk_context *ex_pkey;
-};
-
 /****************************************************************************
  * Public Data
  ****************************************************************************/
@@ -121,7 +109,6 @@ int ssl_pm_new(SSL *ssl)
   size_t pers_len = sizeof(pers);
 
   int endpoint;
-  int version;
 
   const SSL_METHOD *method = ssl->method;
 
@@ -178,39 +165,13 @@ int ssl_pm_new(SSL *ssl)
       goto mbedtls_err2;
     }
 
-  if (TLS_ANY_VERSION != ssl->version)
-    {
-      if (TLS1_2_VERSION == ssl->version)
-        {
-          version = MBEDTLS_SSL_MINOR_VERSION_3;
-        }
-      else if (TLS1_1_VERSION == ssl->version)
-        {
-          version = MBEDTLS_SSL_MINOR_VERSION_2;
-        }
-      else if (TLS1_VERSION == ssl->version)
-        {
-          version = MBEDTLS_SSL_MINOR_VERSION_1;
-        }
-      else
-        {
-          version = MBEDTLS_SSL_MINOR_VERSION_0;
-        }
+  mbedtls_ssl_conf_min_version(&ssl_pm->conf,
+                               MBEDTLS_SSL_MAJOR_VERSION_3,
+                               MBEDTLS_SSL_MINOR_VERSION_3);
 
-      mbedtls_ssl_conf_max_version(&ssl_pm->conf,
-                                   MBEDTLS_SSL_MAJOR_VERSION_3, version);
-      mbedtls_ssl_conf_min_version(&ssl_pm->conf,
-                                   MBEDTLS_SSL_MAJOR_VERSION_3, version);
-    }
-  else
-    {
-      mbedtls_ssl_conf_max_version(&ssl_pm->conf,
-                                   MBEDTLS_SSL_MAJOR_VERSION_3,
-                                   MBEDTLS_SSL_MINOR_VERSION_3);
-      mbedtls_ssl_conf_min_version(&ssl_pm->conf,
-                                   MBEDTLS_SSL_MAJOR_VERSION_3,
-                                   MBEDTLS_SSL_MINOR_VERSION_0);
-    }
+  mbedtls_ssl_conf_max_version(&ssl_pm->conf,
+                               MBEDTLS_SSL_MAJOR_VERSION_3,
+                               MBEDTLS_SSL_MINOR_VERSION_3);
 
   mbedtls_ssl_conf_rng(&ssl_pm->conf,
                  mbedtls_ctr_drbg_random, &ssl_pm->ctr_drbg);
@@ -321,7 +282,7 @@ static int mbedtls_handshake(mbedtls_ssl_context *ssl)
 {
   int ret = 0;
 
-  while (ssl->state != MBEDTLS_SSL_HANDSHAKE_OVER)
+  while (ssl->MBEDTLS_PRIVATE(state) != MBEDTLS_SSL_HANDSHAKE_OVER)
     {
       ret = mbedtls_ssl_handshake_step(ssl);
 
@@ -350,7 +311,7 @@ int ssl_pm_handshake(SSL *ssl)
       return 0;
     }
 
-  if (ssl_pm->ssl.state != MBEDTLS_SSL_HANDSHAKE_OVER)
+  if (ssl_pm->ssl.MBEDTLS_PRIVATE(state) != MBEDTLS_SSL_HANDSHAKE_OVER)
     {
       ssl_speed_up_enter();
 
@@ -486,7 +447,7 @@ int ssl_pm_read(SSL *ssl, void *buffer, int len)
       SSL_DEBUG(SSL_PLATFORM_ERROR_LEVEL,
                 "mbedtls_ssl_read() return -0x%x", -ret);
       if (ret == MBEDTLS_ERR_NET_CONN_RESET ||
-          ret <= MBEDTLS_ERR_SSL_NO_USABLE_CIPHERSUITE) /* fatal errors */
+          ret <= MBEDTLS_ERR_SSL_HANDSHAKE_FAILURE) /* fatal errors */
         {
           ssl->err = SSL_ERROR_SYSCALL;
         }
@@ -534,7 +495,7 @@ int ssl_pm_send(SSL *ssl, const void *buffer, int len)
    * If this function returns something other than a positive value or
    * MBEDTLS_ERR_SSL_WANT_READ/WRITE, the ssl context becomes unusable, and
    * you should either free it or call mbedtls_ssl_session_reset() on it
-   * before re-using it for a new connection; the current connection must
+   * before reusing it for a new connection; the current connection must
    * be closed.
    *
    * When this function returns MBEDTLS_ERR_SSL_WANT_WRITE/READ, it must be
@@ -594,7 +555,7 @@ OSSL_HANDSHAKE_STATE ssl_pm_get_state(const SSL *ssl)
 
   struct ssl_pm *ssl_pm = (struct ssl_pm *)ssl->ssl_pm;
 
-  switch (ssl_pm->ssl.state)
+  switch (ssl_pm->ssl.MBEDTLS_PRIVATE(state))
     {
       case MBEDTLS_SSL_CLIENT_HELLO:
         state = TLS_ST_CW_CLNT_HELLO;
@@ -628,9 +589,6 @@ OSSL_HANDSHAKE_STATE ssl_pm_get_state(const SSL *ssl)
         break;
       case MBEDTLS_SSL_SERVER_KEY_EXCHANGE:
         state = TLS_ST_SR_KEY_EXCH;
-        break;
-      case MBEDTLS_SSL_SERVER_NEW_SESSION_TICKET:
-        state = TLS_ST_SW_SESSION_TICKET;
         break;
       case MBEDTLS_SSL_SERVER_HELLO_VERIFY_REQUEST_SENT:
         state = TLS_ST_SW_CERT_REQ;
@@ -776,7 +734,7 @@ int x509_pm_load_file(X509 *x, const char *path)
   mbedtls_x509_crt_free(&x509_pm->x509_crt);
   mbedtls_x509_crt_init(&x509_pm->x509_crt);
   ret = mbedtls_x509_crt_parse_file(&x509_pm->x509_crt, path);
-  if (ret)
+  if (ret < 0)
     {
       SSL_DEBUG(SSL_PLATFORM_ERROR_LEVEL,
                 "mbedtls_x509_crt_parse_file return -0x%x", -ret);
@@ -795,7 +753,7 @@ int x509_pm_load_path(X509 *x, const char *path)
   mbedtls_x509_crt_free(&x509_pm->x509_crt);
   mbedtls_x509_crt_init(&x509_pm->x509_crt);
   ret = mbedtls_x509_crt_parse_path(&x509_pm->x509_crt, path);
-  if (ret)
+  if (ret < 0)
     {
       SSL_DEBUG(SSL_PLATFORM_ERROR_LEVEL,
                 "mbedtls_x509_crt_parse_file return -0x%x", -ret);
@@ -974,7 +932,7 @@ int X509_VERIFY_PARAM_set1_host(X509_VERIFY_PARAM *param,
 
   if (namelen)
     {
-      name_cstr = malloc(namelen + 1);
+      name_cstr = mbedtls_calloc(1, namelen + 1);
       if (!name_cstr)
         {
           return 0;
@@ -989,7 +947,7 @@ int X509_VERIFY_PARAM_set1_host(X509_VERIFY_PARAM *param,
 
   if (namelen)
     {
-      free(name_cstr);
+      mbedtls_free(name_cstr);
     }
 
   return 1;
@@ -1058,6 +1016,13 @@ SSL *SSL_SSL_from_mbedtls_ssl_context(mbedtls_ssl_context *msc)
         (struct ssl_pm *)((char *)msc - offsetof(struct ssl_pm, ssl));
 
   return ssl_pm->owner;
+}
+
+mbedtls_ssl_context *SSL_mbedtls_ssl_context_from_SSL(SSL *ssl)
+{
+  struct ssl_pm *ssl_pm = (struct ssl_pm *)ssl->ssl_pm;
+
+  return &ssl_pm->ssl;
 }
 
 void SSL_set_SSL_CTX(SSL *ssl, SSL_CTX *ctx)

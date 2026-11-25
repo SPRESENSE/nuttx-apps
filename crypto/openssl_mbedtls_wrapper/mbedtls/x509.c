@@ -24,10 +24,16 @@
  * Included Files
  ****************************************************************************/
 
+#include <string.h>
+
 #include <openssl/ssl_dbg.h>
 #include <openssl/x509.h>
+
+#include <mbedtls/x509_crt.h>
+
 #include "ssl_port.h"
 #include "ssl_methods.h"
+#include "ssl_pm.h"
 
 /****************************************************************************
  * Public Functions
@@ -153,7 +159,49 @@ X509_ALGOR *X509_ALGOR_new(void)
 
 int i2d_X509(X509 *x509, uint8_t **outp)
 {
-  return 0;
+  const mbedtls_x509_crt *crt;
+  struct x509_pm *pm;
+  unsigned char *out;
+
+  if (x509 == NULL)
+    {
+      return 0;
+    }
+
+  pm = (struct x509_pm *)x509->x509_pm;
+  if (pm == NULL)
+    {
+      return 0;
+    }
+
+  crt = &pm->x509_crt;
+  if (crt->raw.p == NULL || crt->raw.len == 0)
+    {
+      return 0;
+    }
+
+  if (outp == NULL)
+    {
+      return (int)crt->raw.len;
+    }
+
+  out = *outp;
+  if (out == NULL)
+    {
+      out = ssl_mem_zalloc(crt->raw.len);
+      if (out == NULL)
+        {
+          return 0;
+        }
+
+      memcpy(out, crt->raw.p, crt->raw.len);
+      *outp = out;
+      return (int)crt->raw.len;
+    }
+
+  memcpy(out, crt->raw.p, crt->raw.len);
+  *outp = out + crt->raw.len;
+  return (int)crt->raw.len;
 }
 
 PKCS8_PRIV_KEY_INFO *d2i_PKCS8_PRIV_KEY_INFO(PKCS8_PRIV_KEY_INFO *info,
@@ -252,4 +300,32 @@ failed:
   ssl_mem_free(x);
 no_mem:
   return NULL;
+}
+
+int X509_cmp(const X509 *a, const X509 *b)
+{
+  const struct x509_pm *pm_a;
+  const struct x509_pm *pm_b;
+
+  if (a == NULL || b == NULL)
+    {
+      return a == b ? 0 : (a < b ? -1 : 1);
+    }
+
+  pm_a = (const struct x509_pm *)a->x509_pm;
+  pm_b = (const struct x509_pm *)b->x509_pm;
+
+  if (pm_a == NULL || pm_b == NULL)
+    {
+      return pm_a == pm_b ? 0 : (pm_a < pm_b ? -1 : 1);
+    }
+
+  if (pm_a->x509_crt.raw.len != pm_b->x509_crt.raw.len)
+    {
+      return pm_a->x509_crt.raw.len < pm_b->x509_crt.raw.len ? -1 : 1;
+    }
+
+  return memcmp(pm_a->x509_crt.raw.p,
+                pm_b->x509_crt.raw.p,
+                pm_a->x509_crt.raw.len);
 }

@@ -37,6 +37,7 @@ if(CONFIG_TESTING_NET_TEST)
       list(APPEND SRCS ${CMAKE_CURRENT_LIST_DIR}/tcp/test_tcp_connect_ipv4.c
            ${CMAKE_CURRENT_LIST_DIR}/tcp/test_tcp_bind_listen.c
            ${CMAKE_CURRENT_LIST_DIR}/tcp/test_tcp_close.c)
+      list(APPEND SRCS ${CMAKE_CURRENT_LIST_DIR}/tcp/test_tcp_bulk.c)
     endif()
 
     if(CONFIG_NET_IPv6)
@@ -45,9 +46,14 @@ if(CONFIG_TESTING_NET_TEST)
     endif()
 
     if(CONFIG_NET_IPv4)
-      list(APPEND SRCS ${CMAKE_CURRENT_LIST_DIR}/tcp/test_tcp_reset.c
-           ${CMAKE_CURRENT_LIST_DIR}/tcp/test_tcp_iov.c
-           ${CMAKE_CURRENT_LIST_DIR}/tcp/test_tcp_halfclose.c)
+      list(
+        APPEND
+        SRCS
+        ${CMAKE_CURRENT_LIST_DIR}/tcp/test_tcp_reset.c
+        ${CMAKE_CURRENT_LIST_DIR}/tcp/test_tcp_iov.c
+        ${CMAKE_CURRENT_LIST_DIR}/tcp/test_tcp_halfclose.c
+        ${CMAKE_CURRENT_LIST_DIR}/tcp/test_tcp_backlog.c)
+      list(APPEND SRCS ${CMAKE_CURRENT_LIST_DIR}/tcp/test_tcp_procfs.c)
     endif()
 
     if(CONFIG_NET_IPv4

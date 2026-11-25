@@ -28,6 +28,7 @@
 #include <openssl/hmac.h>
 #include <mbedtls/hmac_drbg.h>
 #include <mbedtls/md.h>
+#include <mbedtls/platform.h>
 #include <stdlib.h>
 
 /****************************************************************************
@@ -57,7 +58,8 @@ uint8_t *HMAC(const EVP_MD *evp_md, const void *key,
 HMAC_CTX *HMAC_CTX_new(void)
 {
   mbedtls_md_context_t *ctx =
-      (mbedtls_md_context_t *)malloc(sizeof(mbedtls_md_context_t));
+      (mbedtls_md_context_t *)mbedtls_calloc(1,
+                                            sizeof(mbedtls_md_context_t));
   if (ctx != NULL)
     {
       mbedtls_md_init(ctx);
@@ -106,7 +108,7 @@ int HMAC_Final(HMAC_CTX *ctx, uint8_t *out, unsigned int *out_len)
   size_t md_size;
 
   const mbedtls_md_info_t *md_info =
-    ((mbedtls_md_context_t *)(ctx))->md_info;
+    mbedtls_md_info_from_ctx((mbedtls_md_context_t *)ctx);
   if (md_info == NULL)
     {
       return 0;
@@ -126,7 +128,7 @@ void HMAC_CTX_cleanup(HMAC_CTX *ctx)
 void HMAC_CTX_free(HMAC_CTX *ctx)
 {
   mbedtls_md_free((mbedtls_md_context_t *)ctx);
-  free(ctx);
+  mbedtls_free(ctx);
 }
 
 size_t EVP_MD_size(const EVP_MD *md)

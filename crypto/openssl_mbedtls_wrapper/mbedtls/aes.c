@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <openssl/evp.h>
 #include <mbedtls/cipher.h>
+#include <mbedtls/platform.h>
 
 /****************************************************************************
  * Public Functions
@@ -133,7 +134,6 @@ int EVP_CipherInit_ex(EVP_CIPHER_CTX *ctx, const EVP_CIPHER *cipher,
                       const unsigned char *iv, int enc)
 {
   mbedtls_cipher_context_t *ctx_ = (mbedtls_cipher_context_t *)ctx;
-  mbedtls_cipher_set_padding_mode(ctx_, MBEDTLS_PADDING_PKCS7);
   const mbedtls_operation_t operation = enc
     ? MBEDTLS_ENCRYPT : MBEDTLS_DECRYPT;
   int ret = mbedtls_cipher_setup(ctx_,
@@ -157,6 +157,8 @@ int EVP_CipherInit_ex(EVP_CIPHER_CTX *ctx, const EVP_CIPHER *cipher,
     {
       goto error;
     }
+
+  mbedtls_cipher_set_padding_mode(ctx_, MBEDTLS_PADDING_PKCS7);
 
   return 1;
 error:
@@ -198,7 +200,10 @@ int EVP_CipherFinal_ex(EVP_CIPHER_CTX *ctx,
 
 EVP_CIPHER_CTX *EVP_CIPHER_CTX_new(void)
 {
-  return (EVP_CIPHER_CTX *)(malloc(sizeof(mbedtls_cipher_context_t)));
+  mbedtls_cipher_context_t *ctx;
+
+  ctx = mbedtls_calloc(1, sizeof(mbedtls_cipher_context_t));
+  return (EVP_CIPHER_CTX *)ctx;
 }
 
 void EVP_CIPHER_CTX_free(EVP_CIPHER_CTX *ctx)
@@ -206,5 +211,5 @@ void EVP_CIPHER_CTX_free(EVP_CIPHER_CTX *ctx)
   if (ctx == NULL)
     return;
 
-  free(ctx);
+  mbedtls_free(ctx);
 }

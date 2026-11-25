@@ -39,6 +39,15 @@ int main(int argc, FAR char *argv[])
   const struct CMUnitTest tcp_tests[] =
     {
 #ifdef CONFIG_NET_IPv4
+#  ifdef CONFIG_NET_SOCKOPTS
+      /* First: after the other cases, the devif callbacks that this case
+       * needs at once may not be free (NET_PREALLOC_DEVIF_CALLBACKS).
+       */
+
+      cmocka_unit_test_setup_teardown(test_tcp_loopback_bulk,
+                                      test_tcp_bulk_setup,
+                                      test_tcp_bulk_teardown),
+#  endif
       cmocka_unit_test_setup_teardown(test_tcp_closewait_accept_data,
                                       test_tcp_closewait_setup,
                                       test_tcp_closewait_teardown),
@@ -159,6 +168,29 @@ int main(int argc, FAR char *argv[])
       cmocka_unit_test_setup_teardown(test_tcp_recv_iov_nowait,
                                       test_tcp_iov_setup,
                                       test_tcp_iov_teardown),
+#  ifdef CONFIG_NET_TCPBACKLOG
+#    ifdef CONFIG_NET_SOLINGER
+      cmocka_unit_test_setup_teardown(test_tcp_backlog_relisten_rst,
+                                      test_tcp_backlog_setup,
+                                      test_tcp_backlog_teardown),
+#    endif
+      cmocka_unit_test_setup_teardown(test_tcp_backlog_relisten_race,
+                                      test_tcp_backlog_setup,
+                                      test_tcp_backlog_teardown),
+      cmocka_unit_test_setup_teardown(test_tcp_backlog_close_race,
+                                      test_tcp_backlog_setup,
+                                      test_tcp_backlog_teardown),
+#  endif
+#endif
+#ifdef TEST_TCP_PROCFS
+      cmocka_unit_test_setup_teardown(test_tcp_procfs_many,
+                                      test_tcp_procfs_setup,
+                                      test_tcp_procfs_teardown),
+#  ifdef CONFIG_NET_SOLINGER
+      cmocka_unit_test_setup_teardown(test_tcp_procfs_close,
+                                      test_tcp_procfs_setup,
+                                      test_tcp_procfs_teardown),
+#  endif
 #endif
     };
 

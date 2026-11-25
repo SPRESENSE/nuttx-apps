@@ -71,6 +71,7 @@ void test_nuttx_mm07(FAR void **state)
   struct mallinfo test_during_info;
   struct mallinfo test_after_info;
   struct mallinfo mem_info;
+
   memset(&mem_info, 0, sizeof(mem_info));
   for (int i = 0; i < MEMORY_LIST_LENGTH; i++)
     {
@@ -83,10 +84,13 @@ void test_nuttx_mm07(FAR void **state)
 
   for (int k = 0; k < MEMORY_LIST_LENGTH; k++)
     {
+      int max_size;
+
       get_mem_info(&mem_info);
       malloc_size =
           mmtest_get_rand_size(MALLOC_MIN_SIZE, MALLOC_MAX_SIZE);
-      if (mem_info.mxordblk - 16 < 0)
+      max_size = mem_info.mxordblk - 128;
+      if (max_size < 0)
         {
           syslog(LOG_INFO,
                  "TEST END because of the mem_info.mxordblk is:%d",
@@ -94,10 +98,10 @@ void test_nuttx_mm07(FAR void **state)
           break;
         }
 
-      if (malloc_size > mem_info.mxordblk - 16)
+      if (malloc_size > max_size)
         {
-          syslog(LOG_INFO, "SET memsize to:%d", mem_info.mxordblk - 16);
-          malloc_size = mem_info.mxordblk - 16;
+          syslog(LOG_INFO, "SET memsize to:%d", max_size);
+          malloc_size = max_size;
         }
 
       if (malloc_size > 0)
@@ -145,7 +149,9 @@ void test_nuttx_mm07(FAR void **state)
   for (int l = 0; l < MEMORY_LIST_LENGTH; l++)
     {
       if (mem_list[l] != NULL)
-        free(mem_list[l]);
+        {
+          free(mem_list[l]);
+        }
     }
 
   test_after_info = mallinfo();

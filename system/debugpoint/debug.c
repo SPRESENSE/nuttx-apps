@@ -100,6 +100,7 @@ nooptimiziation_function static void test_function(void (*func)(void))
 {
   int ret = 0;
   bool triggered;
+
   printf("==== Calling test_function ====\n");
 
   printf("Add breakpoint at %p\n", func);
@@ -115,6 +116,9 @@ nooptimiziation_function static void test_function(void (*func)(void))
   /* Trigger the breakpoint */
 
   triggered = false;
+
+  UP_DSB();
+
   func();
 
   if (triggered)
@@ -177,6 +181,9 @@ nooptimiziation_function static void test_data(uint8_t *addr,
       /* Trigger the watchpoint by reading the address */
 
       triggered = false;
+
+      UP_DSB();
+
       if (addr[0] == 0x55)
         {
           /* Do something to avoid compiler removing the read */
@@ -187,6 +194,8 @@ nooptimiziation_function static void test_data(uint8_t *addr,
         {
           tmp = 0x55;
         }
+
+      UP_DSB();
 
       if (triggered)
         {
@@ -212,7 +221,12 @@ nooptimiziation_function static void test_data(uint8_t *addr,
       /* Trigger the watchpoint by writing to the address */
 
       triggered = false;
+
+      UP_DSB();
+
       addr[0] = tmp;
+
+      UP_DSB();
 
       if (triggered)
         {
@@ -229,12 +243,17 @@ nooptimiziation_function static void test_data(uint8_t *addr,
       /* Trigger the watchpoint by reading the address */
 
       triggered = false;
+
+      UP_DSB();
+
       if (addr[0] == 0x55)
         {
           /* Do something to avoid compiler removing the read */
 
           printf("Reading %p\n", addr);
         }
+
+      UP_DSB();
 
       if (triggered)
         {
@@ -251,7 +270,12 @@ nooptimiziation_function static void test_data(uint8_t *addr,
       /** Trigger the watchpoint by writing to the address */
 
       triggered = false;
+
+      UP_DSB();
+
       addr[0] = 0x55;
+
+      UP_DSB();
 
       if (triggered)
         {
@@ -289,6 +313,7 @@ static bool parse_options(int argc, FAR char *argv[],
                           struct debug_option *opt)
 {
   int cmd;
+
   while ((cmd = getopt(argc, argv, "r:w:b:x:cl:")) != -1)
     {
       switch (cmd)
@@ -349,21 +374,21 @@ static bool parse_options(int argc, FAR char *argv[],
         }
     }
 
-    if (opt->width == 0)
-      {
-        /* If the watch length is not specified,
-         * default to 4 bytes for watchpoints
-         */
+  if (opt->width == 0)
+    {
+      /* If the watch length is not specified,
+       * default to 4 bytes for watchpoints
+       */
 
-        if (opt->type == GDB_STOPREASON_WATCHPOINT_RO ||
-            opt->type == GDB_STOPREASON_WATCHPOINT_WO ||
-            opt->type == GDB_STOPREASON_WATCHPOINT_RW)
-          {
-            opt->width = 4;
-          }
-      }
+      if (opt->type == GDB_STOPREASON_WATCHPOINT_RO ||
+          opt->type == GDB_STOPREASON_WATCHPOINT_WO ||
+          opt->type == GDB_STOPREASON_WATCHPOINT_RW)
+        {
+          opt->width = 4;
+        }
+    }
 
-    return true;
+  return true;
 }
 
 /****************************************************************************

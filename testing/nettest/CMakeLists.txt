@@ -146,7 +146,7 @@ if(CONFIG_TESTING_NET_TEST)
       PRIORITY
       ${CONFIG_TESTING_NET_TEST_PRIORITY}
       STACKSIZE
-      ${CONFIG_TESTING_NET_TEST_STACKSIZE}
+      ${CONFIG_TESTING_NET_LOCAL_DGRAM_STACKSIZE}
       MODULE
       ${CONFIG_TESTING_NET_TEST}
       DEPENDS
@@ -159,7 +159,6 @@ if(CONFIG_TESTING_NET_TEST)
     set(SRCS
         ${CMAKE_CURRENT_LIST_DIR}/others/test_others.c
         ${CMAKE_CURRENT_LIST_DIR}/others/test_others_common.c
-        ${CMAKE_CURRENT_LIST_DIR}/others/test_others_bufpool.c
         ${CMAKE_CURRENT_LIST_DIR}/others/test_others_chksum.c)
 
     nuttx_add_application(

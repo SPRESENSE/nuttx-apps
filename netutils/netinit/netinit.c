@@ -220,8 +220,9 @@ static sem_t g_notify_sem;
 bool g_use_dhcpc;
 #endif
 
-#if defined(CONFIG_NET_IPv6) && !defined(CONFIG_NET_ICMPv6_AUTOCONF) && \
-   !defined(CONFIG_NET_6LOWPAN)
+#if defined(NETINIT_HAVE_NETDEV) && defined(CONFIG_NET_IPv6) && \
+   !defined(CONFIG_NET_ICMPv6_AUTOCONF) && !defined(CONFIG_NET_6LOWPAN) && \
+   !defined(CONFIG_NET_IEEE802154)
 /* Host IPv6 address */
 
 static const uint16_t g_ipv6_hostaddr[8] =
@@ -263,7 +264,7 @@ static const uint16_t g_ipv6_netmask[8] =
   HTONS(CONFIG_NETINIT_IPv6NETMASK_7),
   HTONS(CONFIG_NETINIT_IPv6NETMASK_8),
 };
-#endif /* CONFIG_NET_IPv6 && !CONFIG_NET_ICMPv6_AUTOCONF && !CONFIG_NET_6LOWPAN */
+#endif /* NETINIT_HAVE_NETDEV && CONFIG_NET_IPv6 && ... */
 
 /****************************************************************************
  * Private Functions
@@ -347,9 +348,11 @@ static void netinit_set_macaddr(void)
 static inline void netinit_checkpath(void)
 {
   int retries = CONFIG_NETINIT_RETRY_MOUNTPATH;
+
   while (retries > 0)
     {
       DIR * dir = opendir(CONFIG_IPCFG_PATH);
+
       if (dir)
         {
           /* Directory exists. */
@@ -359,7 +362,7 @@ static inline void netinit_checkpath(void)
         }
       else
         {
-        usleep(100000);
+          usleep(100000);
         }
 
       retries--;

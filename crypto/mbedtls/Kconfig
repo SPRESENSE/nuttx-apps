@@ -622,9 +622,19 @@ config MBEDTLS_PSA_CRYPTO_STORAGE_C
 	depends on MBEDTLS_PSA_CRYPTO_C
 	default !MBEDTLS_MINIMAL
 
+config MBEDTLS_PSA_CRYPTO_SE_C
+	bool "Enable dynamic secure element support in the Platform Security Architecture cryptography API."
+	depends on MBEDTLS_PSA_CRYPTO_C && MBEDTLS_PSA_CRYPTO_STORAGE_C
+	default n
+
 config MBEDTLS_PSA_ITS_FILE_C
 	bool "Enable the emulation of the Platform Security Architecture Internal Trusted Storage (PSA ITS) over files."
 	default !MBEDTLS_MINIMAL
+
+config PSA_ITS_STORAGE_PREFIX
+	string "Allows storing the key files in a directory other than the current directory."
+	depends on MBEDTLS_PSA_ITS_FILE_C
+	default ""
 
 config MBEDTLS_RIPEMD160_C
 	bool "Enable the RIPEMD-160 hash algorithm."
@@ -717,6 +727,11 @@ config MBEDTLS_CMAC_ALT
 	select MBEDTLS_ALT
 	default n
 
+config MBEDTLS_GCM_ALT
+	bool "Enable Mbedt TLS GCM module alted by nuttx crypto"
+	select MBEDTLS_ALT
+	default n
+
 config MBEDTLS_MD5_ALT
 	bool "Enable Mbedt TLS MD5 module alted by nuttx crypto"
 	select MBEDTLS_ALT
@@ -749,6 +764,34 @@ config MBEDTLS_SHA512_ALT
 
 config MBEDTLS_BIGNUM_ALT
 	bool "Enable Mbedt TLS Bignum module alted by nuttx mpi"
+	select MBEDTLS_ALT
+	default n
+
+config MBEDTLS_ECDSA_ALT
+	bool "Enable Mbedt TLS ECDSA module alted by nuttx crypto"
+	select MBEDTLS_ALT
+	default n
+
+config MBEDTLS_ECDH_ALT
+	bool "Enable Mbedt TLS ECDH module alted by nuttx crypto"
+	select MBEDTLS_ALT
+	default n
+
+config MBEDTLS_PKCS5_ALT
+	bool "Enable Mbed TLS PKCS#5 PBKDF2 alted by nuttx crypto"
+	depends on MBEDTLS_PKCS5_C
+	select MBEDTLS_ALT
+	default n
+	---help---
+		Route mbedtls_pkcs5_pbkdf2_hmac[_ext] to the NuttX crypto
+		device (/dev/crypto) so PBKDF2-HMAC-SHA1/SHA256 key derivation
+		runs on the hardware crypto engine. Only SHA1 and SHA256 are
+		supported; other digests return
+		MBEDTLS_ERR_PKCS5_FEATURE_UNAVAILABLE.
+
+config MBEDTLS_PSA_CRYPTODEV_ALT
+	bool "Enable secure element of Platform Security Architecture API alted by nuttx crypto"
+	depends on MBEDTLS_PSA_CRYPTO_SE_C
 	select MBEDTLS_ALT
 	default n
 

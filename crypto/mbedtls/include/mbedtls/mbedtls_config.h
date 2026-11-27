@@ -450,6 +450,9 @@
 #ifdef CONFIG_MBEDTLS_CMAC_ALT
 #define MBEDTLS_CMAC_ALT
 #endif
+#ifdef CONFIG_MBEDTLS_GCM_ALT
+#define MBEDTLS_GCM_ALT
+#endif
 /* #define MBEDTLS_DES_ALT
  * #define MBEDTLS_DHM_ALT
  * #define MBEDTLS_ECJPAKE_ALT
@@ -478,6 +481,18 @@
 #endif
 #ifdef CONFIG_MBEDTLS_BIGNUM_ALT
 #define MBEDTLS_BIGNUM_ALT
+#endif
+#ifdef CONFIG_MBEDTLS_ECDSA_ALT
+#define MBEDTLS_ECDSA_VERIFY_ALT
+#define MBEDTLS_ECDSA_SIGN_ALT
+#define MBEDTLS_ECDSA_GENKEY_ALT
+#endif
+#ifdef CONFIG_MBEDTLS_ECDH_ALT
+#define MBEDTLS_ECDH_GEN_PUBLIC_ALT
+#define MBEDTLS_ECDH_COMPUTE_SHARED_ALT
+#endif
+#ifdef CONFIG_MBEDTLS_PKCS5_ALT
+#define MBEDTLS_PKCS5_ALT
 #endif
 /* #define MBEDTLS_XTEA_ALT
  */
@@ -3726,7 +3741,9 @@
  *
  */
 
-/* #define MBEDTLS_PSA_CRYPTO_SE_C */
+#ifdef CONFIG_MBEDTLS_PSA_CRYPTO_SE_C
+#define MBEDTLS_PSA_CRYPTO_SE_C
+#endif
 
 /**
  * \def MBEDTLS_PSA_CRYPTO_STORAGE_C
@@ -3755,6 +3772,20 @@
  */
 #ifdef CONFIG_MBEDTLS_PSA_ITS_FILE_C
 #define MBEDTLS_PSA_ITS_FILE_C
+#endif
+
+/**
+ * \def PSA_ITS_STORAGE_PREFIX
+ *
+ * Allows storing the key files in a directory other than the current
+ * directory.
+ *
+ * Module:  library/psa_its_file.c
+ *
+ * Requires: MBEDTLS_PSA_ITS_FILE_C
+ */
+#ifdef CONFIG_PSA_ITS_STORAGE_PREFIX
+#define PSA_ITS_STORAGE_PREFIX CONFIG_PSA_ITS_STORAGE_PREFIX
 #endif
 
 /**

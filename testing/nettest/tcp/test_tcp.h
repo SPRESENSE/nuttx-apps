@@ -1,6 +1,8 @@
 /****************************************************************************
  * apps/testing/nettest/tcp/test_tcp.h
  *
+ * SPDX-License-Identifier: Apache-2.0
+ *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.  The
@@ -213,6 +215,12 @@ void test_tcp_bind_reuseaddr_listener(FAR void **state);
 
 void test_tcp_accept_inherit(FAR void **state);
 
+/****************************************************************************
+ * Name: test_tcp_accept_rcvtimeo
+ ****************************************************************************/
+
+void test_tcp_accept_rcvtimeo(FAR void **state);
+
 #    ifdef CONFIG_NET_TCP_WRITE_BUFFERS
 /****************************************************************************
  * Name: test_tcp_sndtimeo_setup
@@ -241,6 +249,12 @@ void test_tcp_sndtimeo_iob(FAR void **state);
 void test_tcp_listen_again(FAR void **state);
 
 /****************************************************************************
+ * Name: test_tcp_accept_addrlen
+ ****************************************************************************/
+
+void test_tcp_accept_addrlen(FAR void **state);
+
+/****************************************************************************
  * Name: test_tcp_listen_recv
  ****************************************************************************/
 
@@ -251,6 +265,18 @@ void test_tcp_listen_recv(FAR void **state);
  ****************************************************************************/
 
 void test_tcp_listen_connected(FAR void **state);
+
+/****************************************************************************
+ * Name: test_tcp_connect_listener
+ ****************************************************************************/
+
+void test_tcp_connect_listener(FAR void **state);
+
+/****************************************************************************
+ * Name: test_tcp_connect_family
+ ****************************************************************************/
+
+void test_tcp_connect_family(FAR void **state);
 
 /****************************************************************************
  * Name: test_tcp_close_setup
@@ -402,6 +428,12 @@ void test_tcp_reset_poll(FAR void **state);
 void test_tcp_reset_refused(FAR void **state);
 
 /****************************************************************************
+ * Name: test_tcp_reset_closewait
+ ****************************************************************************/
+
+void test_tcp_reset_closewait(FAR void **state);
+
+/****************************************************************************
  * Name: test_tcp_halfclose_setup
  ****************************************************************************/
 
@@ -488,6 +520,14 @@ int test_tcp_backlog_setup(FAR void **state);
  ****************************************************************************/
 
 int test_tcp_backlog_teardown(FAR void **state);
+
+/****************************************************************************
+ * Name: test_tcp_backlog_close_reset
+ ****************************************************************************/
+
+#    ifdef CONFIG_NET_SOCKOPTS
+void test_tcp_backlog_close_reset(FAR void **state);
+#    endif
 
 /****************************************************************************
  * Name: test_tcp_backlog_relisten_rst

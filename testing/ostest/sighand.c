@@ -115,7 +115,9 @@ static void wakeup_action(int signo, siginfo_t *info, void *ucontext)
       ASSERT(false);
     }
 
-  /* Check sigprocmask */
+  /* Check sigprocmask.  SIGKILL and SIGSTOP cannot be blocked (POSIX), so
+   * they are not part of the mask: do not compare them.
+   */
 
   sigfillset(&allsigs);
   status = sigprocmask(SIG_SETMASK, NULL, &oldset);
@@ -123,6 +125,11 @@ static void wakeup_action(int signo, siginfo_t *info, void *ucontext)
     {
       ASSERT(false);
     }
+
+  sigdelset(&allsigs, SIGKILL);
+  sigdelset(&allsigs, SIGSTOP);
+  sigdelset(&oldset, SIGKILL);
+  sigdelset(&oldset, SIGSTOP);
 
   if (!sigset_isequal(&oldset, &allsigs))
     {
@@ -179,6 +186,7 @@ static FAR void *waiter_main(FAR void *arg)
   if (status != 0)
     {
       int error = errno;
+
       if (error == EINTR)
         {
           printf("waiter_main: sem_wait() successfully interrupted by "

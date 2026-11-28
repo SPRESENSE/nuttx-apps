@@ -1,6 +1,8 @@
 ############################################################################
 # apps/testing/nettest/Makefile
 #
+# SPDX-License-Identifier: Apache-2.0
+#
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.  The
@@ -76,6 +78,9 @@ ifeq ($(CONFIG_TESTING_NET_LOCAL),y)
 MAINSRC  += local/test_local.c
 PROGNAME += cmocka_net_local
 CSRCS    += local/test_local_common.c local/test_local_scm_rights.c
+ifeq ($(CONFIG_NET_LOCAL_STREAM)$(CONFIG_NET_SOCKOPTS),yy)
+CSRCS    += local/test_local_accept.c
+endif
 ifeq ($(CONFIG_TESTING_NET_LOCAL_PEERCRED),y)
 CSRCS    += local/test_local_peercred.c
 endif

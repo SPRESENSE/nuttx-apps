@@ -1,6 +1,8 @@
 /****************************************************************************
  * apps/testing/nettest/local/test_local.h
  *
+ * SPDX-License-Identifier: Apache-2.0
+ *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.  The
@@ -48,6 +50,12 @@ int test_local_group_teardown(FAR void **state);
  ****************************************************************************/
 
 void test_local_scm_rights(FAR void **state);
+
+/****************************************************************************
+ * Name: test_local_accept_rcvtimeo
+ ****************************************************************************/
+
+void test_local_accept_rcvtimeo(FAR void **state);
 
 /****************************************************************************
  * Name: test_local_peercred_*

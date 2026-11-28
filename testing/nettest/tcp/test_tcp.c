@@ -1,6 +1,8 @@
 /****************************************************************************
  * apps/testing/nettest/tcp/test_tcp.c
  *
+ * SPDX-License-Identifier: Apache-2.0
+ *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.  The
@@ -95,6 +97,9 @@ int main(int argc, FAR char *argv[])
       cmocka_unit_test_setup_teardown(test_tcp_accept_inherit,
                                       test_tcp_bind_listen_setup,
                                       test_tcp_bind_listen_teardown),
+      cmocka_unit_test_setup_teardown(test_tcp_accept_rcvtimeo,
+                                      test_tcp_bind_listen_setup,
+                                      test_tcp_bind_listen_teardown),
 #    ifdef CONFIG_NET_TCP_WRITE_BUFFERS
       cmocka_unit_test_setup_teardown(test_tcp_sndtimeo_iob,
                                       test_tcp_sndtimeo_setup,
@@ -104,10 +109,16 @@ int main(int argc, FAR char *argv[])
       cmocka_unit_test_setup_teardown(test_tcp_listen_again,
                                       test_tcp_bind_listen_setup,
                                       test_tcp_bind_listen_teardown),
+      cmocka_unit_test_setup_teardown(test_tcp_accept_addrlen,
+                                      test_tcp_bind_listen_setup,
+                                      test_tcp_bind_listen_teardown),
       cmocka_unit_test_setup_teardown(test_tcp_listen_recv,
                                       test_tcp_bind_listen_setup,
                                       test_tcp_bind_listen_teardown),
       cmocka_unit_test_setup_teardown(test_tcp_listen_connected,
+                                      test_tcp_bind_listen_setup,
+                                      test_tcp_bind_listen_teardown),
+      cmocka_unit_test_setup_teardown(test_tcp_connect_listener,
                                       test_tcp_bind_listen_setup,
                                       test_tcp_bind_listen_teardown),
       cmocka_unit_test_setup_teardown(test_tcp_close_shutdown_queued,
@@ -158,6 +169,9 @@ int main(int argc, FAR char *argv[])
       cmocka_unit_test_setup_teardown(test_tcp_reset_refused,
                                       test_tcp_reset_setup,
                                       test_tcp_reset_teardown),
+      cmocka_unit_test_setup_teardown(test_tcp_reset_closewait,
+                                      test_tcp_reset_setup,
+                                      test_tcp_reset_teardown),
       cmocka_unit_test_setup_teardown(test_tcp_halfclose_answer,
                                       test_tcp_halfclose_setup,
                                       test_tcp_halfclose_teardown),
@@ -180,6 +194,11 @@ int main(int argc, FAR char *argv[])
                                       test_tcp_epoll_teardown),
 #  endif
 #  ifdef CONFIG_NET_TCPBACKLOG
+#    ifdef CONFIG_NET_SOCKOPTS
+      cmocka_unit_test_setup_teardown(test_tcp_backlog_close_reset,
+                                      test_tcp_backlog_setup,
+                                      test_tcp_backlog_teardown),
+#    endif
 #    ifdef CONFIG_NET_SOLINGER
       cmocka_unit_test_setup_teardown(test_tcp_backlog_relisten_rst,
                                       test_tcp_backlog_setup,
@@ -202,6 +221,11 @@ int main(int argc, FAR char *argv[])
                                       test_tcp_procfs_setup,
                                       test_tcp_procfs_teardown),
 #  endif
+#endif
+#ifdef CONFIG_NET_IPv4
+      cmocka_unit_test_setup_teardown(test_tcp_connect_family,
+                                      test_tcp_bind_listen_setup,
+                                      test_tcp_bind_listen_teardown),
 #endif
     };
 
